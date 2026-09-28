@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -544,6 +545,18 @@ class MainActivity : ComponentActivity() {
                         Toast.makeText(context, motoHubText("Camera permission is required to take a photo"), Toast.LENGTH_SHORT).show()
                     }
                 }
+                // The consent result can arrive before the activity is resumed, and some ROMs
+                // refuse the foreground start in that window (WB-27). The consent is then held and
+                // tried once more on the next resume; a second refusal ends it as a cancellation.
+                var pendingProjectionConsent by remember { mutableStateOf<Pair<Int, Intent>?>(null) }
+                val startMirroringSession: (Int, Intent) -> Boolean = { resultCode, data ->
+                    if (ProjectionSessionService.start(context, resultCode, data)) {
+                        viewModel.onProjectionRequested()
+                        true
+                    } else {
+                        false
+                    }
+                }
                 val projectionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -552,11 +565,30 @@ class MainActivity : ComponentActivity() {
                         "Screen capture consent returned resultCode=${result.resultCode}, hasData=${result.data != null}."
                     )
                     if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                        ProjectionSessionService.start(context, result.resultCode, result.data!!)
-                        viewModel.onProjectionRequested()
+                        if (!startMirroringSession(result.resultCode, result.data!!)) {
+                            ProjectionEventLog.warning(
+                                "MIRROR",
+                                "Mirroring start refused before the app was in front; retrying on resume."
+                            )
+                            pendingProjectionConsent = result.resultCode to result.data!!
+                        }
                     } else {
                         viewModel.onProjectionCancelled()
                     }
+                }
+                val currentStartMirroringSession by rememberUpdatedState(startMirroringSession)
+                val projectionRetryLifecycleOwner = LocalLifecycleOwner.current
+                DisposableEffect(projectionRetryLifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            pendingProjectionConsent?.let { (resultCode, data) ->
+                                pendingProjectionConsent = null
+                                if (!currentStartMirroringSession(resultCode, data)) viewModel.onProjectionCancelled()
+                            }
+                        }
+                    }
+                    projectionRetryLifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { projectionRetryLifecycleOwner.lifecycle.removeObserver(observer) }
                 }
                 val externalDisplayProjectionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()

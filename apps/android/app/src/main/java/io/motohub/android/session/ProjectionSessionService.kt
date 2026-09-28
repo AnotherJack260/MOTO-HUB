@@ -741,11 +741,27 @@ class ProjectionSessionService : Service() {
         private const val RECOVERY_RETRY_MILLIS = 5_000L
         private const val RECOVERY_GIVE_UP_MILLIS = 120_000L
 
-        fun start(context: Context, resultCode: Int, resultData: Intent) {
+        /**
+         * Returns false when Android refuses the start instead of letting the refusal crash the
+         * app. The consent result can be delivered while the activity is started but not yet
+         * resumed, and some ROMs refuse a foreground start in that window
+         * (ForegroundServiceStartNotAllowedException - Xiaomi, rider D0E3-143E-20CC, two out of
+         * two). The caller holds the consent and retries once the activity is back in front.
+         */
+        fun start(context: Context, resultCode: Int, resultData: Intent): Boolean {
             val intent = Intent(context, ProjectionSessionService::class.java)
                 .putExtra(EXTRA_RESULT_CODE, resultCode)
                 .putExtra(EXTRA_RESULT_DATA, resultData)
-            ContextCompat.startForegroundService(context, intent)
+            return runCatching { ContextCompat.startForegroundService(context, intent) }
+                .onFailure { failure ->
+                    ProjectionEventLog.error(
+                        "SERVICE",
+                        "Android refused to start the mirroring service " +
+                            "(${failure.javaClass.simpleName}: ${failure.message}).",
+                        failure
+                    )
+                }
+                .isSuccess
         }
 
         fun stop(context: Context) {
