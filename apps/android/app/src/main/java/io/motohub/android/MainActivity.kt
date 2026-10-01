@@ -680,6 +680,20 @@ class MainActivity : ComponentActivity() {
                         showAndroidAutoPreview = true
                     }
                 }
+                // The autostart on connect fires when the T-Box link comes up, often with MOTO-HUB
+                // in the background, and Android 12+ refuses a foreground start from there
+                // (WB-28: it used to crash the app). A refused start is held and tried once more
+                // when the rider brings the app back - see the resume observer by the autostart.
+                val androidAutoStart = remember { ResumeRetryingStart<Unit> { startAndroidAuto() } }
+                val startAndroidAutoOrHold: () -> Unit = {
+                    if (!androidAutoStart.request(Unit)) {
+                        ProjectionEventLog.warning(
+                            "AUTOSTART",
+                            "Android Auto refused while MOTO-HUB is in the background; " +
+                                "starting it when the app is back in front."
+                        )
+                    }
+                }
                 val microphonePermissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()
                 ) { granted ->
@@ -688,7 +702,7 @@ class MainActivity : ComponentActivity() {
                     ProjectionEventLog.record("PERMISSION", "Microphone permission result: granted=$granted.")
                     if (granted) {
                         when (action) {
-                            "full" -> startAndroidAuto()
+                            "full" -> startAndroidAutoOrHold()
                             "phone_only" -> startPhoneOnlyBridge()
                         }
                     } else {
@@ -701,7 +715,7 @@ class MainActivity : ComponentActivity() {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                         PackageManager.PERMISSION_GRANTED
                     ) {
-                        startAndroidAuto()
+                        startAndroidAutoOrHold()
                     } else {
                         microphonePermissionAction = action
                         microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -1057,6 +1071,33 @@ class MainActivity : ComponentActivity() {
                                 "Restarting Android Auto on this phone after it was interrupted (e.g. a call)."
                             )
                             continueAndroidAutoPhoneOnlyStart(showAndroidAutoPreview)
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
+                // A start Android refused in the background (WB-28) is tried once more when the
+                // rider brings MOTO-HUB back, and only onto the situation it was meant for: the
+                // link still up and nothing on the TFT. Otherwise it is dropped.
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+                        if (viewModel.uiState.value.session.phase == SessionPhase.READY &&
+                            !ProjectionRuntime.riderStopped &&
+                            !ProjectionRuntime.isActive() &&
+                            !AndroidAutoRuntime.isActive()
+                        ) {
+                            if (androidAutoStart.onResume() == false) {
+                                ProjectionEventLog.warning(
+                                    "AUTOSTART",
+                                    "Android refused the held start again; it is left to the rider."
+                                )
+                            }
+                        } else if (androidAutoStart.discard()) {
+                            ProjectionEventLog.record(
+                                "AUTOSTART",
+                                "The held start was dropped: the link is no longer waiting for a mode."
+                            )
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -1952,13 +1993,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-  private fun startAndroidAuto() {
+  /**
+   * False only when Android refused the service start (MOTO-HUB in the background, WB-28); a
+   * launch already pending counts as started.
+   */
+  private fun startAndroidAuto(): Boolean {
       if (!androidAutoLaunchPending.compareAndSet(false, true)) {
             ProjectionEventLog.warning("ANDROID_AUTO", "Start request ignored because another launch is pending.")
-            return
+            return true
         }
         ProjectionEventLog.record("ANDROID_AUTO", "User requested Android Auto startup.")
-        AndroidAutoSessionService.start(this)
+        if (!AndroidAutoSessionService.start(this)) {
+            androidAutoLaunchPending.set(false)
+            return false
+        }
         lifecycleScope.launch {
             val state = withTimeoutOrNull(10_000L) {
                 // A foreground service is started asynchronously.  Ignore terminal state left
@@ -1998,6 +2046,7 @@ class MainActivity : ComponentActivity() {
             androidAutoLaunchPending.set(false)
             ProjectionEventLog.debug("ANDROID_AUTO", "Launch coordinator released.")
         }
+        return true
     }
 
     override fun onNewIntent(intent: Intent) {
