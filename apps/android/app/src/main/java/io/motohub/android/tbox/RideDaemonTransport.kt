@@ -2630,7 +2630,15 @@ class RideDaemonTransport(
             // is ours; the ack is the dashboard's answer and the only readout this experiment
             // has that does not depend on a rider watching the panel.
             0x20030L to "APP_STATUS",
-            0x20031L to "APP_STATUS_ACK"
+            0x20031L to "APP_STATUS_ACK",
+            // The two connections the dash opens, by the frame that opens them: its own requests
+            // arrive on the first, and every command the phone starts goes out on the second only
+            // (CarbitRide h0.java). Neither reached a log before, which is how phone commands
+            // spent months on the wrong one (issue #12).
+            0x10000L to "OPEN_REQUEST_CHANNEL",
+            0x20000L to "OPEN_PHONE_CHANNEL",
+            0x201c0L to "CHECK_SN_RESULT",
+            0x201c1L to "CHECK_SN_DONE"
         )
 
         private val MEDIA_CONTROL_COMMAND_NAMES = mapOf(
