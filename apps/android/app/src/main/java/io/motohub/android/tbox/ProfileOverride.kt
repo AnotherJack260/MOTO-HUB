@@ -63,7 +63,7 @@ enum class ProfileOverride(
     ),
     ZONTES_350D_VBR_TEST(
         "zontes_350d_vbr_test",
-        "Zontes 350D (test bitrate variabile)",
+        "Zontes 350D (test VBR)",
         "The GOP test on variable bitrate, exactly as Carbit Ride encodes it",
         experimental = true
     ),

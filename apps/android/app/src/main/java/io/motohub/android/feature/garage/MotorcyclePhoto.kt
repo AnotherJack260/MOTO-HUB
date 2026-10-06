@@ -8,8 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,11 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.motohub.android.i18n.motoHubText
+import io.motohub.android.ui.theme.MotoHubColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -47,17 +46,17 @@ fun MotorcyclePhoto(
     Box(
         modifier = modifier
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MotoHubColors.SurfaceHighest),
         contentAlignment = Alignment.Center
     ) {
         val image = bitmap
         if (image == null) {
-            Text(
-                text = "M",
-                color = MaterialTheme.colorScheme.primary,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                fontSize = 42.sp
+            // Neutral, and scaled to the frame: the same glyph reads at 48 dp and at 200 dp.
+            Icon(
+                Icons.Rounded.TwoWheeler,
+                contentDescription = null,
+                tint = MotoHubColors.TextTertiary,
+                modifier = Modifier.fillMaxSize(0.4f)
             )
         } else {
             Image(

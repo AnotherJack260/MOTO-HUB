@@ -436,7 +436,7 @@ enum class TBoxModelProfile(
      */
     ZONTES_350D_VBR_TEST(
         key = "zontes_350d_vbr_test",
-        displayName = "Zontes 350D (test bitrate variabile)",
+        displayName = "Zontes 350D (test VBR)",
         modelIds = emptySet(),
         mapTilesRequireCellular = true,
         fallbackTBoxVideoArea = TBoxEvent.VideoArea(1024, 464),

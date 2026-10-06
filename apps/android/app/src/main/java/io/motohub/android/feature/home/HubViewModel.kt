@@ -465,16 +465,19 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         return persistenceFailure == null
     }
 
-    fun selectMotorcycle(profileId: String) {
+    /** How a Garage action ended, so the rider is told why a refused one did nothing. */
+    enum class GarageResult { DONE, STREAMING, FAILED }
+
+    fun selectMotorcycle(profileId: String): GarageResult {
         val current = mutableUiState.value
-        val profile = current.motorcycles.firstOrNull { it.id == profileId } ?: return
+        val profile = current.motorcycles.firstOrNull { it.id == profileId } ?: return GarageResult.FAILED
         if (isNativeStreamActive()) {
             ProjectionEventLog.warning("GARAGE", "Motorcycle selection ignored during an active projection.")
-            return
+            return GarageResult.STREAMING
         }
         profileStore.setActive(profile.id).onFailure {
             ProjectionEventLog.error("GARAGE", "Unable to activate motorcycle ${profile.ssid}.", it)
-            return
+            return GarageResult.FAILED
         }
         viewModelScope.launch {
             transport.stop()
@@ -489,6 +492,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             formError = null
         )
         ProjectionEventLog.record("GARAGE", "Active motorcycle changed to ${profile.ssid}.")
+        return GarageResult.DONE
     }
 
     fun updateMotorcycle(profile: MotorcycleProfile): Boolean {
@@ -514,16 +518,16 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         return true
     }
 
-    fun deleteMotorcycle(profileId: String) {
+    fun deleteMotorcycle(profileId: String): GarageResult {
         val current = mutableUiState.value
         if (isNativeStreamActive()) {
             ProjectionEventLog.warning("GARAGE", "Motorcycle deletion ignored during an active projection.")
-            return
+            return GarageResult.STREAMING
         }
-        val profile = current.motorcycles.firstOrNull { it.id == profileId } ?: return
+        val profile = current.motorcycles.firstOrNull { it.id == profileId } ?: return GarageResult.FAILED
         profileStore.delete(profileId).onFailure {
             ProjectionEventLog.error("GARAGE", "Unable to delete motorcycle ${profile.ssid}.", it)
-            return
+            return GarageResult.FAILED
         }
         capabilityStore.delete(profileId)
         val remaining = current.motorcycles.filterNot { it.id == profileId }
@@ -543,6 +547,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         ProjectionEventLog.record("GARAGE", "Motorcycle profile deleted for ${profile.ssid}.")
+        return GarageResult.DONE
     }
 
     fun connectAndDiscover() {

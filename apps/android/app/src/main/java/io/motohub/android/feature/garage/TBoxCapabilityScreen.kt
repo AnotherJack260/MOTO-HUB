@@ -5,33 +5,17 @@ package io.motohub.android.feature.garage
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,14 +25,17 @@ import io.motohub.android.tbox.TBoxCapabilities
 import io.motohub.android.tbox.TBoxCapabilitySnapshot
 import io.motohub.android.tbox.TBoxPortScanResult
 import io.motohub.android.tbox.TBoxPortStatus
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubHeader
+import io.motohub.android.ui.components.MhBanner
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhScreen
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhTone
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/** The developer inspector, reached from Motorcycle details › Advanced. Read-only. */
 @Composable
 fun TBoxCapabilityScreen(
     profile: MotorcycleProfile,
@@ -61,154 +48,109 @@ fun TBoxCapabilityScreen(
 ) {
     val capabilities = snapshot?.capabilities
 
-    BackHandler(onBack = onBack)
+    MhScreen(
+        title = motoHubText("Dashboard capabilities"),
+        subtitle = profile.shownName(),
+        onBack = onBack
+    ) {
+        ObservationBanner(snapshot, capabilities)
 
-    MotoHubBackground(Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            MotoHubHeader(
-                modifier = Modifier.fillMaxWidth(),
-                trailing = { TextButton(onClick = onBack) { Text(motoHubText("Back")) } }
+        GarageSection(motoHubText("Connection")) {
+            InspectorRow(motoHubText("Wi-Fi network"), profile.ssid, monospace = true)
+            InspectorRow(
+                motoHubText("EasyConn endpoint"),
+                snapshot?.host?.let { "${it.ipAddress}:${it.port}" },
+                monospace = true
             )
+            InspectorRow(motoHubText("NSD package"), snapshot?.host?.packageName, monospace = true)
+            InspectorRow(motoHubText("Last discovered"), formatTimestamp(snapshot?.discoveredAtEpochMillis))
+        }
 
-            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                MonoLabel(motoHubText("T-BOX CAPABILITY INSPECTOR"))
+        GarageSection(motoHubText("Port check")) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text(
-                    text = profile.displayName ?: profile.ssid,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = motoHubText("A read-only view of data observed directly from this T-Box."),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            ObservationCard(snapshot, capabilities)
-
-            InspectorSection(motoHubText("CONNECTION")) {
-                InspectorRow(motoHubText("Wi-Fi network"), profile.ssid, monospace = true)
-                InspectorRow(
-                    motoHubText("EasyConn endpoint"),
-                    snapshot?.host?.let { "${it.ipAddress}:${it.port}" },
-                    monospace = true
-                )
-                InspectorRow(motoHubText("NSD package"), snapshot?.host?.packageName, monospace = true)
-                InspectorRow(motoHubText("Last discovered"), formatTimestamp(snapshot?.discoveredAtEpochMillis))
-            }
-
-            InspectorSection(motoHubText("DIAGNOSTICS")) {
-                Text(
-                    motoHubText(
-                        "If EasyConn discovery keeps failing, briefly reconnect to this T-Box and probe " +
-                            "its well-known ports (10915-10935) directly to see which one actually answers."
-                    ),
+                    motoHubText("If discovery keeps failing, probe ports 10915–10935 to see which one answers."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Button(
+                MhSecondaryButton(
+                    motoHubText("Scan common EasyConn ports"),
                     onClick = onScanPorts,
-                    enabled = !portScanInProgress,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (portScanInProgress) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(motoHubText("Scan common EasyConn ports"))
-                    }
-                }
+                    loading = portScanInProgress
+                )
                 portScanResult?.let { result -> PortScanResultView(result) }
             }
+        }
 
-            InspectorSection(motoHubText("DISPLAY")) {
-                InspectorRow(motoHubText("TFT capture area"), geometry?.let { "${it.width} x ${it.height}" }, monospace = true)
-                InspectorRow(motoHubText("Orientation"), geometry?.orientationName())
-                InspectorRow(motoHubText("Reported DPI"), capabilities?.dpi?.toString(), monospace = true)
-                CapabilityRow(motoHubText("DPI mode"), capabilities?.dpiEnabled)
-                InspectorRow(motoHubText("Screen type"), capabilities?.screenType?.toString(), monospace = true)
-            }
+        GarageSection(motoHubText("Display")) {
+            InspectorRow(motoHubText("TFT capture area"), geometry?.let { "${it.width} x ${it.height}" }, monospace = true)
+            InspectorRow(motoHubText("Orientation"), geometry?.orientationName())
+            InspectorRow(motoHubText("Reported DPI"), capabilities?.dpi?.toString(), monospace = true)
+            CapabilityRow(motoHubText("DPI mode"), capabilities?.dpiEnabled)
+            InspectorRow(motoHubText("Screen type"), capabilities?.screenType?.toString(), monospace = true)
+        }
 
-            InspectorSection(motoHubText("REPORTED IDENTITY")) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            GarageSection(motoHubText("Reported identity")) {
                 InspectorRow(motoHubText("Head unit name"), capabilities?.huName)
                 InspectorRow(motoHubText("Vehicle brand"), capabilities?.carBrand)
                 InspectorRow(motoHubText("Vehicle model"), capabilities?.carModel)
-                Text(
-                    text = motoHubText(
-                        "These values are shown exactly as reported by the T-Box. MOTO-HUB does not " +
-                            "infer a motorcycle model from the QR code or network name."
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
+            MhFootnote(motoHubText("Shown exactly as the dashboard reports them; MOTO-HUB does not guess the model."))
+        }
 
-            InspectorSection(motoHubText("SOFTWARE & PROTOCOL")) {
-                InspectorRow(motoHubText("PXC version"), capabilities?.pxcVersion, monospace = true)
-                InspectorRow(motoHubText("SDK version"), capabilities?.sdkVersion, monospace = true)
-                InspectorRow(motoHubText("Software version"), capabilities?.versionName, monospace = true)
-                InspectorRow(motoHubText("Version code"), capabilities?.versionCode, monospace = true)
-                InspectorRow(motoHubText("Reported package"), capabilities?.packageName, monospace = true)
-                InspectorRow(motoHubText("Product type"), capabilities?.productType?.toString(), monospace = true)
-                InspectorRow(motoHubText("Transport type"), capabilities?.transportType?.toString(), monospace = true)
-                InspectorRow(
-                    motoHubText("Function mask"),
-                    capabilities?.supportFunction?.let { "0x${it.toString(16).uppercase(Locale.ENGLISH)}" },
-                    monospace = true
-                )
-                InspectorRow(
-                    motoHubText("Wi-Fi socket timeout"),
-                    capabilities?.socketTimeoutPeriodWifi?.let { "$it ms" },
-                    monospace = true
-                )
-            }
-
-            InspectorSection(motoHubText("FEATURE FLAGS")) {
-                CapabilityRow(motoHubText("Screen mirroring"), capabilities?.screenMirroring)
-                CapabilityRow(motoHubText("Screen touch"), capabilities?.screenTouch)
-                CapabilityRow(motoHubText("Overlay touch"), capabilities?.mirrorOverlayTouch)
-                CapabilityRow(motoHubText("Mirror reconnect"), capabilities?.mirrorReconnect)
-                CapabilityRow(motoHubText("Landscape adaptive"), capabilities?.landscapeAdaptive)
-                CapabilityRow(motoHubText("Socket authentication"), capabilities?.socketServerAuth)
-                CapabilityRow(motoHubText("Microphone"), capabilities?.microphone)
-                CapabilityRow(motoHubText("HID input"), capabilities?.hid)
-                CapabilityRow(motoHubText("Third-party apps"), capabilities?.thirdPartyApps)
-                CapabilityRow(motoHubText("Phone signal"), capabilities?.phoneSignal)
-                CapabilityRow(motoHubText("Time synchronization"), capabilities?.syncCorrectTime)
-                CapabilityRow(motoHubText("Bluetooth calls"), capabilities?.bluetoothCall)
-                CapabilityRow(motoHubText("Bluetooth settings"), capabilities?.bluetoothSettings)
-            }
-
-            Text(
-                text = motoHubText("Sensitive CLIENT_INFO fields are intentionally excluded from storage and display."),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
+        GarageSection(motoHubText("Software and protocol")) {
+            InspectorRow(motoHubText("PXC version"), capabilities?.pxcVersion, monospace = true)
+            InspectorRow(motoHubText("SDK version"), capabilities?.sdkVersion, monospace = true)
+            InspectorRow(motoHubText("Software version"), capabilities?.versionName, monospace = true)
+            InspectorRow(motoHubText("Version code"), capabilities?.versionCode, monospace = true)
+            InspectorRow(motoHubText("Reported package"), capabilities?.packageName, monospace = true)
+            InspectorRow(motoHubText("Product type"), capabilities?.productType?.toString(), monospace = true)
+            InspectorRow(motoHubText("Transport type"), capabilities?.transportType?.toString(), monospace = true)
+            InspectorRow(
+                motoHubText("Function mask"),
+                capabilities?.supportFunction?.let { "0x${it.toString(16).uppercase(Locale.ENGLISH)}" },
+                monospace = true
+            )
+            InspectorRow(
+                motoHubText("Wi-Fi socket timeout"),
+                capabilities?.socketTimeoutPeriodWifi?.let { "$it ms" },
+                monospace = true
             )
         }
+
+        GarageSection(motoHubText("Features")) {
+            CapabilityRow(motoHubText("Screen mirroring"), capabilities?.screenMirroring)
+            CapabilityRow(motoHubText("Screen touch"), capabilities?.screenTouch)
+            CapabilityRow(motoHubText("Overlay touch"), capabilities?.mirrorOverlayTouch)
+            CapabilityRow(motoHubText("Mirror reconnect"), capabilities?.mirrorReconnect)
+            CapabilityRow(motoHubText("Landscape adaptive"), capabilities?.landscapeAdaptive)
+            CapabilityRow(motoHubText("Socket authentication"), capabilities?.socketServerAuth)
+            CapabilityRow(motoHubText("Microphone"), capabilities?.microphone)
+            CapabilityRow(motoHubText("HID input"), capabilities?.hid)
+            CapabilityRow(motoHubText("Third-party apps"), capabilities?.thirdPartyApps)
+            CapabilityRow(motoHubText("Phone signal"), capabilities?.phoneSignal)
+            CapabilityRow(motoHubText("Time synchronization"), capabilities?.syncCorrectTime)
+            CapabilityRow(motoHubText("Bluetooth calls"), capabilities?.bluetoothCall)
+            CapabilityRow(motoHubText("Bluetooth settings"), capabilities?.bluetoothSettings)
+        }
+
+        MhFootnote(motoHubText("Sensitive CLIENT_INFO fields are intentionally excluded from storage and display."))
     }
 }
 
 @Composable
-private fun ObservationCard(
+private fun ObservationBanner(
     snapshot: TBoxCapabilitySnapshot?,
     capabilities: TBoxCapabilities?
 ) {
     val complete = capabilities != null
     val title = when {
         complete -> motoHubText("Capability report captured")
-        snapshot?.host != null -> motoHubText("T-Box discovered")
+        snapshot?.host != null -> motoHubText("Dashboard found")
         else -> motoHubText("No observations yet")
     }
     val detail = when {
@@ -216,70 +158,28 @@ private fun ObservationCard(
         snapshot?.host != null -> motoHubText("Start mirroring or Android Auto once to capture CLIENT_INFO.")
         else -> motoHubText("Connect this motorcycle, then start mirroring or Android Auto once.")
     }
-    val accent = if (complete) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-    Card(
-        colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = 0.10f)),
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.40f)),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(accent, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 11.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (complete) motoHubText("LIVE") else motoHubText("WAIT"),
-                    color = MaterialTheme.colorScheme.background,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                formatTimestamp(snapshot?.capabilitiesObservedAtEpochMillis)?.let { timestamp ->
-                    Text(
-                        text = motoHubText("Observed %1\$s", timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-        }
-    }
+    val observed = formatTimestamp(snapshot?.capabilitiesObservedAtEpochMillis)
+        ?.let { motoHubText("Observed %1\$s", it) }
+    MhBanner(
+        title = title,
+        body = listOfNotNull(detail, observed).joinToString("\n"),
+        tone = MhTone.NEUTRAL
+    )
 }
 
+// Not an MhListRow: its value column is capped at 140 dp and would cut package names. Values here
+// are never cut.
 @Composable
-private fun InspectorSection(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
+private fun InspectorRow(
+    label: String,
+    value: String?,
+    monospace: Boolean = false,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            MonoLabel(title)
-            content()
-        }
-    }
-}
-
-@Composable
-private fun InspectorRow(label: String, value: String?, monospace: Boolean = false) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -293,33 +193,18 @@ private fun InspectorRow(label: String, value: String?, monospace: Boolean = fal
             text = value ?: motoHubText("Not reported"),
             modifier = Modifier.weight(0.54f),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
-            fontWeight = if (value == null) FontWeight.Normal else FontWeight.SemiBold
+            color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else valueColor,
+            fontFamily = if (monospace && value != null) FontFamily.Monospace else FontFamily.Default
         )
     }
 }
 
 @Composable
 private fun CapabilityRow(label: String, supported: Boolean?) {
-    val (text, color) = when (supported) {
-        true -> motoHubText("SUPPORTED") to MaterialTheme.colorScheme.tertiary
-        false -> motoHubText("NOT SUPPORTED") to MaterialTheme.colorScheme.error
-        null -> motoHubText("NOT REPORTED") to MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold
-        )
+    when (supported) {
+        true -> InspectorRow(label, motoHubText("Supported"))
+        false -> InspectorRow(label, motoHubText("Not supported"), valueColor = MaterialTheme.colorScheme.error)
+        null -> InspectorRow(label, null)
     }
 }
 
@@ -345,7 +230,7 @@ private fun PortScanResultView(result: TBoxPortScanResult) {
             style = MaterialTheme.typography.bodyMedium,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            color = if (open.isEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+            color = if (open.isEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
         )
         // Only ports worth a second look: an accepted connection, or an explicit refusal (the
         // peer is alive and chose to reject it) - a silent timeout on most of the range is
@@ -360,13 +245,14 @@ private fun PortScanResultView(result: TBoxPortScanResult) {
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace
                 )
+                // A machine value, shown as the enum names it.
                 Text(
                     entry.status.name,
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     color = if (entry.status == TBoxPortStatus.OPEN)
-                        MaterialTheme.colorScheme.tertiary
+                        MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -375,9 +261,9 @@ private fun PortScanResultView(result: TBoxPortScanResult) {
 }
 
 private fun DisplayGeometry.orientationName(): String = when {
-    width > height -> "Landscape"
-    width < height -> "Portrait"
-    else -> "Square"
+    width > height -> motoHubText("Landscape")
+    width < height -> motoHubText("Portrait")
+    else -> motoHubText("Square")
 }
 
 private fun formatTimestamp(epochMillis: Long?): String? = epochMillis?.let {

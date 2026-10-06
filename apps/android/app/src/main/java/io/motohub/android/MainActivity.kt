@@ -554,7 +554,7 @@ class MainActivity : ComponentActivity() {
                             }
                             .onFailure {
                                 ProjectionEventLog.error("GARAGE", "Unable to store the selected motorcycle photo.", it)
-                                MotoHubSnackbar.error(context, motoHubText("Unable to save the motorcycle photo"))
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't save the photo"))
                             }
                     }
                 }
@@ -588,7 +588,17 @@ class MainActivity : ComponentActivity() {
                         launchMotorcycleCamera()
                     } else {
                         photoTargetProfileId = null
-                        MotoHubSnackbar.error(context, motoHubText("Camera permission is required to take a photo"))
+                        MotoHubSnackbar.show(
+                            context,
+                            motoHubText("Allow the camera to take a photo"),
+                            MhSnackTone.ERROR,
+                            actionLabel = motoHubText("Settings"),
+                            onAction = {
+                                if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
+                                    MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
+                                }
+                            }
+                        )
                     }
                 }
                 // The consent result can arrive before the activity is resumed, and some ROMs
@@ -1440,13 +1450,24 @@ class MainActivity : ComponentActivity() {
                                 if (viewModel.updateMotorcycle(profile.copy(photoPath = null))) {
                                     motorcyclePhotoStore.delete(oldPath)
                                     ProjectionEventLog.record("GARAGE", "Photo removed for motorcycle ${profile.ssid}.")
+                                    MotoHubSnackbar.success(context, motoHubText("Photo removed"))
                                 }
                             },
                             onDelete = {
-                                motorcyclePhotoStore.delete(profile.photoPath)
-                                viewModel.deleteMotorcycle(profile.id)
-                                editorProfileId = null
-                                selectedTab = HubTab.GARAGE
+                                when (viewModel.deleteMotorcycle(profile.id)) {
+                                    HubViewModel.GarageResult.DONE -> {
+                                        // Only once the profile is gone: a refused delete keeps
+                                        // the motorcycle, and it must keep its photo with it.
+                                        motorcyclePhotoStore.delete(profile.photoPath)
+                                        editorProfileId = null
+                                        selectedTab = HubTab.GARAGE
+                                        MotoHubSnackbar.success(context, motoHubText("Motorcycle removed"))
+                                    }
+                                    HubViewModel.GarageResult.STREAMING ->
+                                        MotoHubSnackbar.error(context, motoHubText("Stop streaming first"))
+                                    HubViewModel.GarageResult.FAILED ->
+                                        MotoHubSnackbar.error(context, motoHubText("Couldn't remove the motorcycle"))
+                                }
                             }
                         )
                     }
@@ -1711,6 +1732,10 @@ class MainActivity : ComponentActivity() {
                                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                                     }
                                 },
+                                // No returnToGarageAfterPairing: the import sheet opens over
+                                // this tab, which never changes, and a set flag would leak into
+                                // a later scan started from Ride if the rider backs out here.
+                                onImportQrPhoto = importQrPhoto,
                                 onAddMotorcycleManually = {
                                     ProjectionEventLog.record("UI", "User requested manual (no-QR) pairing from the Garage.")
                                     returnToGarageAfterPairing = true
@@ -1718,8 +1743,13 @@ class MainActivity : ComponentActivity() {
                                     showManualPairing = true
                                 },
                                 onSelectMotorcycle = { profileId ->
-                                    viewModel.selectMotorcycle(profileId)
-                                    selectedTab = HubTab.RIDE
+                                    when (viewModel.selectMotorcycle(profileId)) {
+                                        HubViewModel.GarageResult.DONE -> selectedTab = HubTab.RIDE
+                                        HubViewModel.GarageResult.STREAMING ->
+                                            MotoHubSnackbar.error(context, motoHubText("Stop streaming first"))
+                                        HubViewModel.GarageResult.FAILED ->
+                                            MotoHubSnackbar.error(context, motoHubText("Couldn't switch motorcycles"))
+                                    }
                                 },
                                 onOpenDetails = { profileId ->
                                     val profile = state.motorcycles.firstOrNull { it.id == profileId }
