@@ -126,15 +126,24 @@ fun MhTopBar(
     )
 }
 
-/** A trailing action in [MhTopBar]: an icon in a 40 dp Fill circle, with a 48 dp target. */
+/**
+ * A trailing action in [MhTopBar]: an icon in a 40 dp Fill circle, with a 48 dp target. [active]
+ * is for a toggle that is on (a torch, a filter): the glyph turns lime, the way a switch does.
+ */
 @Composable
-fun MhTopBarAction(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun MhTopBarAction(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    active: Boolean = false
+) {
     IconButton(
         onClick = onClick,
         modifier = modifier,
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = MotoHubColors.Fill,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            contentColor = if (active) MotoHubColors.Lime else MaterialTheme.colorScheme.onSurface
         )
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(20.dp))

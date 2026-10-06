@@ -226,6 +226,7 @@ fun TBoxQrScannerScreen(
                     MhTopBarAction(
                         icon = if (torchEnabled) Icons.Rounded.FlashOn else Icons.Rounded.FlashOff,
                         contentDescription = if (torchEnabled) motoHubText("Turn off flash") else motoHubText("Turn on flash"),
+                        active = torchEnabled,
                         onClick = {
                             val enabled = !torchEnabled
                             camera?.cameraControl?.enableTorch(enabled)

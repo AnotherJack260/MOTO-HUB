@@ -50,6 +50,8 @@ fun MhDialog(
     modifier: Modifier = Modifier,
     body: String? = null,
     icon: ImageVector? = null,
+    /** A caution glyph reads as one in warning amber; anything else stays neutral. */
+    iconTint: Color = MaterialTheme.colorScheme.onSurface,
     secondaryLabel: String? = null,
     onSecondary: (() -> Unit)? = null,
     primaryStyle: MhActionStyle = MhActionStyle.LIME,
@@ -78,7 +80,7 @@ fun MhDialog(
             }
         },
         modifier = modifier,
-        icon = icon?.let { { Icon(it, contentDescription = null) } },
+        icon = icon?.let { { Icon(it, contentDescription = null, tint = iconTint) } },
         title = { Text(title) },
         text = if (body == null && content == null) null else {
             {

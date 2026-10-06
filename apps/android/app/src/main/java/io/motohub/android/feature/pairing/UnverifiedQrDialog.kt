@@ -41,6 +41,7 @@ fun UnverifiedQrDialog(
             payload.ssid
         ),
         icon = Icons.Rounded.WarningAmber,
+        iconTint = io.motohub.android.ui.theme.MotoHubColors.Warning,
         primaryLabel = motoHubText("Use these details"),
         onPrimary = {
             confirmed[0] = true
