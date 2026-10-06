@@ -5,50 +5,47 @@ package io.motohub.android.feature.garage
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.material.icons.rounded.CropFree
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.PhotoLibrary
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
+import io.motohub.android.BuildConfig
 import io.motohub.android.androidauto.AndroidAutoDisplayMode
 import io.motohub.android.androidauto.TBoxScreenMargins
 import io.motohub.android.feature.settings.MotoHubSettings
@@ -57,13 +54,19 @@ import io.motohub.android.units.UnitFormat
 import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.tbox.ProfileOverride
 import io.motohub.android.tbox.TBoxModelProfile
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubActionRow
-import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubCardGroup
-import io.motohub.android.ui.components.MotoHubDetailScreen
-import io.motohub.android.ui.components.MotoHubHeader
-import io.motohub.android.ui.components.MotoHubRadioRow
+import io.motohub.android.ui.components.MhActionStyle
+import io.motohub.android.ui.components.MhChoiceRow
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhIconCircle
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhScreen
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhTextField
+import io.motohub.android.ui.components.MotoHubSnackbar
+import io.motohub.android.ui.components.ScreenSlideTransition
+import io.motohub.android.ui.theme.MotoHubColors
 
 private enum class MotorcycleDetail { ANDROID_AUTO_DISPLAY, TFT_MARGINS, PROFILE_OVERRIDE }
 
@@ -71,7 +74,7 @@ private enum class MotorcycleDetail { ANDROID_AUTO_DISPLAY, TFT_MARGINS, PROFILE
 enum class MotorcyclePhotoSource { CAMERA, GALLERY, FILES }
 
 /**
- * Motorcycle profile screen. A compact hub (photo, name, fuel, connection info) with the
+ * Motorcycle profile screen. A compact hub (photo, name, connection info) with the
  * less-frequently-touched settings behind drill-down screens, mirroring the same
  * hub/detail pattern [io.motohub.android.feature.settings.SettingsScreen] already uses -
  * replacing what used to be nine stacked cards in a single long scroll with mixed
@@ -96,72 +99,50 @@ fun MotorcycleDetailsScreen(
     var detail by rememberSaveable(profile.id) { mutableStateOf<MotorcycleDetail?>(null) }
     var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
 
-    BackHandler(enabled = detail != null) { detail = null }
-    BackHandler(enabled = detail == null, onBack = onBack)
-
-    MotoHubBackground(Modifier.fillMaxSize()) {
-        AnimatedContent(
-            targetState = detail,
-            transitionSpec = {
-                if (targetState != null) {
-                    (slideInHorizontally { it / 3 } + fadeIn()) togetherWith
-                        (slideOutHorizontally { -it / 3 } + fadeOut())
-                } else {
-                    (slideInHorizontally { -it / 3 } + fadeIn()) togetherWith
-                        (slideOutHorizontally { it / 3 } + fadeOut())
-                }
-            },
-            label = "motorcycle-details"
-        ) { current ->
-            when (current) {
-                null -> MotorcycleDetailsMainList(
-                    profile = profile,
-                    displayMode = displayMode,
-                    onBack = onBack,
-                    onSave = onSave,
-                    onOpenDetail = { detail = it },
-                    onOpenCapabilities = onOpenCapabilities,
-                    onCustomizeDashboard = onCustomizeDashboard,
-                    onChoosePhoto = onChoosePhoto,
-                    onRemovePhoto = onRemovePhoto,
-                    onRequestDelete = { showDeleteConfirmation = true }
-                )
-                MotorcycleDetail.ANDROID_AUTO_DISPLAY -> AndroidAutoDisplayDetail(
-                    displayMode = displayMode,
-                    onDisplayModeChanged = onDisplayModeChanged,
-                    onBack = { detail = null }
-                )
-                MotorcycleDetail.TFT_MARGINS -> TftMarginsDetail(
-                    profile = profile,
-                    screenMargins = screenMargins,
-                    onScreenMarginsChanged = onScreenMarginsChanged,
-                    onBack = { detail = null }
-                )
-                MotorcycleDetail.PROFILE_OVERRIDE -> ProfileOverrideDetail(
-                    profile = profile,
-                    onSave = onSave,
-                    onBack = { detail = null }
-                )
-            }
+    // Each screen's MhScreen answers system back like its arrow: a sub-detail returns here, this
+    // list leaves through onBack.
+    ScreenSlideTransition(screen = detail, isBase = { it == null }, label = "motorcycle-details") { current ->
+        when (current) {
+            null -> MotorcycleDetailsMainList(
+                profile = profile,
+                displayMode = displayMode,
+                onBack = onBack,
+                onSave = onSave,
+                onOpenDetail = { detail = it },
+                onOpenCapabilities = onOpenCapabilities,
+                onCustomizeDashboard = onCustomizeDashboard,
+                onChoosePhoto = onChoosePhoto,
+                onRemovePhoto = onRemovePhoto,
+                onRequestDelete = { showDeleteConfirmation = true }
+            )
+            MotorcycleDetail.ANDROID_AUTO_DISPLAY -> AndroidAutoDisplayDetail(
+                displayMode = displayMode,
+                onDisplayModeChanged = onDisplayModeChanged,
+                onBack = { detail = null }
+            )
+            MotorcycleDetail.TFT_MARGINS -> TftMarginsDetail(
+                profile = profile,
+                screenMargins = screenMargins,
+                onScreenMarginsChanged = onScreenMarginsChanged,
+                onBack = { detail = null }
+            )
+            MotorcycleDetail.PROFILE_OVERRIDE -> ProfileOverrideDetail(
+                profile = profile,
+                onSave = onSave,
+                onBack = { detail = null }
+            )
         }
     }
 
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text(motoHubText("Remove motorcycle?")) },
-            text = { Text(motoHubText("The saved connection profile and its photo will be removed from MOTO-HUB.")) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirmation = false
-                        onDelete()
-                    }
-                ) { Text(motoHubText("Remove"), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) { Text(motoHubText("Cancel")) }
-            }
+        MhSheet(
+            onDismiss = { showDeleteConfirmation = false },
+            title = motoHubText("Remove %1\$s?", profile.shownName()),
+            body = motoHubText("Its connection details and photo will be deleted from this phone."),
+            primaryLabel = motoHubText("Remove"),
+            onPrimary = onDelete,
+            secondaryLabel = motoHubText("Cancel"),
+            primaryStyle = MhActionStyle.DESTRUCTIVE
         )
     }
 }
@@ -179,7 +160,8 @@ private fun MotorcycleDetailsMainList(
     onRemovePhoto: () -> Unit,
     onRequestDelete: () -> Unit
 ) {
-    val units = MotoHubSettings.distanceUnits(LocalContext.current)
+    val context = LocalContext.current
+    val units = MotoHubSettings.distanceUnits(context)
     var name by rememberSaveable(profile.id) { mutableStateOf(profile.displayName.orEmpty()) }
     // The field edits the profile's km-native tank range in the rider's display unit.
     var fuelTankRangeText by rememberSaveable(profile.id) {
@@ -187,184 +169,171 @@ private fun MotorcycleDetailsMainList(
             profile.fuelTankRangeKm?.let { UnitFormat.wholeDistanceFromKm(it, units) }?.toString().orEmpty()
         )
     }
+    var showPhotoSheet by rememberSaveable { mutableStateOf(false) }
 
+    // Success stays silent: a snackbar per keystroke would be noise.
     fun persist(newName: String = name, newFuelText: String = fuelTankRangeText) {
-        onSave(
+        val saved = onSave(
             profile.copy(
                 displayName = newName.trim().takeIf { it.isNotEmpty() },
                 fuelTankRangeKm = newFuelText.toDoubleOrNull()?.takeIf { it > 0 }
                     ?.let { UnitFormat.kmFromDistance(it, units) }
             )
         )
+        if (!saved) MotoHubSnackbar.error(context, motoHubText("Couldn't save changes"))
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    MhScreen(
+        title = name.trim().ifEmpty { motoHubText("My motorcycle") },
+        onBack = onBack
     ) {
-        MotoHubHeader(
-            modifier = Modifier.fillMaxWidth(),
-            trailing = { TextButton(onClick = onBack) { Text(motoHubText("Back")) } }
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            MonoLabel(motoHubText("MOTORCYCLE PROFILE"))
-            Text(motoHubText("Make it yours"), style = MaterialTheme.typography.headlineMedium)
-            Text(
-                motoHubText("Changes are saved immediately."),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        var showPhotoSourceDialog by rememberSaveable { mutableStateOf(false) }
-        if (showPhotoSourceDialog) {
-            PhotoSourceDialog(
-                onDismiss = { showPhotoSourceDialog = false },
-                onSelect = { source ->
-                    showPhotoSourceDialog = false
-                    onChoosePhoto(source)
-                }
-            )
-        }
-        MotorcyclePhoto(
-            path = profile.photoPath,
-            modifier = Modifier
+        val hasPhoto = profile.photoPath != null
+        val photoAction = if (hasPhoto) motoHubText("Change photo") else motoHubText("Add photo")
+        Box(
+            Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(200.dp)
+                .clip(MaterialTheme.shapes.large)
+                .semantics { contentDescription = photoAction }
+                .clickable(role = Role.Button) { showPhotoSheet = true }
+        ) {
+            MotorcyclePhoto(path = profile.photoPath, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(20.dp))
+            MhIconCircle(
+                if (hasPhoto) Icons.Rounded.Edit else Icons.Rounded.PhotoCamera,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                container = MotoHubColors.SurfaceHigh
+            )
+        }
+        MhTextField(
+            value = name,
+            onValueChange = { input ->
+                name = input
+                persist(newName = input)
+            },
+            label = motoHubText("Name")
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedButton(
-                onClick = { showPhotoSourceDialog = true },
-                modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) { Text(if (profile.photoPath == null) motoHubText("Add photo") else motoHubText("Change photo")) }
-            if (profile.photoPath != null) {
-                OutlinedButton(
-                    onClick = onRemovePhoto,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(motoHubText("Remove photo")) }
-            }
+        // CORE only stores and exports it - nothing reads it there - so it is not asked for.
+        if (BuildConfig.IS_PRO) {
+            MhTextField(
+                value = fuelTankRangeText,
+                onValueChange = { input ->
+                    val digitsOnly = input.filter { it.isDigit() }
+                    fuelTankRangeText = digitsOnly
+                    persist(newFuelText = digitsOnly)
+                },
+                label = motoHubText("Tank range (%1\$s)", UnitFormat.wholeDistanceLabel(units)),
+                helper = motoHubText("Distance on a full tank."),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
         }
 
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(motoHubText("Identity"), style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { input ->
-                        name = input
-                        persist(newName = input)
-                    },
-                    label = { Text(motoHubText("Display name")) },
-                    placeholder = { Text(motoHubText("For example: MT700 Adventure")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    motoHubText("The name is only used inside MOTO-HUB."),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                HorizontalDivider()
-
-                Text(motoHubText("Fuel"), style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
-                    value = fuelTankRangeText,
-                    onValueChange = { input ->
-                        val digitsOnly = input.filter { it.isDigit() }
-                        fuelTankRangeText = digitsOnly
-                        persist(newFuelText = digitsOnly)
-                    },
-                    label = { Text(motoHubText("Tank range (${UnitFormat.wholeDistanceLabel(units)})")) },
-                    placeholder = { Text(motoHubText("For example: 300")) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    motoHubText("Full-tank range on a fill-up. Powers the fuel-range warning in navigation."),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        MotoHubCardGroup {
-            MotoHubActionRow(
-                title = motoHubText("Android Auto Display"),
-                description = motoHubText("How the complete Android Auto image fits the TFT"),
+        GarageSection(motoHubText("Android Auto")) {
+            MhListRow(
+                title = motoHubText("Display fit"),
+                icon = Icons.Rounded.AspectRatio,
                 value = displayMode.shortLabel,
                 onClick = { onOpenDetail(MotorcycleDetail.ANDROID_AUTO_DISPLAY) }
             )
-            MotoHubActionRow(
-                title = motoHubText("TFT Safe Margins"),
-                description = motoHubText("Exclude pixels occupied by the motorcycle UI"),
+            MhListRow(
+                title = motoHubText("Screen margins"),
+                subtitle = motoHubText("Leave room for the dashboard's own display"),
+                icon = Icons.Rounded.CropFree,
                 onClick = { onOpenDetail(MotorcycleDetail.TFT_MARGINS) }
             )
-            MotoHubActionRow(
-                title = motoHubText("T-Box Profile Override"),
-                description = motoHubText("Override automatic profile detection"),
-                value = motoHubText((ProfileOverride.byKey(profile.profileOverrideKey) ?: ProfileOverride.AUTO).label),
-                onClick = { onOpenDetail(MotorcycleDetail.PROFILE_OVERRIDE) }
-            )
-            MotoHubActionRow(
-                title = motoHubText("T-Box Capability Inspector"),
-                description = motoHubText("Endpoint, geometry, protocol, and feature flags"),
-                onClick = onOpenCapabilities
-            )
-            if (io.motohub.android.BuildConfig.IS_PRO) {
-                MotoHubActionRow(
-                    title = motoHubText("Customize Dashboard"),
-                    description = motoHubText("Choose widgets for each side panel"),
+            if (BuildConfig.IS_PRO) {
+                MhListRow(
+                    title = motoHubText("Customize dashboard"),
+                    subtitle = motoHubText("Choose widgets for each side panel"),
+                    icon = Icons.Rounded.Tune,
                     onClick = onCustomizeDashboard
                 )
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            MonoLabel(motoHubText("CONNECTION"))
-            Text(profile.ssid, fontFamily = FontFamily.Monospace)
-            Text(
-                motoHubText("The Wi-Fi password is stored securely on this phone."),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Info rows: nothing to tap, so no chevron.
+            GarageSection(motoHubText("Connection")) {
+                MhListRow(title = motoHubText("Wi-Fi name"), trailing = { MonoValue(profile.ssid) })
+                profile.modelId?.let { modelId ->
+                    MhListRow(title = motoHubText("Dashboard ID"), trailing = { MonoValue(modelId) })
+                }
+            }
+            MhFootnote(motoHubText("The Wi-Fi password is stored securely on this phone."))
+        }
+
+        GarageSection(motoHubText("Advanced")) {
+            MhListRow(
+                title = motoHubText("Dashboard profile"),
+                icon = Icons.Rounded.Memory,
+                value = ProfileOverride.byKey(profile.profileOverrideKey).title(),
+                onClick = { onOpenDetail(MotorcycleDetail.PROFILE_OVERRIDE) }
             )
-            profile.modelId?.let { modelId ->
-                Text(
-                    motoHubText("T-Box identifier: %1\$s", modelId),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            MhListRow(
+                title = motoHubText("Dashboard capabilities"),
+                subtitle = motoHubText("What the dashboard reports about itself"),
+                icon = Icons.Rounded.Info,
+                onClick = onOpenCapabilities
+            )
+        }
+
+        MhListGroup {
+            MhListRow(
+                title = motoHubText("Remove motorcycle"),
+                icon = Icons.Rounded.DeleteOutline,
+                iconTint = MotoHubColors.Error,
+                titleColor = MaterialTheme.colorScheme.error,
+                showChevron = false,
+                onClick = onRequestDelete
+            )
+        }
+    }
+
+    if (showPhotoSheet) {
+        // The same two picker rows as the QR import sheet, plus the camera and removal.
+        MhSheet(onDismiss = { showPhotoSheet = false }, title = motoHubText("Motorcycle photo")) { close ->
+            MhListRow(
+                title = motoHubText("Take a photo"),
+                icon = Icons.Rounded.PhotoCamera,
+                showChevron = false,
+                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.CAMERA) } }
+            )
+            MhListRow(
+                title = motoHubText("Choose from gallery"),
+                icon = Icons.Rounded.PhotoLibrary,
+                showChevron = false,
+                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.GALLERY) } }
+            )
+            MhListRow(
+                title = motoHubText("Browse files"),
+                subtitle = motoHubText("Downloads, cloud drives and other folders"),
+                icon = Icons.Rounded.FolderOpen,
+                showChevron = false,
+                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.FILES) } }
+            )
+            if (profile.photoPath != null) {
+                MhListRow(
+                    title = motoHubText("Remove photo"),
+                    icon = Icons.Rounded.DeleteOutline,
+                    iconTint = MotoHubColors.Error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                    showChevron = false,
+                    onClick = { close(onRemovePhoto) }
                 )
             }
         }
-
-        Text(
-            motoHubText("Remove this motorcycle"),
-            modifier = Modifier
-                .clickable(onClick = onRequestDelete)
-                .padding(vertical = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
-        )
     }
+}
+
+// Capped so a long Wi-Fi name wraps instead of squeezing the row title; never cut.
+@Composable
+private fun MonoValue(text: String) {
+    Text(
+        text,
+        modifier = Modifier.widthIn(max = 180.dp),
+        style = MaterialTheme.typography.bodyMedium,
+        fontFamily = FontFamily.Monospace,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 /** Also reused by [io.motohub.android.feature.garage.DefaultDashboardSettingsScreen]. */
@@ -374,37 +343,17 @@ fun AndroidAutoDisplayDetail(
     onDisplayModeChanged: (AndroidAutoDisplayMode) -> Unit,
     onBack: () -> Unit
 ) {
-    MotoHubDetailScreen(title = motoHubText("Android Auto Display"), backLabel = motoHubText("‹ Motorcycle"), onBack = onBack) {
-        Text(
-            motoHubText("Choose how the complete Android Auto image is fitted to the TFT."),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FormatButton(
-                text = motoHubText("FIT"),
-                selected = displayMode == AndroidAutoDisplayMode.LETTERBOX,
-                onClick = { onDisplayModeChanged(AndroidAutoDisplayMode.LETTERBOX) },
-                modifier = Modifier.weight(1f)
-            )
-            FormatButton(
-                text = motoHubText("STRETCH"),
-                selected = displayMode == AndroidAutoDisplayMode.STRETCH,
-                onClick = { onDisplayModeChanged(AndroidAutoDisplayMode.STRETCH) },
-                modifier = Modifier.weight(1f)
-            )
-            FormatButton(
-                text = motoHubText("CROP"),
-                selected = displayMode == AndroidAutoDisplayMode.FILL,
-                onClick = { onDisplayModeChanged(AndroidAutoDisplayMode.FILL) },
-                modifier = Modifier.weight(1f)
-            )
+    MhScreen(title = motoHubText("Display fit"), onBack = onBack) {
+        MhListGroup {
+            AndroidAutoDisplayMode.entries.forEach { mode ->
+                MhChoiceRow(
+                    title = mode.shortLabel,
+                    subtitle = mode.description,
+                    selected = mode == displayMode,
+                    onClick = { onDisplayModeChanged(mode) }
+                )
+            }
         }
-        Text(
-            displayMode.description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -416,39 +365,34 @@ fun TftMarginsDetail(
     onScreenMarginsChanged: (TBoxScreenMargins) -> Unit,
     onBack: () -> Unit
 ) {
-    MotoHubDetailScreen(title = motoHubText("TFT Safe Margins"), backLabel = motoHubText("‹ Motorcycle"), onBack = onBack) {
-        Text(
-            motoHubText("Exclude pixels occupied by the motorcycle UI. These values are stored for this ") +
-                "motorcycle and applied to both Android Auto video and touch.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    MhScreen(title = motoHubText("Screen margins"), onBack = onBack) {
+        MhFootnote(motoHubText("Leave room for the dashboard's own display. Applies to Android Auto video and touch."))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MarginField("Top", screenMargins.top, { value ->
+            MarginField(motoHubText("Top"), screenMargins.top, { value ->
                 onScreenMarginsChanged(screenMargins.copy(top = value))
             }, Modifier.weight(1f))
-            MarginField("Bottom", screenMargins.bottom, { value ->
+            MarginField(motoHubText("Bottom"), screenMargins.bottom, { value ->
                 onScreenMarginsChanged(screenMargins.copy(bottom = value))
             }, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MarginField("Left", screenMargins.left, { value ->
+            MarginField(motoHubText("Left"), screenMargins.left, { value ->
                 onScreenMarginsChanged(screenMargins.copy(left = value))
             }, Modifier.weight(1f))
-            MarginField("Right", screenMargins.right, { value ->
+            MarginField(motoHubText("Right"), screenMargins.right, { value ->
                 onScreenMarginsChanged(screenMargins.copy(right = value))
             }, Modifier.weight(1f))
         }
-        OutlinedButton(
+        MhFootnote(motoHubText("In pixels, 0 to %1\$d.", TBoxScreenMargins.MAX))
+        MhSecondaryButton(
+            motoHubText("Reset to default"),
             onClick = {
                 // Restore this motorcycle model's own default margins, not zero -
                 // some models (e.g. the 800NK family) ship with a non-zero default
                 // because their native UI occupies part of the TFT out of the box.
                 onScreenMarginsChanged(TBoxModelProfile.fromModelId(profile.modelId).defaultScreenMargins)
-            },
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(14.dp)
-        ) { Text(motoHubText("Reset margins")) }
+            }
+        )
     }
 }
 
@@ -458,45 +402,72 @@ private fun ProfileOverrideDetail(
     onSave: (MotorcycleProfile) -> Boolean,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var profileOverrideKey by rememberSaveable(profile.id) {
         mutableStateOf(profile.profileOverrideKey)
     }
 
-    MotoHubDetailScreen(title = motoHubText("T-Box Profile Override"), backLabel = motoHubText("‹ Motorcycle"), onBack = onBack) {
-        Text(
-            motoHubText("Override the automatic profile detection for this motorcycle. Use only if the ") +
-                "dashboard behaves unexpectedly. Tap the active option again to return to Auto.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ProfileOverride.entries.forEach { override ->
-                val isActive = ProfileOverride.byKey(profileOverrideKey) == override
-                MotoHubRadioRow(
-                    title = motoHubText(override.label),
-                    description = motoHubText(override.description),
-                    selected = isActive,
-                    onClick = {
-                        val newKey = if (isActive) null else override.key
-                        onSave(profile.copy(profileOverrideKey = newKey))
-                        profileOverrideKey = newKey
-                        val label = if (isActive) motoHubText("Auto") else motoHubText(override.label)
-                        ProjectionEventLog.record(
-                            "GARAGE",
-                            "Profile override for ${profile.ssid}: $label."
-                        )
-                    }
+    @Composable
+    fun OverrideRow(override: ProfileOverride) {
+        val isActive = ProfileOverride.byKey(profileOverrideKey) == override
+        MhChoiceRow(
+            title = override.title(),
+            subtitle = override.subtitle(),
+            selected = isActive,
+            onClick = {
+                // Tapping the chosen one again goes back to Auto.
+                val newKey = if (isActive) null else override.key
+                if (onSave(profile.copy(profileOverrideKey = newKey))) {
+                    profileOverrideKey = newKey
+                } else {
+                    MotoHubSnackbar.error(context, motoHubText("Couldn't save changes"))
+                }
+                val label = if (isActive) motoHubText("Auto") else override.title()
+                ProjectionEventLog.record(
+                    "GARAGE",
+                    "Profile override for ${profile.ssid}: $label."
                 )
             }
-        }
+        )
     }
+
+    // A partition of the enum by its own flags, so the next experiment files itself.
+    val neutral = listOf(ProfileOverride.AUTO, ProfileOverride.GENERIC)
+    val developer = ProfileOverride.entries.filter { !it.riderSelectable }
+    val experimental = ProfileOverride.entries.filter { it.experimental && it.riderSelectable }
+    val motorcycles = ProfileOverride.entries - neutral - developer - experimental
+
+    MhScreen(title = motoHubText("Dashboard profile"), onBack = onBack) {
+        MhFootnote(motoHubText("Auto suits most motorcycles. Choose one only if the dashboard misbehaves."))
+        MhListGroup { neutral.forEach { OverrideRow(it) } }
+        GarageSection(motoHubText("Motorcycles")) { motorcycles.forEach { OverrideRow(it) } }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            GarageSection(motoHubText("Experimental")) { experimental.forEach { OverrideRow(it) } }
+            MhFootnote(motoHubText("Trials for specific dashboard problems. Switch back to Auto if nothing improves."))
+        }
+        GarageSection(motoHubText("Developer")) { developer.forEach { OverrideRow(it) } }
+    }
+}
+
+// The two neutral choices are rider words and get translated; every other entry is a model name
+// or a technical note, shown as written.
+private fun ProfileOverride.title(): String = when (this) {
+    ProfileOverride.AUTO -> motoHubText("Auto")
+    ProfileOverride.GENERIC -> motoHubText("Generic dashboard")
+    else -> label
+}
+
+private fun ProfileOverride.subtitle(): String = when (this) {
+    ProfileOverride.AUTO -> motoHubText("Detect from the motorcycle (recommended)")
+    ProfileOverride.GENERIC -> motoHubText("Neutral defaults for a dashboard that is not recognised")
+    else -> description
 }
 
 val AndroidAutoDisplayMode.shortLabel: String
     get() = when (this) {
-        AndroidAutoDisplayMode.LETTERBOX -> "FIT"
-        AndroidAutoDisplayMode.STRETCH -> "STRETCH"
-        AndroidAutoDisplayMode.FILL -> "CROP"
+        AndroidAutoDisplayMode.LETTERBOX -> motoHubText("Fit")
+        AndroidAutoDisplayMode.STRETCH -> motoHubText("Stretch")
+        AndroidAutoDisplayMode.FILL -> motoHubText("Crop")
     }
 
 @Composable
@@ -506,75 +477,13 @@ private fun MarginField(
     onValueChanged: (Int) -> Unit,
     modifier: Modifier
 ) {
-    OutlinedTextField(
+    MhTextField(
         value = value.toString(),
         onValueChange = { input ->
             input.toIntOrNull()?.let { onValueChanged(it.coerceIn(0, TBoxScreenMargins.MAX)) }
         },
-        label = { Text(label) },
-        singleLine = true,
+        label = label,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = modifier
-    )
-}
-
-@Composable
-private fun FormatButton(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-        ),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-            } else {
-                androidx.compose.ui.graphics.Color.Transparent
-            },
-            contentColor = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurface
-        )
-    ) { Text(text, fontWeight = FontWeight.Bold) }
-}
-
-@Composable
-private fun PhotoSourceDialog(
-    onDismiss: () -> Unit,
-    onSelect: (MotorcyclePhotoSource) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("Motorcycle photo")) },
-        text = {
-            Column {
-                MotoHubActionRow(
-                    title = motoHubText("Take a photo"),
-                    description = motoHubText("Open the camera and shoot it now."),
-                    onClick = { onSelect(MotorcyclePhotoSource.CAMERA) }
-                )
-                HorizontalDivider()
-                MotoHubActionRow(
-                    title = motoHubText("Choose from gallery"),
-                    description = motoHubText("Pick one of your photos."),
-                    onClick = { onSelect(MotorcyclePhotoSource.GALLERY) }
-                )
-                HorizontalDivider()
-                MotoHubActionRow(
-                    title = motoHubText("Browse files"),
-                    description = motoHubText("Downloads, cloud drives and any other folder."),
-                    onClick = { onSelect(MotorcyclePhotoSource.FILES) }
-                )
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(motoHubText("Cancel")) } }
     )
 }
