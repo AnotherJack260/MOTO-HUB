@@ -5,116 +5,129 @@ package io.motohub.android.feature.safety
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DoNotTouch
+import androidx.compose.material.icons.rounded.GppMaybe
+import androidx.compose.material.icons.rounded.LocalParking
+import androidx.compose.material.icons.rounded.SportsMotorsports
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import io.motohub.android.ui.components.MotoHubDialogBody
+import io.motohub.android.ui.components.MhIconCircle
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhSwitchRow
+import io.motohub.android.ui.theme.MotoHubColors
 
+/**
+ * The briefing before the first ride: a calm full-screen page rather than an alarm. It is still a
+ * window of its own above everything, and back and outside taps do nothing, so it blocks exactly as
+ * the dialog it replaces did - the only way past it is "I understand".
+ *
+ * Every clause of the old warning is still here, one row each; only "trip recording" is gone,
+ * because this edition records no trips. The page scrolls when a translation runs long, while the
+ * switch and the button stay pinned above the navigation bar.
+ */
 @Composable
 fun SafetyDisclaimerDialog(
     doNotShowAgain: Boolean,
     onDoNotShowAgainChanged: (Boolean) -> Unit,
     onContinue: () -> Unit
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = {},
         properties = DialogProperties(
             dismissOnBackPress = false,
-            dismissOnClickOutside = false
-        ),
-        // The badge lives in the icon slot rather than in the title: Material 3 measures the title
-        // before the body, so anything oversized up here is height stolen from the warning itself.
-        icon = {
-            Surface(
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "⚠",
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        },
-        title = {
-            Text(
-                text = motoHubText("SAFETY WARNING"),
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-        },
-        text = {
-            MotoHubDialogBody(spacing = 14.dp) {
-                Text(
-                    text = motoHubText(
-                        "Riding requires your full attention. Never interact with MOTO-HUB, " +
-                            "Android Auto, navigation, mirroring, trip recording, or any on-screen " +
-                            "control while the motorcycle is moving."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = motoHubText(
-                        "Configure and verify everything only while parked. Use this application " +
-                            "only in a completely safe and controlled situation. If conditions are not " +
-                            "completely safe, do not use it."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = motoHubText(
-                        "MOTO-HUB is not a safety device and cannot prevent distraction, crashes, " +
-                            "injury, or damage. You are solely responsible for riding safely and obeying " +
-                            "all applicable laws."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onDoNotShowAgainChanged(!doNotShowAgain) },
-                    verticalAlignment = Alignment.CenterVertically
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Checkbox(
-                        checked = doNotShowAgain,
-                        onCheckedChange = onDoNotShowAgainChanged
+                    Spacer(Modifier.height(32.dp))
+                    MhIconCircle(
+                        Icons.Rounded.SportsMotorsports,
+                        size = 56.dp,
+                        tint = MotoHubColors.Warning,
+                        container = MotoHubColors.WarningContainer
                     )
-                    Text(
-                        text = motoHubText("I understand — do not show this warning again"),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            motoHubText("Before you ride"),
+                            modifier = Modifier.semantics { heading() },
+                            style = MaterialTheme.typography.displaySmall
+                        )
+                        Text(
+                            motoHubText("Riding needs your full attention."),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    MhListGroup {
+                        MhListRow(
+                            title = motoHubText("Hands off while moving"),
+                            subtitle = motoHubText(
+                                "Never use MOTO-HUB, mirroring, Android Auto, navigation or any on-screen " +
+                                    "control while the motorcycle is moving."
+                            ),
+                            icon = Icons.Rounded.DoNotTouch
+                        )
+                        MhListRow(
+                            title = motoHubText("Set up while parked"),
+                            subtitle = motoHubText(
+                                "Configure and check everything only while parked, and use MOTO-HUB only " +
+                                    "where it is completely safe and controlled."
+                            ),
+                            icon = Icons.Rounded.LocalParking
+                        )
+                        MhListRow(
+                            title = motoHubText("Not a safety device"),
+                            subtitle = motoHubText(
+                                "MOTO-HUB can't prevent distraction, crashes, injury or damage. You alone " +
+                                    "are responsible for riding safely and within the law."
+                            ),
+                            icon = Icons.Rounded.GppMaybe
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onContinue) {
-                Text(motoHubText("I understand and continue"))
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    MhListGroup {
+                        MhSwitchRow(
+                            title = motoHubText("Don't show this again"),
+                            checked = doNotShowAgain,
+                            onCheckedChange = onDoNotShowAgainChanged
+                        )
+                    }
+                    MhPrimaryButton(motoHubText("I understand"), onContinue)
+                }
             }
         }
-    )
+    }
 }

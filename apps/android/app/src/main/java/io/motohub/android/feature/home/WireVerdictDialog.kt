@@ -3,14 +3,14 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.home
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
-import io.motohub.android.ui.components.MotoHubDialogBody
+import io.motohub.android.ui.components.MhActionStyle
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhSheet
 
 /**
  * The one question MOTO-HUB cannot answer for itself.
@@ -30,46 +30,31 @@ fun WireVerdictDialog(
     onAnswer: (projectionSeen: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("Did it show up on the dashboard?")) },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText(
-                        "Last time you connected to %1\$s, everything looked right from this phone. " +
-                            "MOTO-HUB has no way to see the dashboard's screen, so this is the one " +
-                            "thing it has to ask you.",
-                        motorcycleName
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    motoHubText(
-                        "If it stayed on the pairing screen, MOTO-HUB keeps trying video formats " +
-                            "until one works. When other riders with the same dashboard have " +
-                            "already confirmed this one, it asks you once more before moving on."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onAnswer(true) }) {
-                Text(motoHubText("Yes, I saw it"))
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = { onAnswer(false) }) {
-                Text(motoHubText("No, nothing appeared"))
-            }
-        }
-    )
+    // Two equal grey answers: this is data, and a lime "Yes" would tilt it. [onDismiss] runs on
+    // every way out, answers included, and before the answer; swiping away answers nothing.
+    MhSheet(
+        onDismiss = onDismiss,
+        title = motoHubText("Did it show up on the dashboard?"),
+        body = motoHubText(
+            "Last time you connected to %1\$s, everything looked fine from the phone. MOTO-HUB " +
+                "can't see the dashboard, so it has to ask.",
+            motorcycleName
+        ),
+        primaryLabel = motoHubText("Yes, I saw it"),
+        onPrimary = { onAnswer(true) },
+        secondaryLabel = motoHubText("No, nothing appeared"),
+        onSecondary = { onAnswer(false) },
+        primaryStyle = MhActionStyle.NEUTRAL
+    ) {
+        MhFootnote(
+            motoHubText("If it stayed on the pairing screen, MOTO-HUB tries another video format next time."),
+            Modifier.padding(horizontal = 16.dp)
+        )
+    }
 }
 
 /**
- * Shown to a rider whose wire search is standing still because they only ever use the Ride
- * Dashboard.
+ * Shown to a rider whose wire search is standing still because they only ever mirror.
  *
  * Only Android Auto runs the format the search is testing, so a mirroring session teaches it
  * nothing and the rung never moves. Without this the rider sees a search that simply never
@@ -77,29 +62,15 @@ fun WireVerdictDialog(
  */
 @Composable
 fun WireNeedsAndroidAutoDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("The video format search is waiting")) },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText(
-                        "MOTO-HUB is still looking for a video format your dashboard can display, " +
-                            "but it can only test one while Android Auto is running - the Ride " +
-                            "Dashboard always sends its own format."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    motoHubText(
-                        "Connect once with Android Auto and the search moves on by itself."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) { Text(motoHubText("Got it")) }
-        }
+    // Any way of closing it counts as read: onDismiss runs on all of them, "Got it" included.
+    MhSheet(
+        onDismiss = onDismiss,
+        title = motoHubText("Try Android Auto once"),
+        body = motoHubText(
+            "MOTO-HUB can only test a new video format while Android Auto runs; mirroring always " +
+                "uses its own. Connect once with Android Auto and the search moves on by itself."
+        ),
+        primaryLabel = motoHubText("Got it"),
+        onPrimary = {}
     )
 }

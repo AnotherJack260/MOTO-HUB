@@ -3,13 +3,14 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.diagnostics.report
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
-import io.motohub.android.ui.components.MotoHubDialogBody
+import io.motohub.android.ui.components.MhActionStyle
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhSheet
 
 /**
  * What a diagnostics report contains, and the two answers to it. Reached from
@@ -19,7 +20,8 @@ import io.motohub.android.ui.components.MotoHubDialogBody
  * [onDismiss] exists because the dialog used to treat a tap outside as consent
  * (`onDismissRequest = onAccept`). That was defensible while the feature was on by default and
  * this was the notice about it; on an opt-in feature it would turn an idle tap into "yes, send
- * my logs". Dismissing now changes nothing.
+ * my logs". Swiping the sheet away still changes nothing. "Don't send" is a real answer - it turns
+ * automatic reports off - so it is not dressed up as "Not now", and neither answer gets the lime.
  */
 @Composable
 fun DiagnosticReportNoticeDialog(
@@ -27,33 +29,19 @@ fun DiagnosticReportNoticeDialog(
     onDecline: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("Help improve MOTO-HUB")) },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText(
-                        "MOTO-HUB can send a diagnostics report to the developer: your " +
-                            "motorcycle's dashboard model, your phone model, the Android, Android Auto, " +
-                            "MOTO-HUB versions installed, and the application log. Passwords, positions " +
-                            "and hardware addresses are never included."
-                    )
-                )
-                Text(
-                    motoHubText(
-                        "Reports go out at most once a day, after an update, or after a crash, and only " +
-                            "over a connection with Internet access. Your Support ID is shown under " +
-                            "Settings ▸ Diagnostics, where this can be turned on or off at any time."
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onAccept) { Text(motoHubText("Send reports")) }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDecline) { Text(motoHubText("Not now")) }
-        }
-    )
+    MhSheet(
+        onDismiss = onDismiss,
+        title = motoHubText("Help improve MOTO-HUB"),
+        body = motoHubText(
+            "Reports hold your dashboard and phone models, the Android, Android Auto and MOTO-HUB " +
+                "versions, and the app log. Never passwords, positions or hardware addresses."
+        ),
+        primaryLabel = motoHubText("Send reports"),
+        onPrimary = onAccept,
+        secondaryLabel = motoHubText("Don't send"),
+        onSecondary = onDecline,
+        primaryStyle = MhActionStyle.NEUTRAL
+    ) {
+        MhFootnote(motoHubText("At most once a day, after an update or a crash"), Modifier.padding(horizontal = 16.dp))
+    }
 }

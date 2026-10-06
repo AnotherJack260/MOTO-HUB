@@ -3,36 +3,23 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.diagnostics
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -50,12 +38,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.tbox.ThinkerRideGate
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubHeader
-import io.motohub.android.ui.theme.MotoHubLive
-import io.motohub.android.ui.theme.MotoHubManual
-import io.motohub.android.ui.theme.MotoHubMirror
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhScreen
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhSwitchRow
+import io.motohub.android.ui.components.MhTextButton
+import io.motohub.android.ui.components.MhTextField
+import io.motohub.android.ui.theme.MotoHubColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,7 +64,6 @@ import java.util.Locale
  */
 @Composable
 fun BleExplorerScreen(onBack: () -> Unit) {
-    BackHandler(onBack = onBack)
     val context = LocalContext.current
     // A scan left running after the screen is gone keeps the radio awake with nobody watching.
     // Leaving the screen ends the scan and the link the same way the learn wizard does.
@@ -113,171 +105,133 @@ fun BleExplorerScreen(onBack: () -> Unit) {
                 entry.serviceUuids.any { it.contains(filter, ignoreCase = true) })
     }
 
-    MotoHubBackground(Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            MotoHubHeader(
-                modifier = Modifier.fillMaxWidth(),
-                trailing = { TextButton(onClick = onBack) { Text(motoHubText("Close")) } }
+    MhScreen(
+        title = motoHubText("Bluetooth LE explorer"),
+        subtitle = motoHubText(
+            "Find any Bluetooth LE device, open it, and see what it is really made of: " +
+                "its services, its characteristics, and every byte it sends. Made for " +
+                "remotes that announce nothing about themselves - press their buttons " +
+                "while subscribed and the protocol writes itself into the log."
+        ),
+        onBack = onBack
+    ) {
+        if (scanning) {
+            MhSecondaryButton(motoHubText("Stop scanning"), onClick = { BleExplorer.stopScan(context) })
+        } else {
+            MhPrimaryButton(motoHubText("Scan for devices"), onClick = scanWithPermissions)
+        }
+
+        if (connected != null) {
+            ConnectedDevice(
+                entry = connected,
+                linkState = linkState,
+                mtu = mtu,
+                services = services,
+                onDisconnect = { BleExplorer.disconnect() },
+                onRediscover = { BleExplorer.rediscoverServices() },
+                onRequestMtu = { BleExplorer.requestMtu(517) },
+                onReadRssi = { BleExplorer.readRemoteRssi() },
+                onRead = { BleExplorer.read(it) },
+                onWrite = { writing = it },
+                onToggleNotify = { BleExplorer.setNotifying(it, !it.notifying) }
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MonoLabel(motoHubText("SYSTEM LAB"))
-                Text(motoHubText("Bluetooth LE explorer"), style = MaterialTheme.typography.headlineMedium)
-                Text(
+        }
+
+        MhSectionHeader(motoHubText("Devices (%1\$d)", visible.size))
+        MhTextField(
+            value = filter,
+            onValueChange = { filter = it },
+            label = motoHubText("Filter by name, address or service")
+        )
+        MhListGroup {
+            MhSwitchRow(title = motoHubText("Named devices only"), checked = namedOnly, onCheckedChange = { namedOnly = it })
+        }
+        if (visible.isEmpty()) {
+            MhFootnote(
+                if (scanning) {
                     motoHubText(
-                        "Find any Bluetooth LE device, open it, and see what it is really made of: " +
-                            "its services, its characteristics, and every byte it sends. Made for " +
-                            "remotes that announce nothing about themselves - press their buttons " +
-                            "while subscribed and the protocol writes itself into the log."
-                    ),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Button(
-                onClick = { if (scanning) BleExplorer.stopScan(context) else scanWithPermissions() },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(
-                    motoHubText(if (scanning) "Stop scanning" else "Scan for devices"),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            if (connected != null) {
-                ConnectedDevice(
-                    entry = connected,
-                    linkState = linkState,
-                    mtu = mtu,
-                    services = services,
-                    onDisconnect = { BleExplorer.disconnect() },
-                    onRediscover = { BleExplorer.rediscoverServices() },
-                    onRequestMtu = { BleExplorer.requestMtu(517) },
-                    onReadRssi = { BleExplorer.readRemoteRssi() },
-                    onRead = { BleExplorer.read(it) },
-                    onWrite = { writing = it },
-                    onToggleNotify = { BleExplorer.setNotifying(it, !it.notifying) }
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MonoLabel(motoHubText("DEVICES (%1\$d)", visible.size))
-                OutlinedTextField(
-                    value = filter,
-                    onValueChange = { filter = it },
-                    label = { Text(motoHubText("Filter by name, address or service")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                TextButton(onClick = { namedOnly = !namedOnly }) {
-                    Text(motoHubText(if (namedOnly) "Showing named devices only" else "Showing every device"))
-                }
-                if (visible.isEmpty()) {
-                    Text(
-                        motoHubText(
-                            if (scanning) {
-                                "Nothing yet. A remote that sleeps only advertises for a few seconds " +
-                                    "after a button is pressed - press one and keep it close."
-                            } else {
-                                "Start a scan to see what is around."
-                            }
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        "Nothing yet. A remote that sleeps only advertises for a few seconds " +
+                            "after a button is pressed - press one and keep it close."
                     )
+                } else {
+                    motoHubText("Start a scan to see what is around.")
                 }
+            )
+        } else {
+            MhListGroup {
                 visible.forEach { entry ->
                     DeviceRow(entry = entry, onClick = { BleExplorer.connect(context, entry) })
                 }
             }
-
-            TrafficView(traffic = traffic, onClear = { BleExplorer.clearTraffic() })
-            Spacer(Modifier.height(8.dp))
         }
+
+        TrafficView(traffic = traffic, onClear = { BleExplorer.clearTraffic() })
     }
 
     writing?.let { node ->
-        WriteDialog(
-            node = node,
-            onDismiss = { writing = null },
-            onWrite = { bytes, withResponse ->
-                BleExplorer.write(node, bytes, withResponse)
-                writing = null
-            }
-        )
+        WriteSheet(node = node, onDismiss = { writing = null })
     }
 }
 
 @Composable
 private fun DeviceRow(entry: BleScanEntry, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    entry.label,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${entry.rssi} dBm",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = signalColour(entry.rssi)
-                )
-            }
             Text(
-                entry.address + if (entry.connectable) "" else motoHubText("  - not connectable"),
-                style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                entry.label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            // The three fields that identify an unknown device, when it offers any of them: the
-            // services it claims, the vendor id in its manufacturer data, and whatever it puts in
-            // service data. A remote that shows none of these can only be identified by connecting.
-            if (entry.serviceUuids.isNotEmpty()) {
-                Text(
-                    motoHubText("services: ") + entry.serviceUuids.joinToString { BleNames.short(java.util.UUID.fromString(it)) },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MotoHubMirror
+            Text(
+                "${entry.rssi} dBm",
+                style = MaterialTheme.typography.labelMedium,
+                color = signalColour(entry.rssi)
+            )
+        }
+        Text(
+            if (entry.connectable) entry.address else motoHubText("%1\$s · not connectable", entry.address),
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        // The three fields that identify an unknown device, when it offers any of them: the
+        // services it claims, the vendor id in its manufacturer data, and whatever it puts in
+        // service data. A remote that shows none of these can only be identified by connecting.
+        if (entry.serviceUuids.isNotEmpty()) {
+            DeviceDetail(
+                motoHubText(
+                    "Services: %1\$s",
+                    entry.serviceUuids.joinToString { BleNames.short(java.util.UUID.fromString(it)) }
                 )
-            }
-            if (entry.manufacturer.isNotEmpty()) {
-                Text(
-                    motoHubText("manufacturer: ") + entry.manufacturer.joinToString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MotoHubManual
-                )
-            }
-            if (entry.serviceData.isNotEmpty()) {
-                Text(
-                    motoHubText("service data: ") + entry.serviceData.joinToString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            )
+        }
+        if (entry.manufacturer.isNotEmpty()) {
+            DeviceDetail(motoHubText("Manufacturer: %1\$s", entry.manufacturer.joinToString()))
+        }
+        if (entry.serviceData.isNotEmpty()) {
+            DeviceDetail(motoHubText("Service data: %1\$s", entry.serviceData.joinToString()))
         }
     }
+}
+
+@Composable
+private fun DeviceDetail(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        fontFamily = FontFamily.Monospace,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
@@ -294,17 +248,13 @@ private fun ConnectedDevice(
     onWrite: (BleCharacteristicNode) -> Unit,
     onToggleNotify: (BleCharacteristicNode) -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.extraLarge,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    MhSectionHeader(motoHubText("Connected"))
+    MhListGroup {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            MonoLabel(motoHubText("CONNECTED"))
-            Text(entry?.label.orEmpty(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(entry?.label.orEmpty(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             Text(
                 "${entry?.address.orEmpty()}  -  ${linkState.name.lowercase()}  -  MTU $mtu",
                 style = MaterialTheme.typography.labelSmall,
@@ -312,39 +262,32 @@ private fun ConnectedDevice(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onDisconnect, modifier = Modifier.weight(1f)) {
-                    Text(motoHubText("Disconnect"))
-                }
-                OutlinedButton(onClick = onRediscover, modifier = Modifier.weight(1f)) {
-                    Text(motoHubText("Rediscover"))
-                }
+                MhSecondaryButton(motoHubText("Disconnect"), onDisconnect, Modifier.weight(1f))
+                MhSecondaryButton(motoHubText("Rediscover"), onRediscover, Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onRequestMtu, modifier = Modifier.weight(1f)) {
-                    Text(motoHubText("MTU 517"))
-                }
-                OutlinedButton(onClick = onReadRssi, modifier = Modifier.weight(1f)) {
-                    Text(motoHubText("Read RSSI"))
-                }
+                MhSecondaryButton(motoHubText("MTU 517"), onRequestMtu, Modifier.weight(1f))
+                MhSecondaryButton(motoHubText("Read RSSI"), onReadRssi, Modifier.weight(1f))
             }
-            services.forEach { service ->
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        BleNames.describe(service.uuid),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = MotoHubLive
-                    )
-                    service.characteristics.forEach { node ->
-                        CharacteristicRow(
-                            node = node,
-                            onRead = { onRead(node) },
-                            onWrite = { onWrite(node) },
-                            onToggleNotify = { onToggleNotify(node) }
-                        )
-                    }
-                }
+        }
+    }
+    services.forEach { service ->
+        Text(
+            BleNames.describe(service.uuid),
+            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        MhListGroup {
+            service.characteristics.forEach { node ->
+                CharacteristicRow(
+                    node = node,
+                    onRead = { onRead(node) },
+                    onWrite = { onWrite(node) },
+                    onToggleNotify = { onToggleNotify(node) }
+                )
             }
         }
     }
@@ -357,168 +300,136 @@ private fun CharacteristicRow(
     onWrite: () -> Unit,
     onToggleNotify: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
+        Text(
+            BleNames.describe(node.uuid),
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            node.propertyLabels().joinToString(" · "),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        node.lastValue?.let { value ->
             Text(
-                BleNames.describe(node.uuid),
+                BleHex.encode(value) + BleHex.ascii(value).let { text ->
+                    if (text.any { it != '.' }) "   \"$text\"" else ""
+                },
                 style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                node.propertyLabels().joinToString(" · "),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            node.lastValue?.let { value ->
-                Text(
-                    BleHex.encode(value) + BleHex.ascii(value).let { text ->
-                        if (text.any { it != '.' }) "   \"$text\"" else ""
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MotoHubLive
-                )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (node.canRead) {
+                MhSecondaryButton(motoHubText("Read"), onRead, Modifier.weight(1f))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (node.canRead) {
-                    OutlinedButton(onClick = onRead, modifier = Modifier.weight(1f)) {
-                        Text(motoHubText("Read"), style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                if (node.canWrite || node.canWriteNoResponse) {
-                    OutlinedButton(onClick = onWrite, modifier = Modifier.weight(1f)) {
-                        Text(motoHubText("Write"), style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                if (node.canNotify || node.canIndicate) {
-                    OutlinedButton(onClick = onToggleNotify, modifier = Modifier.weight(1f)) {
-                        Text(
-                            motoHubText(if (node.notifying) "Unsubscribe" else "Subscribe"),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
+            if (node.canWrite || node.canWriteNoResponse) {
+                MhSecondaryButton(motoHubText("Write"), onWrite, Modifier.weight(1f))
+            }
+            if (node.canNotify || node.canIndicate) {
+                MhSecondaryButton(
+                    if (node.notifying) motoHubText("Unsubscribe") else motoHubText("Subscribe"),
+                    onToggleNotify,
+                    Modifier.weight(1f)
+                )
             }
         }
     }
 }
 
+/** Bytes for one characteristic. Swiping the sheet away cancels; a write closes it first. */
 @Composable
-private fun WriteDialog(
-    node: BleCharacteristicNode,
-    onDismiss: () -> Unit,
-    onWrite: (ByteArray, Boolean) -> Unit
-) {
+private fun WriteSheet(node: BleCharacteristicNode, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf("") }
     val bytes = BleHex.decode(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("Write to %1\$s", BleNames.short(node.uuid))) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    motoHubText(
-                        "Bytes in hex - \"01 FF 0A\", \"01ff0a\" and \"0x01,0xFF\" all work. " +
-                            "This writes straight to the device: on some hardware the wrong value " +
-                            "changes settings that are hard to change back."
-                    ),
-                    style = MaterialTheme.typography.bodySmall
+    MhSheet(onDismiss = onDismiss, title = motoHubText("Write to %1\$s", BleNames.short(node.uuid))) { close ->
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            MhFootnote(
+                motoHubText(
+                    "Bytes in hex - \"01 FF 0A\", \"01ff0a\" and \"0x01,0xFF\" all work. " +
+                        "This writes straight to the device: on some hardware the wrong value " +
+                        "changes settings that are hard to change back."
                 )
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text(motoHubText("Hex")) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
+            )
+            MhTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = motoHubText("Hex"),
+                helper = bytes?.let { motoHubText("%1\$d byte(s)", it.size) },
+                error = if (bytes == null) motoHubText("Not valid hex yet.") else null,
+                monospace = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
+            )
+            MhPrimaryButton(
+                motoHubText("Write"),
+                onClick = { bytes?.let { value -> close { BleExplorer.write(node, value, true) } } },
+                enabled = bytes != null && node.canWrite
+            )
+            if (node.canWriteNoResponse) {
+                MhSecondaryButton(
+                    motoHubText("Write without response"),
+                    onClick = { bytes?.let { value -> close { BleExplorer.write(node, value, false) } } },
+                    enabled = bytes != null
                 )
-                Text(
-                    if (bytes == null) {
-                        motoHubText("Not valid hex yet.")
-                    } else {
-                        motoHubText("%1\$d byte(s)", bytes.size)
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (bytes == null) MaterialTheme.colorScheme.error else MotoHubLive
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = bytes != null && node.canWrite,
-                onClick = { bytes?.let { onWrite(it, true) } }
-            ) { Text(motoHubText("Write")) }
-        },
-        dismissButton = {
-            Row {
-                if (node.canWriteNoResponse) {
-                    TextButton(
-                        enabled = bytes != null,
-                        onClick = { bytes?.let { onWrite(it, false) } }
-                    ) { Text(motoHubText("No response")) }
-                }
-                TextButton(onClick = onDismiss) { Text(motoHubText("Cancel")) }
             }
         }
-    )
+    }
 }
 
 @Composable
 private fun TrafficView(traffic: List<BleTrafficLine>, onClear: () -> Unit) {
     val clock = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.US) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            MonoLabel(motoHubText("TRAFFIC"))
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onClear) { Text(motoHubText("Clear")) }
-        }
-        Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 340.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        MhSectionHeader(motoHubText("Traffic"))
+        Spacer(Modifier.weight(1f))
+        MhTextButton(motoHubText("Clear"), onClick = onClear)
+    }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 120.dp, max = 340.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(12.dp)
-            ) {
-                if (traffic.isEmpty()) {
-                    Text(
-                        motoHubText("Nothing yet."),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                traffic.forEach { line ->
-                    Text(
-                        "${clock.format(Date(line.atMillis))}  ${prefix(line.kind)} ${line.text}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = when (line.kind) {
-                            BleTrafficLine.Kind.IN -> MotoHubLive
-                            BleTrafficLine.Kind.OUT -> MotoHubMirror
-                            BleTrafficLine.Kind.FAILURE -> MaterialTheme.colorScheme.error
-                            BleTrafficLine.Kind.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
+            if (traffic.isEmpty()) {
+                Text(
+                    motoHubText("Nothing yet."),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            traffic.forEach { line ->
+                Text(
+                    "${clock.format(Date(line.atMillis))}  ${prefix(line.kind)} ${line.text}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = when (line.kind) {
+                        BleTrafficLine.Kind.IN -> MaterialTheme.colorScheme.onSurface
+                        BleTrafficLine.Kind.OUT -> MaterialTheme.colorScheme.onSurfaceVariant
+                        BleTrafficLine.Kind.FAILURE -> MaterialTheme.colorScheme.error
+                        BleTrafficLine.Kind.INFO -> MotoHubColors.TextTertiary
+                    }
+                )
             }
         }
-        Text(
-            motoHubText(
-                "Every line here is also in the application log, so a session can be sent in a " +
-                    "diagnostic report."
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
+    MhFootnote(
+        motoHubText(
+            "Every line here is also in the application log, so a session can be sent in a " +
+                "diagnostic report."
+        )
+    )
 }
 
 private fun prefix(kind: BleTrafficLine.Kind): String = when (kind) {
@@ -529,7 +440,7 @@ private fun prefix(kind: BleTrafficLine.Kind): String = when (kind) {
 }
 
 private fun signalColour(rssi: Int): Color = when {
-    rssi >= -60 -> MotoHubLive
-    rssi >= -80 -> MotoHubManual
-    else -> Color(0xFF8C93A0)
+    rssi >= -60 -> MotoHubColors.Lime
+    rssi >= -80 -> MotoHubColors.Warning
+    else -> MotoHubColors.TextTertiary
 }

@@ -3,12 +3,12 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.androidauto
 
-import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.Context
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -17,14 +17,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.tbox.CompanionAppRegistry
 import io.motohub.android.tbox.CompanionConflictGate
-import io.motohub.android.ui.components.MotoHubDialogBody
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhTextButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -55,8 +60,7 @@ class CompanionConflictGateState internal constructor(
         private set
 
     /**
-     * @param actionLabel what the rider asked for, in the log and in the dialog's continue button
-     *   ("Android Auto", "Mirroring").
+     * @param actionLabel what the rider asked for, in the log ("Android Auto", "Mirroring").
      */
     fun gate(actionLabel: String, onProceed: () -> Unit) {
         scope.launch {
@@ -90,11 +94,16 @@ fun rememberCompanionConflictGate(
 
 /**
  * States the conflict as the fact it is, and offers the only remedy Android leaves: the rider
- * force-stopping the holder from its App info page.
+ * force-stopping the holder from its app settings.
  *
  * There is deliberately no "do not show this again". The warning that had one was a guess about
  * an installed app; this one only ever appears when the ports are held at that very instant, and
  * a rider who silences it silences the one screen that explains why nothing works.
+ *
+ * The sheet stays open while the rider is away in the other app's settings, so "Try anyway" is
+ * right there when they come back - which is also why a settings page that will not open is said
+ * inside the sheet rather than in a snackbar that would draw underneath it. With no companion
+ * detected there is nothing lime: "Try anyway" is a risky choice, so it is never the primary.
  */
 @Composable
 fun CompanionConflictGateDialog(state: CompanionConflictGateState) {
@@ -102,85 +111,58 @@ fun CompanionConflictGateDialog(state: CompanionConflictGateState) {
     val context = LocalContext.current
     val companion = pending.conflict.companionApp
     val holderName = companion?.displayName
-    AlertDialog(
-        onDismissRequest = { state.clear() },
-        title = {
-            Text(
-                if (holderName != null) {
-                    motoHubText("%1\$s is holding the dashboard connection", holderName)
-                } else {
-                    motoHubText("Another app is holding the dashboard connection")
-                }
-            )
+    var openFailed by remember(pending) { mutableStateOf(false) }
+    MhSheet(
+        onDismiss = { state.clear() },
+        title = if (holderName != null) {
+            motoHubText("%1\$s is using the dashboard", holderName)
+        } else {
+            motoHubText("Another app is using the dashboard")
         },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText(
-                        "The three local ports MOTO-HUB needs for the dashboard (%1\$s) are in " +
-                            "use right now, so the connection would fail.",
-                        pending.conflict.busyPorts.joinToString()
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
+        body = if (holderName != null) {
+            motoHubText("Force-stop it in its app settings, then try again.")
+        } else {
+            motoHubText("Force-stop your motorcycle's companion app, then try again.")
+        }
+    ) { close ->
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            MhFootnote(motoHubText("Running a session in your other MOTO-HUB app? Stop it there instead."))
+            Text(
+                motoHubText("Busy ports: %1\$s", pending.conflict.busyPorts.joinToString()),
+                modifier = Modifier.padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (companion != null) {
+                MhPrimaryButton(
+                    motoHubText("Open %1\$s app settings", companion.displayName),
+                    onClick = { openFailed = !CompanionAppRegistry.openAppSettings(context, companion) },
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-                if (holderName != null) {
+                if (openFailed) {
                     Text(
-                        motoHubText(
-                            "On this phone that is almost always %1\$s. Force-stop it from its " +
-                                "App info page and try again - Android does not let one app " +
-                                "release another one's connection.",
-                            holderName
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    Text(
-                        motoHubText(
-                            "Force-stop your motorcycle's own companion app from its App info " +
-                                "page and try again - Android does not let one app release " +
-                                "another one's connection."
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
+                        motoHubText("Couldn't open app settings"),
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
-                Text(
-                    motoHubText(
-                        "If your other MOTO-HUB app is running a session on this phone, stop " +
-                            "that one instead."
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                if (companion != null) {
-                    OutlinedButton(
-                        onClick = {
-                            if (!CompanionAppRegistry.openAppSettings(context, companion)) {
-                                MotoHubSnackbar.error(context, motoHubText("Unable to open the companion app settings"))
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(motoHubText("Open %1\$s settings", companion.displayName))
+            }
+            MhSecondaryButton(
+                motoHubText("Try anyway"),
+                onClick = {
+                    // pending, not state.pending: close() clears the state before this runs.
+                    close {
+                        ProjectionEventLog.record(
+                            "ANDROID_AUTO",
+                            "Rider started ${pending.actionLabel} anyway, with the reverse ports held."
+                        )
+                        pending.proceed()
                     }
                 }
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val proceed = pending.proceed
-                state.clear()
-                ProjectionEventLog.record(
-                    "ANDROID_AUTO",
-                    "Rider started ${pending.actionLabel} anyway, with the reverse ports held."
-                )
-                proceed()
-            }) {
-                Text(motoHubText("Try anyway"))
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = { state.clear() }) {
-                Text(motoHubText("Cancel"))
-            }
+            )
+            MhTextButton(motoHubText("Cancel"), onClick = { close {} }, modifier = Modifier.fillMaxWidth())
         }
-    )
+    }
 }
