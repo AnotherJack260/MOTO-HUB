@@ -107,9 +107,10 @@ import io.motohub.android.feature.pairing.TBoxQrOrigin
 import io.motohub.android.feature.pairing.TBoxQrPayload
 import io.motohub.android.feature.pairing.TBoxQrPhotoDecoder
 import io.motohub.android.feature.pairing.QrImageSource
-import io.motohub.android.feature.pairing.QrImageSourceDialog
-import io.motohub.android.feature.pairing.TBoxQrPhotoProcessingDialog
+import io.motohub.android.feature.pairing.QrImportSheet
 import io.motohub.android.feature.pairing.TBoxQrScannerScreen
+import io.motohub.android.tbox.WifiDirectGate
+import io.motohub.android.ui.components.MhSnackTone
 import io.motohub.android.feature.pairing.UnverifiedQrDialog
 import io.motohub.android.feature.safety.SafetyDisclaimerDialog
 import io.motohub.android.feature.settings.AutostartService
@@ -353,6 +354,12 @@ class MainActivity : ComponentActivity() {
                 var showQrImageSource by remember { mutableStateOf(false) }
                 var qrPhotoProcessing by remember { mutableStateOf(false) }
                 var qrPhotoProgress by remember { mutableStateOf(0 to 0) }
+                // The import sheet's other two states: a failed read (empty = no useful verdict)
+                // and a code that was read, held until the sheet has slid away.
+                var qrImportFailure by remember { mutableStateOf<String?>(null) }
+                var qrImportDecoded by remember { mutableStateOf<TBoxQrPayload?>(null) }
+                // The sheet stays up under the picker, so a double tap would open a second one.
+                var qrPickerOpen by remember { mutableStateOf(false) }
                 var pendingUnverifiedQr by remember { mutableStateOf<TBoxQrPayload?>(null) }
                 var lastAutoConnectAttemptAt by remember { mutableStateOf(0L) }
                 var autoConnectAttempts by remember { mutableStateOf(0) }
@@ -361,6 +368,16 @@ class MainActivity : ComponentActivity() {
                 var photoTargetProfileId by rememberSaveable { mutableStateOf<String?>(null) }
                 var returnToGarageAfterPairing by rememberSaveable { mutableStateOf(false) }
                 val context = LocalContext.current
+
+                // Every QR path ends like the manual form: a snackbar saying whether the motorcycle
+                // was saved. Nothing else on screen tells the rider.
+                fun saveQrPairing(payload: TBoxQrPayload) {
+                    if (viewModel.applyQrPairing(payload)) {
+                        MotoHubSnackbar.success(context, motoHubText("Motorcycle saved"))
+                    } else {
+                        MotoHubSnackbar.error(context, motoHubText("Couldn't save the motorcycle"))
+                    }
+                }
 
                 // A code that corroborates itself is saved straight away; anything else decoded
                 // cleanly but from a source we cannot vouch for waits for the rider to confirm.
@@ -374,7 +391,7 @@ class MainActivity : ComponentActivity() {
                         return
                     }
                     if (payload.origin == TBoxQrOrigin.RECOGNISED) {
-                        viewModel.applyQrPairing(payload)
+                        saveQrPairing(payload)
                     } else {
                         ProjectionEventLog.record(
                             "PAIRING",
@@ -1107,13 +1124,27 @@ class MainActivity : ComponentActivity() {
                             returnToGarageAfterPairing = false
                             selectedTab = HubTab.GARAGE
                         }
-                        viewModel.onCameraPermissionDenied()
+                        // A snackbar, not the Ride banner: it floats over whichever tab the
+                        // rider asked from, and a denied camera is not a connection error.
+                        ProjectionEventLog.warning("PERMISSION", "Camera permission denied.")
+                        MotoHubSnackbar.show(
+                            context,
+                            motoHubText("Allow the camera to scan QR codes"),
+                            MhSnackTone.ERROR,
+                            actionLabel = motoHubText("Settings"),
+                            onAction = {
+                                if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
+                                    MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
+                                }
+                            }
+                        )
                     }
                 }
                 // One decoder behind two doors. The photo picker indexes the gallery and nothing
                 // else, so a pairing code saved to Downloads or pulled out of a chat was
                 // unreachable; OpenDocument reaches those, and the rider picks which on the way in.
                 val decodeQrImage: (Uri?) -> Unit = decode@{ uri ->
+                    qrPickerOpen = false
                     if (uri == null) {
                         ProjectionEventLog.debug("PAIRING", "QR photo picker closed without a selection.")
                         return@decode
@@ -1122,6 +1153,7 @@ class MainActivity : ComponentActivity() {
 
                     qrPhotoProcessing = true
                     qrPhotoProgress = 0 to 0
+                    qrImportFailure = null
                     TBoxQrPhotoDecoder.scan(
                         context = context,
                         uri = uri,
@@ -1129,7 +1161,8 @@ class MainActivity : ComponentActivity() {
                     ) { result ->
                         qrPhotoProcessing = false
                         result
-                            .onSuccess(::acceptQrPayload)
+                            // The import sheet hands it to acceptQrPayload once it has slid away.
+                            .onSuccess { payload -> qrImportDecoded = payload }
                             .onFailure { failure ->
                                 ProjectionEventLog.debug(
                                     "PAIRING",
@@ -1149,10 +1182,15 @@ class MainActivity : ComponentActivity() {
                                     .takeIf { it is IllegalStateException || it is IllegalArgumentException }
                                     ?.message
                                     ?.takeIf(String::isNotBlank)
-                                viewModel.onQrImportFailed(
+                                ProjectionEventLog.warning(
+                                    "PAIRING",
                                     explained
                                         ?: "No QR code with motorcycle Wi-Fi details could be read from the photo."
                                 )
+                                // Shown in the import sheet, where the rider is looking - not as
+                                // a Ride error: a photo that would not read is not a failed
+                                // connection. Empty lets the sheet give its own advice.
+                                qrImportFailure = explained.orEmpty()
                             }
                     }
                 }
@@ -1164,6 +1202,11 @@ class MainActivity : ComponentActivity() {
                 val qrPhotoFileLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument()
                 ) { uri -> decodeQrImage(uri) }
+                // "Import QR code" from any tab: Ride and Garage both open the same sheet.
+                val importQrPhoto: () -> Unit = {
+                    ProjectionEventLog.record("UI", "User requested QR decoding from a photo.")
+                    showQrImageSource = true
+                }
 
                 // Which full-screen destination is on top, derived from the same state the old
                 // if/else chain read. The chain replaced the whole tree in a single frame; the
@@ -1461,6 +1504,7 @@ class MainActivity : ComponentActivity() {
                         onSave = {
                             if (viewModel.saveMotorcycle()) {
                                 ProjectionEventLog.record("UI", "Manual pairing screen closed after a saved profile.")
+                                MotoHubSnackbar.success(context, motoHubText("Motorcycle saved"))
                                 showManualPairing = false
                                 if (returnToGarageAfterPairing) {
                                     returnToGarageAfterPairing = false
@@ -1492,10 +1536,7 @@ class MainActivity : ComponentActivity() {
                                 cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                             }
                         },
-                        onImportQrPhoto = {
-                            ProjectionEventLog.record("UI", "User requested QR decoding from a photo.")
-                            showQrImageSource = true
-                        },
+                        onImportQrPhoto = importQrPhoto,
                         onManualPairing = {
                             ProjectionEventLog.record("UI", "User requested manual (no-QR) pairing.")
                             viewModel.resetManualPairingForm()
@@ -1774,11 +1815,24 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-                if (showQrImageSource) {
-                    QrImageSourceDialog(
-                        onDismiss = { showQrImageSource = false },
-                        onSelect = { source ->
-                            showQrImageSource = false
+                // One sheet for the whole import, up while any of its states holds: a picker result
+                // that lands in a recreated process, without the chooser's flag, still shows here.
+                if (showQrImageSource || qrPhotoProcessing || qrImportFailure != null || qrImportDecoded != null) {
+                    val (completedAttempts, totalAttempts) = qrPhotoProgress
+                    QrImportSheet(
+                        reading = qrPhotoProcessing,
+                        progress = if (totalAttempts > 0) {
+                            (completedAttempts.toFloat() / totalAttempts).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        },
+                        failure = qrImportFailure,
+                        decoded = qrImportDecoded,
+                        // The sheet stays up under the system picker; backing out of the picker
+                        // returns to it as it was.
+                        onSelect = select@{ source ->
+                            if (qrPickerOpen) return@select
+                            qrPickerOpen = true
                             ProjectionEventLog.record("PAIRING", "QR image source chosen: $source.")
                             when (source) {
                                 QrImageSource.GALLERY -> qrPhotoLauncher.launch(
@@ -1786,33 +1840,32 @@ class MainActivity : ComponentActivity() {
                                 )
                                 QrImageSource.FILES -> qrPhotoFileLauncher.launch(arrayOf("image/*"))
                             }
+                        },
+                        onDecoded = ::acceptQrPayload,
+                        onDismiss = {
+                            showQrImageSource = false
+                            qrImportFailure = null
+                            qrImportDecoded = null
                         }
-                    )
-                }
-                if (qrPhotoProcessing) {
-                    TBoxQrPhotoProcessingDialog(
-                        completedAttempts = qrPhotoProgress.first,
-                        totalAttempts = qrPhotoProgress.second
                     )
                 }
                 pendingUnverifiedQr?.let { payload ->
                     UnverifiedQrDialog(
                         payload = payload,
                         onConfirm = {
-                            pendingUnverifiedQr = null
                             ProjectionEventLog.record(
                                 "PAIRING",
                                 "Rider confirmed the unrecognised pairing code for ssid=${payload.ssid}."
                             )
-                            viewModel.applyQrPairing(payload)
+                            saveQrPairing(payload)
                         },
-                        onDismiss = {
-                            pendingUnverifiedQr = null
+                        onDecline = {
                             ProjectionEventLog.record(
                                 "PAIRING",
                                 "Rider declined the unrecognised pairing code for ssid=${payload.ssid}."
                             )
-                        }
+                        },
+                        onDismiss = { pendingUnverifiedQr = null }
                     )
                 }
                 // The rider had to be on the motorcycle to answer this, so it is asked when they
