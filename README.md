@@ -358,7 +358,7 @@ The public repository contains only the MOTO-HUB source, documentation, build me
 
 ### Build requirements
 
-- **JDK 21.** Gradle 8.13 / AGP 8.12.3 do not run on newer JDKs, and the JDK bundled with current Android Studio versions is too new — point `JAVA_HOME` at a JDK 21 explicitly.
+- **JDK 17–25.** Gradle 9.2 runs on any of them, including the JDK bundled with current Android Studio versions.
 - Android SDK platform/API 36.
 - A physical Android device. An emulator cannot reproduce the motorcycle Wi-Fi, camera, NSD, or Android Auto behavior.
 - A generated `hudlib.aar` from the MOTO-HUB ridedaemon fork.
