@@ -62,6 +62,9 @@ enum class SessionPhase {
     ERROR
 }
 
+/** See [HubSessionState.failureKind]. */
+enum class SessionFailureKind { NEARBY_PERMISSION, NOTIFICATION_PERMISSION }
+
 data class MotorcycleProfile(
     val ssid: String,
     val password: String,
@@ -108,6 +111,15 @@ data class HubSessionState(
      * came from is known where it is raised and unrecoverable from the translated text.
      */
     val offerOfficialAppHelp: Boolean = false,
+
+    /**
+     * What kind of failure [message] is, for the few the Ride tab answers with their own fix and
+     * that nothing else in the message can tell apart. Same reasoning as [offerPhoneHotspotRetry]:
+     * those messages are translated where they are raised, so after an in-app language change
+     * (the activity is recreated, the ViewModel is not) comparing the text would miss. Null for
+     * every failure the raw text already identifies.
+     */
+    val failureKind: SessionFailureKind? = null,
 
     /**
      * The session is up and the dashboard is refusing most of what it is sent - see
