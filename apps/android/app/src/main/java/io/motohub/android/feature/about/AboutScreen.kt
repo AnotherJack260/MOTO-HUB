@@ -3,9 +3,9 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.about
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.i18n.motoHubText
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -194,18 +194,10 @@ private fun VersionCard(onUnlockPrototype: (() -> Unit)? = null) {
                             when {
                                 remaining <= 0 -> {
                                     tapCount = 0
-                                    Toast.makeText(
-                                        context,
-                                        motoHubText("Prototype unlocked"),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    MotoHubSnackbar.success(context, motoHubText("Prototype unlocked"))
                                     onUnlockPrototype()
                                 }
-                                remaining <= 3 -> Toast.makeText(
-                                    context,
-                                    motoHubText("%d taps away from the prototype", remaining),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                remaining <= 3 -> MotoHubSnackbar.show(context, motoHubText("%d taps away from the prototype", remaining))
                             }
                         }
                     }

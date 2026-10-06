@@ -3,7 +3,6 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,8 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
 
@@ -79,11 +76,8 @@ fun MotoHubNotice(
     // so a progress line does not shout as loudly as a failure sitting in the same column.
     val container = when (tone) {
         NoticeTone.INFO -> MaterialTheme.colorScheme.surface
-        else -> toneColor.copy(alpha = 0.10f)
-    }
-    val border = when (tone) {
-        NoticeTone.INFO -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        else -> BorderStroke(1.dp, toneColor.copy(alpha = 0.45f))
+        NoticeTone.ACTION -> io.motohub.android.ui.theme.MotoHubColors.LimeContainer
+        NoticeTone.ERROR -> MaterialTheme.colorScheme.errorContainer
     }
     var expanded by rememberSaveable(label, body) { mutableStateOf(false) }
 
@@ -92,7 +86,6 @@ fun MotoHubNotice(
             .fillMaxWidth()
             .let { if (details != null) it.clickable { expanded = !expanded } else it },
         colors = CardDefaults.cardColors(containerColor = container),
-        border = border,
         shape = MaterialTheme.shapes.large
     ) {
         Column(
@@ -109,18 +102,15 @@ fun MotoHubNotice(
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = toneColor,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
                 if (details != null) {
                     Text(
-                        text = if (expanded) motoHubText("Less ▲") else motoHubText("Details ▼"),
+                        text = if (expanded) motoHubText("Hide details") else motoHubText("Details"),
                         style = MaterialTheme.typography.labelMedium,
-                        color = toneColor,
-                        fontFamily = FontFamily.Monospace
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -129,7 +119,7 @@ fun MotoHubNotice(
             headline?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }

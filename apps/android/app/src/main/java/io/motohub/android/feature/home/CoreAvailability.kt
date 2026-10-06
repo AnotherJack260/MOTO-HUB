@@ -3,10 +3,10 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.home
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -104,7 +104,7 @@ fun CoreMissingBanner() {
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(CORE_RELEASES_URL))
                     runCatching { context.startActivity(intent) }.onFailure {
-                        Toast.makeText(context, motoHubText("Couldn't open the browser."), Toast.LENGTH_SHORT).show()
+                        MotoHubSnackbar.error(context, motoHubText("Couldn't open the browser."))
                     }
                 },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),

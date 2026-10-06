@@ -3,8 +3,8 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.androidauto
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -154,11 +154,7 @@ fun CompanionConflictGateDialog(state: CompanionConflictGateState) {
                     OutlinedButton(
                         onClick = {
                             if (!CompanionAppRegistry.openAppSettings(context, companion)) {
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Unable to open the companion app settings"),
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to open the companion app settings"))
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

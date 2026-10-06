@@ -22,10 +22,18 @@ import android.os.Bundle
 import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import io.motohub.android.ui.components.MotoHubSnackbar
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -292,7 +300,12 @@ class MainActivity : ComponentActivity() {
         ProjectionEventLog.record("UI", "Main activity created.")
         // Nothing is sent without consent: this only decides whether there is a reason to ask.
         DiagnosticReportScheduler.onAppStarted(this, CrashRecovery.previousCrashRecovered)
-        enableEdgeToEdge()
+        // Always light icons: the app is dark whatever the phone's theme is, and the platform
+        // default would pick dark icons on a light-mode phone - invisible on this background.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         refreshAoaAccessoryConnected(intent)
         handleAndroidAutoPreviewLaunchIntent(intent)
         handleHandlebarBluetoothRequestIntent(intent)
@@ -377,13 +390,13 @@ class MainActivity : ComponentActivity() {
                     if (launchedPhoneOnlyAa) {
                         applyPhoneOnlyAndroidAutoDisplayMode(context, launchedPhoneOnlyAaDisplayMode)
                         androidAutoPhoneOnlyBridge.start(onFailure = { message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            MotoHubSnackbar.error(context, message)
                         })
                     }
                     PhoneOnlyAndroidAutoLaunchRequest.requests.collect { displayMode ->
                         applyPhoneOnlyAndroidAutoDisplayMode(context, displayMode)
                         androidAutoPhoneOnlyBridge.start(onFailure = { message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            MotoHubSnackbar.error(context, message)
                         })
                         androidAutoPreviewIsPhoneOnly = true
                         androidAutoPhoneOnlyLaunchedFromPro = true
@@ -508,7 +521,7 @@ class MainActivity : ComponentActivity() {
                             }
                             .onFailure {
                                 ProjectionEventLog.error("GARAGE", "Unable to store the selected motorcycle photo.", it)
-                                Toast.makeText(context, motoHubText("Unable to save the motorcycle photo"), Toast.LENGTH_SHORT).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to save the motorcycle photo"))
                             }
                     }
                 }
@@ -542,7 +555,7 @@ class MainActivity : ComponentActivity() {
                         launchMotorcycleCamera()
                     } else {
                         photoTargetProfileId = null
-                        Toast.makeText(context, motoHubText("Camera permission is required to take a photo"), Toast.LENGTH_SHORT).show()
+                        MotoHubSnackbar.error(context, motoHubText("Camera permission is required to take a photo"))
                     }
                 }
                 // The consent result can arrive before the activity is resumed, and some ROMs
@@ -657,7 +670,7 @@ class MainActivity : ComponentActivity() {
                     // when the preview closes, which is right for a launch FROM Advanced but
                     // would exit Core's own UI for a tap made inside it.
                     androidAutoPhoneOnlyBridge.start(onFailure = { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        MotoHubSnackbar.error(context, message)
                     })
                     androidAutoPreviewIsPhoneOnly = true
                     if (phoneOnlyAndroidAutoShowPreview) {
@@ -1186,7 +1199,7 @@ class MainActivity : ComponentActivity() {
                                 ClipData.newPlainText(motoHubText("MOTO-HUB diagnostics"), text)
                             )
                             ProjectionEventLog.record("LOG", "Diagnostic log copied to the clipboard.")
-                            Toast.makeText(context, motoHubText("Log copied to clipboard"), Toast.LENGTH_SHORT).show()
+                            MotoHubSnackbar.success(context, motoHubText("Log copied to clipboard"))
                         },
                         onShare = {
                             val text = ProjectionEventLog.exportText()
@@ -1194,7 +1207,7 @@ class MainActivity : ComponentActivity() {
                                 DiagnosticLogShare.createShareIntent(context, text)
                             }.onFailure { failure ->
                                 ProjectionEventLog.error("LOG", "Diagnostic log file share failed.", failure)
-                            Toast.makeText(context, motoHubText("Unable to create log file"), Toast.LENGTH_SHORT).show()
+                            MotoHubSnackbar.error(context, motoHubText("Unable to create log file"))
                             }.getOrNull()
                             if (shareIntent != null) {
                                 ProjectionEventLog.record("LOG", "Diagnostic log file share sheet opened.")
@@ -1231,11 +1244,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }.onFailure {
                                 ProjectionEventLog.error("UI", "Unable to open the GitHub repository.", it)
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Unable to open GitHub"),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to open GitHub"))
                             }
                         },
                         onOpenDiscord = {
@@ -1246,11 +1255,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }.onFailure {
                                 ProjectionEventLog.error("UI", "Unable to open the Discord link.", it)
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Unable to open Discord"),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to open Discord"))
                             }
                         },
                         onCheckUpdates = {
@@ -1524,11 +1529,7 @@ class MainActivity : ComponentActivity() {
                             if (companion == null ||
                                 !CompanionAppRegistry.openAppSettings(context, companion)
                             ) {
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Unable to open the companion app settings"),
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to open the companion app settings"))
                             }
                         },
                         onOpenAndroidAutoSettings = {
@@ -1540,11 +1541,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenWifiSettings = {
                             if (!WifiGate.openWifiSettings(context)) {
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Unable to open Wi-Fi settings"),
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Unable to open Wi-Fi settings"))
                             }
                         },
                         onCancelConnection = viewModel::cancelConnection,
@@ -1876,6 +1873,11 @@ class MainActivity : ComponentActivity() {
                             showSafetyDisclaimer = false
                         }
                     )
+                }
+                // Last, so it floats over every screen; it has no pointer input of its own, so
+                // taps fall through to whatever is underneath. Lifted clear of the tab bar.
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                    MotoHubSnackbar.Host(Modifier.navigationBarsPadding().padding(bottom = 72.dp))
                 }
             }
         }

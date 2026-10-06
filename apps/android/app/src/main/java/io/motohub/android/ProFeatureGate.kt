@@ -3,10 +3,10 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import io.motohub.android.i18n.MotoHubStrings
 
 /**
@@ -25,14 +25,10 @@ internal fun proFeatureUnavailable(context: Context, featureLabel: String): Bool
     if (!BuildConfig.IS_PRO) return false
     // Toast must be posted on the main looper — service start() is sometimes reached off it.
     Handler(Looper.getMainLooper()).post {
-        Toast.makeText(
-            context.applicationContext,
-            MotoHubStrings.get(
+        MotoHubSnackbar.show(context.applicationContext, MotoHubStrings.get(
                 "%1\$s in MOTO-HUB Advanced is coming soon (use MOTO-HUB Core for now).",
                 featureLabel
-            ),
-            Toast.LENGTH_LONG
-        ).show()
+            ))
     }
     return true
 }

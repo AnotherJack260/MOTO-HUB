@@ -5,18 +5,6 @@ package io.motohub.android.ui.components
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,47 +12,42 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Garage
+import androidx.compose.material.icons.outlined.Navigation
+import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TwoWheeler
+import androidx.compose.material.icons.rounded.Garage
+import androidx.compose.material.icons.rounded.Navigation
+import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
-import io.motohub.android.ui.theme.MotoHubLive
+import io.motohub.android.ui.theme.MotoHubColors
 
 enum class ConnectionState { DISCONNECTED, CONNECTING, CONNECTED }
 
@@ -81,98 +64,24 @@ fun MotoHubBackground(
     }
 }
 
+/** A hairline under the status bar: grey, lime while connecting, lime when connected. */
 @Composable
 fun ConnectionRail(state: ConnectionState, modifier: Modifier = Modifier) {
-    val connectedColor = MotoHubLive
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val accentColor = MaterialTheme.colorScheme.primary
-
-    when (state) {
-        ConnectionState.DISCONNECTED -> {
-            Box(
-                modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(outlineColor)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(
+                when (state) {
+                    ConnectionState.DISCONNECTED -> Color.Transparent
+                    ConnectionState.CONNECTING -> MotoHubColors.Lime.copy(alpha = 0.4f)
+                    ConnectionState.CONNECTED -> MotoHubColors.Lime
+                }
             )
-        }
-        ConnectionState.CONNECTING -> {
-            val transition = rememberInfiniteTransition(label = "rail")
-            val offset by transition.animateFloat(
-                initialValue = -1f,
-                targetValue = 2f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1400, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "shimmer"
-            )
-            Canvas(
-                modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-            ) {
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(outlineColor, accentColor, outlineColor),
-                        startX = size.width * offset,
-                        endX = size.width * (offset + 1f)
-                    )
-                )
-            }
-        }
-        ConnectionState.CONNECTED -> {
-            Box(
-                modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(connectedColor)
-            )
-        }
-    }
-}
-
-/**
- * "MOTO-HUB CORE"/"MOTO-HUB ADVANCED" drops in from above with a physical spring bounce every
- * time Home mounts - a single bold accent color per edition (Core's brand lime, Advanced's
- * racing red, matching its app icon) rather than a shifting rainbow: sober, but unmistakable.
- */
-@Composable
-private fun EditionWaveText(modifier: Modifier = Modifier) {
-    val isPro = io.motohub.android.BuildConfig.IS_PRO
-    val label = if (isPro) "MOTO-HUB ADVANCED" else "MOTO-HUB CORE"
-    val accentColor = if (isPro) EDITION_ADVANCED_RED else MaterialTheme.colorScheme.primary
-
-    val offsetY = remember { Animatable(-64f) }
-    LaunchedEffect(Unit) {
-        offsetY.animateTo(
-            targetValue = 0f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
-        )
-    }
-    Text(
-        text = label,
-        modifier = modifier.offset { IntOffset(0, offsetY.value.roundToInt()) },
-        style = MaterialTheme.typography.bodySmall.copy(
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = MaterialTheme.typography.labelMedium.letterSpacing,
-            color = accentColor,
-            shadow = Shadow(
-                color = accentColor.copy(alpha = 0.45f),
-                offset = Offset(0f, 3f),
-                blurRadius = 10f
-            )
-        )
     )
 }
 
-/** Same bright center tone as the Advanced/PRO adaptive launcher icon's radial gradient. */
-private val EDITION_ADVANCED_RED = Color(0xFFFF4A38)
-
+/** Kept for the screens that still draw it; the hub no longer has a top bar of its own. */
 @Composable
 fun HubAppBar(
     motorcycleName: String?,
@@ -181,40 +90,14 @@ fun HubAppBar(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.End
     ) {
-        EditionWaveText()
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onMotorcycleTap)
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val dotColor by animateColorAsState(
-                targetValue = if (isConnected) MotoHubLive else MaterialTheme.colorScheme.onSurfaceVariant,
-                label = "dot"
-            )
-            Box(
-                Modifier
-                    .size(6.dp)
-                    .background(dotColor, CircleShape)
-            )
-            Text(
-                text = motorcycleName ?: motoHubText("No motorcycle"),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        MhStatusChip(
+            text = motorcycleName ?: motoHubText("No motorcycle"),
+            tone = if (isConnected) MhTone.LIVE else MhTone.NEUTRAL,
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onMotorcycleTap)
+        )
     }
 }
 
@@ -227,46 +110,50 @@ fun HubBottomNavigation(
     modifier: Modifier = Modifier
 ) {
     Row(
-        // The caller already reserves system gesture-bar space with
-        // navigationBarsPadding() - an extra fixed bottom padding here on top of
-        // that (there used to be one, +16.dp) just made the bar taller on every
-        // device for no reason, most noticeable in landscape where screen height
-        // is already tight. NavItem's own padding still keeps each tap target a
-        // comfortable size for gloved riding.
+        // The caller reserves the gesture-bar inset with navigationBarsPadding(); each item's
+        // own height keeps the tap target glove-sized.
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.94f))
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        NavItem("Ride", selected == HubTab.RIDE, Modifier.weight(1f)) { onSelect(HubTab.RIDE) }
+        NavItem(motoHubText("Ride"), Icons.Rounded.TwoWheeler, Icons.Outlined.TwoWheeler, selected == HubTab.RIDE, Modifier.weight(1f)) { onSelect(HubTab.RIDE) }
         // Nav and Trips are PRO-only features. CORE ships without them (see build.gradle.kts flavors).
         if (io.motohub.android.BuildConfig.IS_PRO) {
-            NavItem("Nav", selected == HubTab.NAV, Modifier.weight(1f)) { onSelect(HubTab.NAV) }
-            NavItem("Trips", selected == HubTab.TRIPS, Modifier.weight(1f)) { onSelect(HubTab.TRIPS) }
+            NavItem(motoHubText("Nav"), Icons.Rounded.Navigation, Icons.Outlined.Navigation, selected == HubTab.NAV, Modifier.weight(1f)) { onSelect(HubTab.NAV) }
+            NavItem(motoHubText("Trips"), Icons.Rounded.Route, Icons.Outlined.Route, selected == HubTab.TRIPS, Modifier.weight(1f)) { onSelect(HubTab.TRIPS) }
         }
-        NavItem("Garage", selected == HubTab.GARAGE, Modifier.weight(1f)) { onSelect(HubTab.GARAGE) }
-        NavItem("Settings", selected == HubTab.SETTINGS, Modifier.weight(1f)) { onSelect(HubTab.SETTINGS) }
+        NavItem(motoHubText("Garage"), Icons.Rounded.Garage, Icons.Outlined.Garage, selected == HubTab.GARAGE, Modifier.weight(1f)) { onSelect(HubTab.GARAGE) }
+        NavItem(motoHubText("Settings"), Icons.Rounded.Settings, Icons.Outlined.Settings, selected == HubTab.SETTINGS, Modifier.weight(1f)) { onSelect(HubTab.SETTINGS) }
     }
 }
 
 @Composable
-private fun NavItem(label: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+private fun NavItem(
+    label: String,
+    activeIcon: ImageVector,
+    idleIcon: ImageVector,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val color = if (active) MaterialTheme.colorScheme.onSurface else MotoHubColors.TextTertiary
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 2.dp, vertical = 6.dp),
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(role = Role.Tab, onClick = onClick)
+            .semantics { selected = active }
+            .heightIn(min = 56.dp)
+            .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)
     ) {
-        NavIcon(label, active)
+        Icon(if (active) activeIcon else idleIcon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontFamily = FontFamily.SansSerif,
-            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
             color = color,
             maxLines = 1,
             softWrap = false,
@@ -275,61 +162,7 @@ private fun NavItem(label: String, active: Boolean, modifier: Modifier = Modifie
     }
 }
 
-@Composable
-private fun NavIcon(label: String, active: Boolean) {
-    val color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Canvas(Modifier.size(22.dp)) {
-        val s = size.width
-        val stroke = Stroke(width = 1.7.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        when (label) {
-            "Ride" -> {
-                drawCircle(color = color, radius = s * 0.38f, style = stroke)
-                drawLine(color, Offset(s * 0.5f, s * 0.28f), Offset(s * 0.5f, s * 0.5f), stroke.width)
-                drawLine(color, Offset(s * 0.5f, s * 0.5f), Offset(s * 0.66f, s * 0.6f), stroke.width)
-            }
-            "Nav" -> {
-                drawLine(color, Offset(s * 0.5f, s * 0.12f), Offset(s * 0.78f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.5f, s * 0.12f), Offset(s * 0.22f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.5f, s * 0.12f), Offset(s * 0.5f, s * 0.56f), stroke.width)
-            }
-            "Trips" -> {
-                drawLine(color, Offset(s * 0.12f, s * 0.88f), Offset(s * 0.88f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.12f, s * 0.72f), Offset(s * 0.32f, s * 0.52f), stroke.width)
-                drawLine(color, Offset(s * 0.32f, s * 0.52f), Offset(s * 0.52f, s * 0.68f), stroke.width)
-                drawLine(color, Offset(s * 0.52f, s * 0.68f), Offset(s * 0.88f, s * 0.28f), stroke.width)
-            }
-            "Garage" -> {
-                drawLine(color, Offset(s * 0.1f, s * 0.42f), Offset(s * 0.5f, s * 0.12f), stroke.width)
-                drawLine(color, Offset(s * 0.5f, s * 0.12f), Offset(s * 0.9f, s * 0.42f), stroke.width)
-                drawLine(color, Offset(s * 0.18f, s * 0.42f), Offset(s * 0.18f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.82f, s * 0.42f), Offset(s * 0.82f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.18f, s * 0.88f), Offset(s * 0.82f, s * 0.88f), stroke.width)
-                drawLine(color, Offset(s * 0.38f, s * 0.88f), Offset(s * 0.38f, s * 0.56f), stroke.width)
-                drawLine(color, Offset(s * 0.62f, s * 0.88f), Offset(s * 0.62f, s * 0.56f), stroke.width)
-                drawLine(color, Offset(s * 0.38f, s * 0.56f), Offset(s * 0.62f, s * 0.56f), stroke.width)
-            }
-            "Settings" -> {
-                drawCircle(color = color, radius = s * 0.14f, center = Offset(s * 0.5f, s * 0.5f), style = stroke)
-                drawCircle(color = color, radius = s * 0.38f, center = Offset(s * 0.5f, s * 0.5f), style = stroke)
-                val notchLen = s * 0.12f
-                for (i in 0 until 6) {
-                    val angle = Math.toRadians((i * 60.0) - 90)
-                    val inner = s * 0.38f
-                    val outer = inner + notchLen
-                    val cx = s * 0.5f
-                    val cy = s * 0.5f
-                    drawLine(
-                        color,
-                        Offset(cx + (inner * Math.cos(angle)).toFloat(), cy + (inner * Math.sin(angle)).toFloat()),
-                        Offset(cx + (outer * Math.cos(angle)).toFloat(), cy + (outer * Math.sin(angle)).toFloat()),
-                        stroke.width
-                    )
-                }
-            }
-        }
-    }
-}
-
+/** Section label above a group. Was a monospace eyebrow; now the design system's section header. */
 @Composable
 fun MonoLabel(
     text: String,
@@ -339,75 +172,23 @@ fun MonoLabel(
     Text(
         text = text,
         modifier = modifier,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.SemiBold,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = textAlign
     )
 }
 
 @Composable
 fun LivePill(text: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .background(
-                MotoHubLive.copy(alpha = 0.08f),
-                RoundedCornerShape(20.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val transition = rememberInfiniteTransition(label = "pill")
-        val alpha by transition.animateFloat(
-            initialValue = 1f,
-            targetValue = 0.3f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1000),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "blink"
-        )
-        Box(
-            Modifier
-                .size(6.dp)
-                .background(MotoHubLive.copy(alpha = alpha), CircleShape)
-        )
-        Text(
-            text = motoHubText(text),
-            style = MaterialTheme.typography.labelMedium,
-            color = MotoHubLive,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+    MhStatusChip(motoHubText(text), MhTone.LIVE, modifier)
 }
 
 @Composable
 fun StatusPill(text: String, color: Color, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .background(color.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier
-                .size(6.dp)
-                .background(color, CircleShape)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = color,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+    MhStatusChip(text, if (color == MaterialTheme.colorScheme.error) MhTone.ERROR else MhTone.WARNING, modifier)
 }
 
+/** Top row of the full-screen pages that predate [MhScreen]: just the trailing action now. */
 @Composable
 fun MotoHubHeader(
     modifier: Modifier = Modifier,
@@ -415,23 +196,14 @@ fun MotoHubHeader(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = if (io.motohub.android.BuildConfig.IS_PRO) "MOTO-HUB ADVANCED" else "MOTO-HUB",
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodySmall,
-            letterSpacing = MaterialTheme.typography.labelMedium.letterSpacing,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
         trailing?.invoke()
     }
 }
 
-/** A scrollable detail screen with a "‹ back" link and a large title, used by any drill-down settings-style screen. */
+/** A drill-down settings-style screen: back button, large title, scrolling content. */
 @Composable
 fun MotoHubDetailScreen(
     title: String,
@@ -439,51 +211,16 @@ fun MotoHubDetailScreen(
     backLabel: String = "‹ Back",
     content: @Composable () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            // Before verticalScroll so the inset shrinks the viewport instead of scrolling
-            // away with the content. Screens reached from the hub sit inside a parent that
-            // already applied - and therefore consumed - this inset, so it adds nothing
-            // there; screens shown as a full-screen overlay straight from MainActivity have
-            // no such parent, and without this the back link renders behind the clock.
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Spacer(Modifier.height(4.dp))
-        Text(
-            backLabel,
-            modifier = Modifier
-                .clickable(onClick = onBack)
-                .padding(vertical = 4.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            title,
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        content()
-        Spacer(Modifier.height(8.dp))
-    }
+    MhScreen(title = title, onBack = onBack) { content() }
 }
 
-/** A card wrapping a group of [MotoHubActionRow]s, used for a list of drill-down options. */
+/** A card wrapping a group of rows. */
 @Composable
 fun MotoHubCardGroup(content: @Composable () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Column { content() }
-    }
+    MhListGroup { content() }
 }
 
-/** A tappable row with a title, description, optional current-value hint, and a chevron - opens a drill-down screen. */
+/** A tappable row with a title, description, optional current value, and a chevron. */
 @Composable
 fun MotoHubActionRow(
     title: String,
@@ -491,48 +228,10 @@ fun MotoHubActionRow(
     value: String? = null,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            // Fixed to one line so every row in a group takes the same vertical
-            // space regardless of how much width the trailing value claims.
-            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (value != null) {
-            // Capped and wrapped onto up to two lines rather than truncated with
-            // an ellipsis, so a longer value stays fully readable while still
-            // leaving the title column above enough width to stay on one line.
-            Text(
-                value,
-                modifier = Modifier.widthIn(max = 104.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.End
-            )
-        }
-        Text(
-            "›",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    MhListRow(title = title, subtitle = description.takeIf { it.isNotBlank() }, value = value, onClick = onClick)
 }
 
-/** A title/description row with a trailing switch - a single on/off setting. */
+/** A single on/off setting. */
 @Composable
 fun ToggleRow(
     title: String,
@@ -541,31 +240,16 @@ fun ToggleRow(
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean = true
 ) {
-    val contentColor = if (enabled) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else contentColor
-            )
-            Text(description, style = MaterialTheme.typography.bodySmall, color = contentColor)
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
-    }
+    MhSwitchRow(
+        title = title,
+        subtitle = description.takeIf { it.isNotBlank() },
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        enabled = enabled
+    )
 }
 
-/** A selectable card with a radio button, title, and description - one option among several exclusive choices. */
+/** One option among several exclusive choices. Group consecutive ones in an [MhListGroup]. */
 @Composable
 fun MotoHubRadioRow(
     title: String,
@@ -573,40 +257,12 @@ fun MotoHubRadioRow(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        ),
-        border = BorderStroke(
-            1.5.dp,
-            if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outline
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            RadioButton(selected = selected, onClick = onClick)
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+    Box(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surface)) {
+        MhChoiceRow(
+            title = title,
+            subtitle = description.takeIf { it.isNotBlank() },
+            selected = selected,
+            onClick = onClick
+        )
     }
 }

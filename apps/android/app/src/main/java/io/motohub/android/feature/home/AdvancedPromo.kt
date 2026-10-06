@@ -3,11 +3,11 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.home
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -112,11 +112,7 @@ fun AdvancedPromoCard(onOpenDetails: () -> Unit) {
                         .getLaunchIntentForPackage(ADVANCED_PACKAGE_NAME)
                     if (launch != null) {
                         runCatching { context.startActivity(launch) }.onFailure {
-                            Toast.makeText(
-                                context,
-                                motoHubText("Couldn't open MOTO-HUB ADV-SOLO."),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            MotoHubSnackbar.error(context, motoHubText("Couldn't open MOTO-HUB ADV-SOLO."))
                         }
                     } else {
                         installed = false
@@ -205,11 +201,7 @@ fun AdvancedPromoScreen(onBack: () -> Unit) {
     val open: (String) -> Unit = { url ->
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
             .onFailure {
-                Toast.makeText(
-                    context,
-                    motoHubText("Couldn't open the browser."),
-                    Toast.LENGTH_SHORT
-                ).show()
+                MotoHubSnackbar.error(context, motoHubText("Couldn't open the browser."))
             }
     }
 
@@ -329,11 +321,7 @@ fun AdvancedPromoScreen(onBack: () -> Unit) {
                             installed = false
                         } else {
                             runCatching { context.startActivity(launch) }.onFailure {
-                                Toast.makeText(
-                                    context,
-                                    motoHubText("Couldn't open MOTO-HUB ADV-SOLO."),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open MOTO-HUB ADV-SOLO."))
                             }
                         }
                     }

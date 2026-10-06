@@ -3,9 +3,9 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.diagnostics.report
 
+import io.motohub.android.ui.components.MotoHubSnackbar
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -85,7 +85,7 @@ fun SupportIdSection(loggingEnabled: Boolean) {
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(
                     ClipData.newPlainText(motoHubText("MOTO-HUB Support ID"), id)
                 )
-                Toast.makeText(context, motoHubText("Support ID copied"), Toast.LENGTH_SHORT).show()
+                MotoHubSnackbar.success(context, motoHubText("Support ID copied"))
             }
         )
         MotoHubActionRow(

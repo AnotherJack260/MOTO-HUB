@@ -3,6 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -12,112 +13,116 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
-val MotoHubLive = Color(0xFF2DD881)
-val MotoHubMirror = Color(0xFF5BA8F0)
-val MotoHubDashboard = Color(0xFF2DD881)
-val MotoHubAndroidAuto = Color(0xFF3EC8D0)
-val MotoHubImport = Color(0xFFFFA84B)
-val MotoHubManual = Color(0xFFB388FF)
-val MotoHubFavorite = Color(0xFFFFD24C)
+/**
+ * The tokens behind documentation/DESIGN_SYSTEM.md. Lime is the one accent: it marks the single
+ * primary action on a screen, what is selected, and what is live. Nothing else gets a colour of
+ * its own.
+ */
+object MotoHubColors {
+    val Lime = Color(0xFFC8F240)
+    val Background = Color(0xFF0A0A0B)
+    val Surface = Color(0xFF161618)
+    val SurfaceHigh = Color(0xFF202023)
+    val SurfaceHighest = Color(0xFF2A2A2E)
+    val TextPrimary = Color(0xFFF5F5F7)
+    val TextSecondary = Color(0xFFA0A0A6)
 
-private val MotoHubColors = darkColorScheme(
-    primary = Color(0xFFC8F240),
-    onPrimary = Color(0xFF0B0D09),
-    secondary = Color(0xFFB9C4AB),
-    background = Color(0xFF0B0D09),
-    onBackground = Color(0xFFE8ECE2),
-    surface = Color(0xFF151913),
-    onSurface = Color(0xFFE8ECE2),
-    surfaceVariant = Color(0xFF1C211A),
-    onSurfaceVariant = Color(0xFF7E876E),
-    tertiary = Color(0xFF2DD881),
-    onTertiary = Color(0xFF07140C),
-    outline = Color(0xFF2A3124),
-    outlineVariant = Color(0xFF1F241B),
-    error = Color(0xFFF05545),
-    surfaceContainer = Color(0xFF262C22)
+    /** Disabled and decorative text only - too faint for anything the rider has to read. */
+    val TextTertiary = Color(0xFF6E6E74)
+    val Error = Color(0xFFFF5A52)
+    val ErrorContainer = Color(0xFF2B1513)
+    val Warning = Color(0xFFFFB340)
+    val WarningContainer = Color(0xFF2B2111)
+    val LimeContainer = Color(0xFF252A12)
+}
+
+// The per-feature colours the app used to paint its tiles with. Kept as names so the screens that
+// still read them compile, but they now all resolve to the one neutral or the one accent: a list
+// of options reads as a list, not a paint chart.
+val MotoHubLive = MotoHubColors.Lime
+val MotoHubMirror = MotoHubColors.TextPrimary
+val MotoHubDashboard = MotoHubColors.TextPrimary
+val MotoHubAndroidAuto = MotoHubColors.TextPrimary
+val MotoHubImport = MotoHubColors.TextPrimary
+val MotoHubManual = MotoHubColors.TextPrimary
+val MotoHubFavorite = MotoHubColors.Warning
+
+private val MotoHubColorScheme = darkColorScheme(
+    primary = MotoHubColors.Lime,
+    onPrimary = MotoHubColors.Background,
+    primaryContainer = MotoHubColors.LimeContainer,
+    onPrimaryContainer = MotoHubColors.Lime,
+    secondary = MotoHubColors.TextSecondary,
+    onSecondary = MotoHubColors.Background,
+    secondaryContainer = MotoHubColors.SurfaceHighest,
+    onSecondaryContainer = MotoHubColors.TextPrimary,
+    tertiary = MotoHubColors.Lime,
+    onTertiary = MotoHubColors.Background,
+    background = MotoHubColors.Background,
+    onBackground = MotoHubColors.TextPrimary,
+    surface = MotoHubColors.Surface,
+    onSurface = MotoHubColors.TextPrimary,
+    surfaceVariant = MotoHubColors.SurfaceHigh,
+    onSurfaceVariant = MotoHubColors.TextSecondary,
+    surfaceTint = Color.Transparent,
+    surfaceContainerLowest = MotoHubColors.Background,
+    surfaceContainerLow = MotoHubColors.Surface,
+    surfaceContainer = MotoHubColors.SurfaceHigh,
+    surfaceContainerHigh = MotoHubColors.SurfaceHigh,
+    surfaceContainerHighest = MotoHubColors.SurfaceHighest,
+    inverseSurface = MotoHubColors.TextPrimary,
+    inverseOnSurface = MotoHubColors.Background,
+    inversePrimary = MotoHubColors.Lime,
+    outline = MotoHubColors.SurfaceHighest,
+    outlineVariant = MotoHubColors.SurfaceHigh,
+    error = MotoHubColors.Error,
+    onError = MotoHubColors.Background,
+    errorContainer = MotoHubColors.ErrorContainer,
+    onErrorContainer = Color(0xFFFFB4AE),
+    scrim = Color(0x99000000)
+)
+
+private fun sans(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.0) = TextStyle(
+    fontFamily = FontFamily.SansSerif,
+    fontWeight = weight,
+    fontSize = size.sp,
+    lineHeight = line.sp,
+    letterSpacing = tracking.sp
 )
 
 private val MotoHubTypography = Typography(
-    displaySmall = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 32.sp,
-        letterSpacing = (-0.5).sp
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = (-0.3).sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 17.sp,
-        lineHeight = 23.sp,
-        letterSpacing = (-0.2).sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 15.sp,
-        lineHeight = 21.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontSize = 15.sp,
-        lineHeight = 22.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
-    ),
-    bodySmall = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontSize = 12.sp,
-        lineHeight = 17.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 11.sp,
-        letterSpacing = 0.7.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 10.sp,
-        letterSpacing = 0.7.sp
-    )
+    displayLarge = sans(40, 46, FontWeight.Bold, -0.8),
+    displayMedium = sans(34, 40, FontWeight.Bold, -0.6),
+    displaySmall = sans(28, 34, FontWeight.Bold, -0.4),
+    headlineLarge = sans(26, 32, FontWeight.Bold, -0.3),
+    headlineMedium = sans(22, 28, FontWeight.Bold, -0.2),
+    headlineSmall = sans(20, 26, FontWeight.Bold, -0.1),
+    titleLarge = sans(20, 26, FontWeight.SemiBold, -0.1),
+    titleMedium = sans(16, 22, FontWeight.SemiBold),
+    titleSmall = sans(15, 20, FontWeight.SemiBold),
+    bodyLarge = sans(16, 24, FontWeight.Normal),
+    bodyMedium = sans(14, 20, FontWeight.Normal),
+    bodySmall = sans(13, 18, FontWeight.Normal),
+    labelLarge = sans(16, 20, FontWeight.SemiBold),
+    labelMedium = sans(13, 16, FontWeight.Medium),
+    labelSmall = sans(12, 16, FontWeight.Medium)
 )
 
-// Softer than the 12/14/16 this app shipped with. The corner radius is the single strongest
-// "which year is this from" signal a Compose screen gives off, and the old set read as a 2019
-// Material 2 list. Everything here is drawn from MaterialTheme.shapes, so the whole app moves
-// together and no screen is left with the old radius next to a new one.
 private val MotoHubShapes = Shapes(
-    small = RoundedCornerShape(14.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(22.dp)
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp)
 )
 
 @Composable
 fun MotoHubTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = MotoHubColors,
+        colorScheme = MotoHubColorScheme,
         typography = MotoHubTypography,
         shapes = MotoHubShapes,
         content = content
