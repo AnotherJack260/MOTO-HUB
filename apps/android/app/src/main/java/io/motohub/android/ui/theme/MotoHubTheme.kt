@@ -24,9 +24,19 @@ import androidx.compose.ui.unit.sp
 object MotoHubColors {
     val Lime = Color(0xFFC8F240)
     val Background = Color(0xFF0A0A0B)
-    val Surface = Color(0xFF161618)
-    val SurfaceHigh = Color(0xFF202023)
-    val SurfaceHighest = Color(0xFF2A2A2E)
+    // Each step is about 1.16:1 above the one below - enough for a card to survive sunlight
+    // without an outline - and TextSecondary still reads at 4.5:1 or better on all of them.
+    val Surface = Color(0xFF1C1C1E)
+    val SurfaceHigh = Color(0xFF2C2C2E)
+    val SurfaceHighest = Color(0xFF363638)
+
+    /**
+     * 12% white, for controls that sit on a surface: secondary buttons, icon circles, text fields,
+     * the off switch track, the grabber, neutral chips. Translucent on purpose: an opaque grey
+     * vanishes on the one surface that happens to share its value (a secondary pill on a sheet was
+     * 1:1), while this always reads one step lighter than whatever is under it.
+     */
+    val Fill = Color(0x1FFFFFFF)
     val TextPrimary = Color(0xFFF5F5F7)
     val TextSecondary = Color(0xFFA0A0A6)
 
@@ -101,7 +111,9 @@ private val MotoHubTypography = Typography(
     headlineMedium = sans(22, 28, FontWeight.Bold, -0.2),
     headlineSmall = sans(20, 26, FontWeight.Bold, -0.1),
     titleLarge = sans(20, 26, FontWeight.SemiBold, -0.1),
-    titleMedium = sans(16, 22, FontWeight.SemiBold),
+    // Medium, not SemiBold: titles, headers and buttons all at 600 flattened the hierarchy, and
+    // many OEM system fonts ship no 600, so it rendered as 500 on one phone and 700 on the next.
+    titleMedium = sans(16, 22, FontWeight.Medium),
     titleSmall = sans(15, 20, FontWeight.SemiBold),
     bodyLarge = sans(16, 24, FontWeight.Normal),
     bodyMedium = sans(14, 20, FontWeight.Normal),

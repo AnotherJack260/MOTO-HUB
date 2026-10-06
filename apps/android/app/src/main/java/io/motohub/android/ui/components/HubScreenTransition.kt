@@ -80,12 +80,13 @@ fun HubScreenTransition(
  *
  * The model is the one the rest of Android has trained every thumb on: [isBase] names the floor
  * - the list, the collapsed state, the tab's resting screen - and everything else is a card that
- * slides in over it from the right, full-width, while the base retreats a quarter of its width
- * behind it. That parallax is what reads as one surface *covering* another rather than two
- * surfaces racing past each other. Leaving a non-base state for another non-base state (a detail
- * screen replaced by a different detail screen, not by the list) still counts as forward - there
- * is no base to return to, so the card that was on top simply hands off to the next one the same
- * way it arrived.
+ * slides in over it from the right, full-width, while the base stays put and dims a little. The
+ * base used to retreat a quarter of its width over 320 ms as well; that parallax made a utility
+ * app feel heavy, and a card sliding over a still floor already reads as one surface *covering*
+ * another rather than two racing past each other. Leaving a non-base state for another non-base
+ * state (a detail screen replaced by a different detail screen, not by the list) still counts as
+ * forward - there is no base to return to, so the card that was on top simply hands off to the
+ * next one the same way it arrived.
  *
  * Direction is decided once, from [isBase] on the target alone: toward the base is back, away
  * from it is forward. That is exactly right for how every one of these dispatchers actually
@@ -149,7 +150,7 @@ fun <T> ScreenCrossfade(
     content: @Composable (T) -> Unit
 ) {
     val savedScreenState = rememberSaveableStateHolder()
-    Crossfade(targetState = screen, modifier = modifier, label = label) { shown ->
+    Crossfade(targetState = screen, modifier = modifier, animationSpec = tween(MOTION_MILLIS), label = label) { shown ->
         savedScreenState.SaveableStateProvider(stateKey(shown)) {
             content(shown)
         }
@@ -160,20 +161,19 @@ private fun <T> AnimatedContentTransitionScope<T>.screenSlideTransform(
     isBase: (T) -> Boolean
 ): ContentTransform {
     val forward = !isBase(targetState)
-    val spec = tween<Float>(TRANSITION_MILLIS, easing = FastOutSlowInEasing)
-    val slide = tween<androidx.compose.ui.unit.IntOffset>(TRANSITION_MILLIS, easing = FastOutSlowInEasing)
+    val spec = tween<Float>(MOTION_MILLIS, easing = FastOutSlowInEasing)
+    val slide = tween<androidx.compose.ui.unit.IntOffset>(MOTION_MILLIS, easing = FastOutSlowInEasing)
     return if (forward) {
-        (slideInHorizontally(slide) { width -> width } togetherWith
-            slideOutHorizontally(slide) { width -> -width / PARALLAX_FRACTION } + fadeOut(spec, targetAlpha = 0.6f))
+        (slideInHorizontally(slide) { width -> width } togetherWith fadeOut(spec, targetAlpha = DIMMED))
             .apply { targetContentZIndex = 1f }
     } else {
-        (slideInHorizontally(slide) { width -> -width / PARALLAX_FRACTION } + fadeIn(spec, initialAlpha = 0.6f) togetherWith
-            slideOutHorizontally(slide) { width -> width })
+        (fadeIn(spec, initialAlpha = DIMMED) togetherWith slideOutHorizontally(slide) { width -> width })
             .apply { targetContentZIndex = 0f }
     }
 }
 
-private const val TRANSITION_MILLIS = 320
+/** The app's one motion duration: screens, crossfades, banners folding open. */
+internal const val MOTION_MILLIS = 220
 
-/** The base retreats a quarter of the width while a card covers it: parallax, not a race. */
-private const val PARALLAX_FRACTION = 4
+/** How far the floor dims while a card covers it. */
+private const val DIMMED = 0.6f

@@ -3,6 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
@@ -41,7 +44,12 @@ enum class MhNavIcon { BACK, CLOSE }
  *
  * Status-bar padding is applied here, before the scroll, so a screen shown straight from
  * MainActivity does not slide its title under the clock; screens inside the hub sit in a parent
- * that already consumed the inset, so it adds nothing there.
+ * that already consumed the inset, so it adds nothing there. Without a [bottomBar] the same goes
+ * for the navigation bar and the keyboard at the end of the scroll, so the last row can always be
+ * scrolled clear of both.
+ *
+ * System back calls [onBack] like the back arrow does, so a new screen cannot forget it. A
+ * [BackHandler] registered further in - a step inside the screen - still wins.
  */
 @Composable
 fun MhScreen(
@@ -55,6 +63,7 @@ fun MhScreen(
     spacing: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    BackHandler(onBack = onBack)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -78,6 +87,7 @@ fun MhScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .then(if (bottomBar == null) Modifier.navigationBarsPadding().imePadding() else Modifier)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
@@ -86,7 +96,12 @@ fun MhScreen(
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(title, style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        title,
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                     if (subtitle != null) {
                         Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -137,7 +152,7 @@ fun MhTabPage(
     ) {
         Text(
             title,
-            modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 4.dp).semantics { heading() },
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground
         )

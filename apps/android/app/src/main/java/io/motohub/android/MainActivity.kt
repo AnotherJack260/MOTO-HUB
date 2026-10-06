@@ -1874,8 +1874,9 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-                // Last, so it floats over every screen; it has no pointer input of its own, so
-                // taps fall through to whatever is underneath. Lifted clear of the tab bar.
+                // Last, so it floats over every screen. Only the snackbar itself takes taps (one
+                // dismisses it); the rest of the host lets them through. Lifted clear of the tab
+                // bar, and above the keyboard when one is open.
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                     MotoHubSnackbar.Host(Modifier.navigationBarsPadding().padding(bottom = 72.dp))
                 }

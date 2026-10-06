@@ -4,14 +4,18 @@
 package io.motohub.android.ui.components
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarDuration
@@ -38,21 +41,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.motohub.android.ui.theme.MotoHubColors
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -60,8 +63,15 @@ import kotlinx.coroutines.launch
  * stacked as pills (primary on top). [content] goes between the body and the actions for the
  * sheets that carry a list or a field.
  *
+ * [onDismiss] means "the sheet is gone", whichever way it went: scrim, back, swipe, or any button.
+ * It runs exactly once, so clear your `showX` flag there and nowhere else - a sheet whose flag is
+ * never cleared leaves an invisible window that swallows every touch. Put Cancel's own logic in
+ * [onSecondary], not in [onDismiss].
+ *
  * Actions run after the sheet has slid away, so the screen underneath never changes while the
- * sheet is still covering it. Set [dismissible] to false only for something the rider must answer.
+ * sheet is still covering it, and only once: a double tap with gloves would otherwise start two
+ * slides and run the action twice. Set [dismissible] to false only for something the rider must
+ * answer.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,12 +87,26 @@ fun MhSheet(
     dismissible: Boolean = true,
     content: (@Composable ColumnScope.(close: (after: () -> Unit) -> Unit) -> Unit)? = null
 ) {
+    // Declared before the sheet state, whose veto reads it: once a button has started closing a
+    // non-dismissible sheet, Hidden has to be allowed or the sheet slides off screen while still
+    // counting itself as open.
+    val closing = remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { dismissible || it != SheetValue.Hidden }
+        confirmValueChange = { dismissible || closing.value || it != SheetValue.Hidden }
     )
     val scope = rememberCoroutineScope()
-    val close: (() -> Unit) -> Unit = { after -> scope.hideThen(sheetState, after) }
+    val close: (() -> Unit) -> Unit = { after ->
+        if (!closing.value) {
+            closing.value = true
+            // One coroutine, in order: if the sheet is torn down mid-slide, nothing after runs.
+            scope.launch {
+                sheetState.hide()
+                onDismiss()
+                after()
+            }
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = { if (dismissible) onDismiss() },
         sheetState = sheetState,
@@ -98,7 +122,7 @@ fun MhSheet(
                 Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
-                    .background(MotoHubColors.SurfaceHighest, CircleShape)
+                    .background(MotoHubColors.Fill, CircleShape)
             )
         },
         properties = ModalBottomSheetProperties(shouldDismissOnBackPress = dismissible)
@@ -112,7 +136,7 @@ fun MhSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (title != null) {
-                Text(title, style = MaterialTheme.typography.headlineMedium)
+                Text(title, modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
             }
             if (body != null) {
                 Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -128,17 +152,13 @@ fun MhSheet(
                         }
                     }
                     if (secondaryLabel != null) {
-                        MhSecondaryButton(secondaryLabel, { close(onSecondary ?: onDismiss) })
+                        // Not `?: onDismiss`: close() already calls it.
+                        MhSecondaryButton(secondaryLabel, { close(onSecondary ?: {}) })
                     }
                 }
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-private fun CoroutineScope.hideThen(state: SheetState, after: () -> Unit) {
-    launch { state.hide() }.invokeOnCompletion { after() }
 }
 
 enum class MhSnackTone { SUCCESS, INFO, ERROR }
@@ -169,7 +189,10 @@ object MotoHubSnackbar {
         if (messages.subscriptionCount.value > 0) {
             messages.tryEmit(Message(text, tone, actionLabel, onAction))
         } else {
-            Toast.makeText(context.applicationContext, text, Toast.LENGTH_SHORT).show()
+            // show() is called from callbacks on any thread; a Toast made off the main looper
+            // crashes or silently never appears.
+            val app = context.applicationContext
+            Handler(Looper.getMainLooper()).post { Toast.makeText(app, text, Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -182,20 +205,16 @@ object MotoHubSnackbar {
         val lifecycleOwner = LocalLifecycleOwner.current
         LaunchedEffect(lifecycleOwner) {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                messages.collect { message ->
-                    // Newest wins: a second message replaces the first instead of queueing
-                    // behind it, so nothing on screen is ever older than the last tap.
-                    hostState.currentSnackbarData?.dismiss()
-                    launch {
-                        val result = hostState.showSnackbar(
-                            SnackbarVisuals(message),
-                        )
-                        if (result == SnackbarResult.ActionPerformed) message.onAction?.invoke()
-                    }
+                // Newest wins: a new message cancels the one being shown, which takes it off
+                // screen, instead of queueing behind it on the host's mutex - so nothing on screen
+                // is ever older than the last tap, however fast they come.
+                messages.collectLatest { message ->
+                    val result = hostState.showSnackbar(SnackbarVisuals(message))
+                    if (result == SnackbarResult.ActionPerformed) message.onAction?.invoke()
                 }
             }
         }
-        SnackbarHost(hostState, modifier) { data -> Snack(data) }
+        SnackbarHost(hostState, modifier.imePadding()) { data -> Snack(data) }
     }
 
     private class SnackbarVisuals(val payload: Message) : androidx.compose.material3.SnackbarVisuals {
@@ -215,7 +234,9 @@ object MotoHubSnackbar {
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.large)
                 .background(MotoHubColors.SurfaceHighest)
-                .semantics { liveRegion = LiveRegionMode.Polite }
+                // A tap on the message dismisses it rather than reaching the button underneath.
+                // No liveRegion here: SnackbarHost already sets one, and two make TalkBack say it twice.
+                .clickable(onClick = data::dismiss)
                 .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically

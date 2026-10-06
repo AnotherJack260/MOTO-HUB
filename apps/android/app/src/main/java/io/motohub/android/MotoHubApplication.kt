@@ -4,6 +4,7 @@
 package io.motohub.android
 
 import android.app.Application
+import android.app.UiModeManager
 import io.motohub.android.i18n.MotoHubStrings
 import io.motohub.android.session.CrashRecovery
 import io.motohub.android.session.ProcessExitReport
@@ -13,6 +14,12 @@ import io.motohub.android.session.SentryIntegration
 class MotoHubApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // The app is dark whatever the phone is set to; tell the platform once. Every window
+        // drawn for us then picks light system-bar icons too - ModalBottomSheet sets its own
+        // window's icons from isSystemInDarkTheme(), and on a light-mode phone every sheet turned
+        // the clock and gesture handle dark. Persisted per app, so after the first launch this
+        // is a no-op.
+        getSystemService(UiModeManager::class.java).setApplicationNightMode(UiModeManager.MODE_NIGHT_YES)
         MotoHubStrings.initialize(this)
         SentryIntegration.initialize(this)
         ProjectionEventLog.initialize(this)

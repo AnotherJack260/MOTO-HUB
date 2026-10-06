@@ -28,7 +28,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -43,6 +46,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -60,9 +64,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -77,30 +85,36 @@ import io.motohub.android.ui.theme.MotoHubColors
 // use which; the short version is one lime button per screen, everything else a quieter button
 // or a row in a group.
 
+// Both buttons fill the width unless told otherwise, and that lives in [fillWidth] rather than in
+// the default modifier: a caller passing Modifier.padding(...) would otherwise silently lose it.
+// While loading they stay in their enabled colours - the button is busy, not unavailable, and a
+// grey container would swallow the spinner.
+
 /** The one thing to do on this screen. Lime, full width, glove-sized. */
 @Composable
 fun MhPrimaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    fillWidth: Boolean = true
 ) {
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.heightIn(min = 56.dp),
+        modifier = modifier.fillWidthIf(fillWidth).heightIn(min = 56.dp),
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MotoHubColors.SurfaceHighest,
-            disabledContentColor = MotoHubColors.TextTertiary
+            disabledContainerColor = if (loading) MaterialTheme.colorScheme.primary else MotoHubColors.SurfaceHighest,
+            disabledContentColor = if (loading) MaterialTheme.colorScheme.onPrimary else MotoHubColors.TextTertiary
         ),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
     ) {
-        ButtonContent(text, icon, loading, MaterialTheme.colorScheme.onPrimary)
+        ButtonContent(text, icon, loading)
     }
 }
 
@@ -109,29 +123,33 @@ fun MhPrimaryButton(
 fun MhSecondaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     destructive: Boolean = false,
     loading: Boolean = false,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    fillWidth: Boolean = true
 ) {
     val content = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.heightIn(min = 52.dp),
+        // 56 like the primary: stacked in a sheet the pair reads as one set, and gloves need it.
+        modifier = modifier.fillWidthIf(fillWidth).heightIn(min = 56.dp),
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MotoHubColors.SurfaceHigh,
+            containerColor = MotoHubColors.Fill,
             contentColor = content,
-            disabledContainerColor = MotoHubColors.SurfaceHigh,
-            disabledContentColor = MotoHubColors.TextTertiary
+            disabledContainerColor = MotoHubColors.Fill,
+            disabledContentColor = if (loading) content else MotoHubColors.TextTertiary
         ),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        ButtonContent(text, icon, loading, content)
+        ButtonContent(text, icon, loading)
     }
 }
+
+private fun Modifier.fillWidthIf(fill: Boolean) = if (fill) fillMaxWidth() else this
 
 /** "Cancel", "Details", "Not now": text with a full-size touch target. */
 @Composable
@@ -154,9 +172,9 @@ fun MhTextButton(
 }
 
 @Composable
-private fun ButtonContent(text: String, icon: ImageVector?, loading: Boolean, color: Color) {
+private fun ButtonContent(text: String, icon: ImageVector?, loading: Boolean) {
     if (loading) {
-        CircularProgressIndicator(Modifier.size(20.dp), color = color, strokeWidth = 2.dp)
+        CircularProgressIndicator(Modifier.size(20.dp), color = LocalContentColor.current, strokeWidth = 2.dp)
         Spacer(Modifier.width(10.dp))
     } else if (icon != null) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -186,7 +204,7 @@ fun MhIconCircle(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     tint: Color = MaterialTheme.colorScheme.onSurface,
-    container: Color = MotoHubColors.SurfaceHighest
+    container: Color = MotoHubColors.Fill
 ) {
     Box(
         modifier = modifier.size(size).background(container, CircleShape),
@@ -201,7 +219,7 @@ fun MhIconCircle(
 fun MhSectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
-        modifier = modifier.padding(start = 4.dp, top = 8.dp),
+        modifier = modifier.padding(start = 4.dp, top = 8.dp).semantics { heading() },
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -231,7 +249,7 @@ fun MhListRow(
     subtitle: String? = null,
     icon: ImageVector? = null,
     iconTint: Color = MaterialTheme.colorScheme.onSurface,
-    iconContainer: Color = MotoHubColors.SurfaceHighest,
+    iconContainer: Color = MotoHubColors.Fill,
     value: String? = null,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     enabled: Boolean = true,
@@ -282,7 +300,10 @@ fun MhListRow(
     }
 }
 
-/** An on/off setting. The whole row toggles, not just the switch. */
+/**
+ * An on/off setting. The whole row toggles, not just the switch, and the row is the one control
+ * TalkBack sees: it announces the title with its on/off state, and the switch inside only draws.
+ */
 @Composable
 fun MhSwitchRow(
     title: String,
@@ -297,11 +318,9 @@ fun MhSwitchRow(
         title = title,
         subtitle = subtitle,
         icon = icon,
-        modifier = modifier,
+        modifier = modifier.toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
         enabled = enabled,
-        role = Role.Switch,
-        onClick = { onCheckedChange(!checked) },
-        trailing = { MhSwitch(checked, onCheckedChange, enabled) }
+        trailing = { MhSwitch(checked, null, enabled) }
     )
 }
 
@@ -316,13 +335,16 @@ fun MhSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, enabled: B
             checkedTrackColor = MotoHubColors.Lime,
             checkedBorderColor = Color.Transparent,
             uncheckedThumbColor = MotoHubColors.TextSecondary,
-            uncheckedTrackColor = MotoHubColors.SurfaceHighest,
+            uncheckedTrackColor = MotoHubColors.Fill,
             uncheckedBorderColor = Color.Transparent
         )
     )
 }
 
-/** One of several exclusive choices in a group: a lime check marks the chosen one. */
+/**
+ * One of several exclusive choices in a group: a lime check marks the chosen one. Selectable
+ * rather than clickable, so TalkBack says which one is chosen and not just that it can be tapped.
+ */
 @Composable
 fun MhChoiceRow(
     title: String,
@@ -336,9 +358,7 @@ fun MhChoiceRow(
         title = title,
         subtitle = subtitle,
         icon = icon,
-        modifier = modifier,
-        role = Role.RadioButton,
-        onClick = onClick,
+        modifier = modifier.selectable(selected, onClick = onClick, role = Role.RadioButton),
         trailing = {
             Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
                 if (selected) Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -351,25 +371,28 @@ enum class MhTone { LIVE, PROGRESS, NEUTRAL, WARNING, ERROR }
 
 private fun MhTone.colors(): Pair<Color, Color> = when (this) {
     MhTone.LIVE -> MotoHubColors.Lime to MotoHubColors.LimeContainer
-    MhTone.PROGRESS -> MotoHubColors.Lime to MotoHubColors.SurfaceHighest
-    MhTone.NEUTRAL -> MotoHubColors.TextSecondary to MotoHubColors.SurfaceHighest
+    MhTone.PROGRESS -> MotoHubColors.Lime to MotoHubColors.Fill
+    MhTone.NEUTRAL -> MotoHubColors.TextSecondary to MotoHubColors.Fill
     MhTone.WARNING -> MotoHubColors.Warning to MotoHubColors.WarningContainer
     MhTone.ERROR -> MotoHubColors.Error to MotoHubColors.ErrorContainer
 }
 
-/** "Live", "Connecting", "Offline": a dot and a word in a pill. */
+/**
+ * "Live", "Connecting", "Offline": a dot and a word in a pill. Only PROGRESS pulses - something
+ * that blinks for a whole ride stops meaning anything. The pulse is read in the draw phase, so it
+ * repaints the dot without recomposing the chip sixty times a second.
+ */
 @Composable
 fun MhStatusChip(text: String, tone: MhTone, modifier: Modifier = Modifier) {
     val (fg, bg) = tone.colors()
-    val dotAlpha = if (tone == MhTone.PROGRESS || tone == MhTone.LIVE) {
-        val pulse by rememberInfiniteTransition(label = "chip").animateFloat(
+    val pulse = if (tone == MhTone.PROGRESS) {
+        rememberInfiniteTransition(label = "chip").animateFloat(
             initialValue = 1f,
-            targetValue = if (tone == MhTone.PROGRESS) 0.25f else 0.55f,
+            targetValue = 0.25f,
             animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
             label = "dot"
         )
-        pulse
-    } else 1f
+    } else null
     Row(
         modifier = modifier
             .background(bg, CircleShape)
@@ -377,8 +400,8 @@ fun MhStatusChip(text: String, tone: MhTone, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(7.dp).alpha(dotAlpha).background(fg, CircleShape))
-        Text(text, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1)
+        Box(Modifier.size(7.dp).graphicsLayer { alpha = pulse?.value ?: 1f }.background(fg, CircleShape))
+        Text(text, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -397,7 +420,9 @@ fun MhBanner(
     details: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val (fg, bg) = tone.colors()
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    // Keyed on the message: a new failure in the same spot must not open with the last one's
+    // details already showing.
+    var expanded by rememberSaveable(title, body) { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -431,7 +456,7 @@ fun MhBanner(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (actionLabel != null && onAction != null) {
-                    MhSecondaryButton(actionLabel, onAction, modifier = Modifier)
+                    MhSecondaryButton(actionLabel, onAction, fillWidth = false)
                 }
                 if (details != null) {
                     MhTextButton(
@@ -445,8 +470,8 @@ fun MhBanner(
         if (details != null) {
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+                enter = fadeIn(tween(MOTION_MILLIS)) + expandVertically(tween(MOTION_MILLIS)),
+                exit = fadeOut(tween(MOTION_MILLIS)) + shrinkVertically(tween(MOTION_MILLIS))
             ) {
                 Column(
                     modifier = Modifier.padding(start = 34.dp),
@@ -458,7 +483,14 @@ fun MhBanner(
     }
 }
 
-/** A filled text field on the raised surface, with an optional password eye and helper line. */
+/**
+ * A filled text field on the raised surface, with an optional password eye and helper line.
+ *
+ * The helper or error line goes in the field's own supporting-text slot, so TalkBack reads the
+ * error while the field has focus. [monospace] marks a machine value (SSID, key, hex): it also
+ * turns off autocorrect and capitalisation, or the keyboard "fixes" an SSID with a space in it.
+ * Focus shows as a lime label - the cursor is lime already, so the field needs no glowing border.
+ */
 @Composable
 fun MhTextField(
     value: String,
@@ -469,53 +501,53 @@ fun MhTextField(
     error: String? = null,
     isPassword: Boolean = false,
     monospace: Boolean = false,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    enabled: Boolean = true
 ) {
-    var revealed by rememberSaveable { mutableStateOf(false) }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            singleLine = true,
-            isError = error != null,
-            textStyle = MaterialTheme.typography.bodyLarge.let { if (monospace) it.copy(fontFamily = FontFamily.Monospace) else it },
-            visualTransformation = if (isPassword && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = if (isPassword) keyboardOptions.copy(keyboardType = KeyboardType.Password) else keyboardOptions,
-            trailingIcon = if (!isPassword) null else {
-                {
-                    MhIconButton(
-                        if (revealed) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                        contentDescription = if (revealed) motoHubText("Hide password") else motoHubText("Show password"),
-                        onClick = { revealed = !revealed },
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            shape = MaterialTheme.shapes.medium,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MotoHubColors.SurfaceHighest,
-                unfocusedContainerColor = MotoHubColors.SurfaceHighest,
-                errorContainerColor = MotoHubColors.SurfaceHighest,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                cursorColor = MaterialTheme.colorScheme.primary
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-        val line = error ?: helper
-        if (line != null) {
-            Text(
-                line,
-                modifier = Modifier.padding(horizontal = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    var revealed by rememberSaveable(label) { mutableStateOf(false) }
+    val options = keyboardOptions
+        .let { if (monospace) it.copy(autoCorrectEnabled = false, capitalization = KeyboardCapitalization.None) else it }
+        .let { if (isPassword) it.copy(keyboardType = KeyboardType.Password) else it }
+    val line = error ?: helper
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        enabled = enabled,
+        singleLine = true,
+        isError = error != null,
+        textStyle = MaterialTheme.typography.bodyLarge.let { if (monospace) it.copy(fontFamily = FontFamily.Monospace) else it },
+        visualTransformation = if (isPassword && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = options,
+        keyboardActions = keyboardActions,
+        supportingText = line?.let { { Text(it) } },
+        trailingIcon = if (!isPassword) null else {
+            {
+                MhIconButton(
+                    if (revealed) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                    contentDescription = if (revealed) motoHubText("Hide password") else motoHubText("Show password"),
+                    onClick = { revealed = !revealed },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        shape = MaterialTheme.shapes.small,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MotoHubColors.Fill,
+            unfocusedContainerColor = MotoHubColors.Fill,
+            disabledContainerColor = MotoHubColors.Fill,
+            errorContainerColor = MotoHubColors.Fill,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            cursorColor = MaterialTheme.colorScheme.primary
+        ),
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 /** Nothing here yet: what it is, one line, the way to fill it. */

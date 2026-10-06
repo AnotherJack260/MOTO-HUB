@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Garage
@@ -33,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -41,8 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -96,7 +97,11 @@ fun HubAppBar(
         MhStatusChip(
             text = motorcycleName ?: motoHubText("No motorcycle"),
             tone = if (isConnected) MhTone.LIVE else MhTone.NEUTRAL,
-            modifier = Modifier.clip(CircleShape).clickable(onClick = onMotorcycleTap)
+            // The chip is ~26 dp tall; the minimum size gives it a glove-sized 48 dp target.
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onMotorcycleTap)
         )
     }
 }
@@ -115,7 +120,8 @@ fun HubBottomNavigation(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .selectableGroup(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         NavItem(motoHubText("Ride"), Icons.Rounded.TwoWheeler, Icons.Outlined.TwoWheeler, selected == HubTab.RIDE, Modifier.weight(1f)) { onSelect(HubTab.RIDE) }
@@ -138,12 +144,13 @@ private fun NavItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val color = if (active) MaterialTheme.colorScheme.onSurface else MotoHubColors.TextTertiary
+    // Selected is white, not lime: lime stays for the one action on the screen. Idle is the
+    // secondary text colour - the tertiary grey was 3.9:1, too faint for a 12 sp label.
+    val color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
-            .clickable(role = Role.Tab, onClick = onClick)
-            .semantics { selected = active }
+            .selectable(active, role = Role.Tab, onClick = onClick)
             .heightIn(min = 56.dp)
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -163,19 +170,14 @@ private fun NavItem(
 }
 
 /** Section label above a group. Was a monospace eyebrow; now the design system's section header. */
+@Deprecated("Use MhSectionHeader; textAlign is ignored.", ReplaceWith("MhSectionHeader(text, modifier)"))
 @Composable
 fun MonoLabel(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null
 ) {
-    Text(
-        text = text,
-        modifier = modifier,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = textAlign
-    )
+    MhSectionHeader(text, modifier)
 }
 
 @Composable
@@ -204,6 +206,7 @@ fun MotoHubHeader(
 }
 
 /** A drill-down settings-style screen: back button, large title, scrolling content. */
+@Deprecated("Use MhScreen; backLabel is no longer shown.", ReplaceWith("MhScreen(title = title, onBack = onBack) { content() }"))
 @Composable
 fun MotoHubDetailScreen(
     title: String,
@@ -221,6 +224,10 @@ fun MotoHubCardGroup(content: @Composable () -> Unit) {
 }
 
 /** A tappable row with a title, description, optional current value, and a chevron. */
+@Deprecated(
+    "Use MhListRow inside an MhListGroup.",
+    ReplaceWith("MhListRow(title = title, subtitle = description, value = value, onClick = onClick)")
+)
 @Composable
 fun MotoHubActionRow(
     title: String,
@@ -232,6 +239,12 @@ fun MotoHubActionRow(
 }
 
 /** A single on/off setting. */
+@Deprecated(
+    "Use MhSwitchRow inside an MhListGroup.",
+    ReplaceWith(
+        "MhSwitchRow(title = title, checked = checked, onCheckedChange = onCheckedChange, subtitle = description, enabled = enabled)"
+    )
+)
 @Composable
 fun ToggleRow(
     title: String,
@@ -250,6 +263,10 @@ fun ToggleRow(
 }
 
 /** One option among several exclusive choices. Group consecutive ones in an [MhListGroup]. */
+@Deprecated(
+    "Use MhChoiceRow; put the choices together in one MhListGroup.",
+    ReplaceWith("MhChoiceRow(title = title, selected = selected, onClick = onClick, subtitle = description)")
+)
 @Composable
 fun MotoHubRadioRow(
     title: String,

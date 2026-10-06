@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +22,37 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+
+/**
+ * One of the three things allowed to stop the rider: the safety acknowledgement, crash-data
+ * consent, the unverified-QR warning. Everything else is a sheet or a snackbar.
+ *
+ * Back and tapping outside do nothing unless [dismissible]: these are questions with an answer,
+ * and a stray tap must not count as one. The buttons are the kit's, not Material's 40 dp text
+ * buttons, so they are glove-sized; when they do not fit side by side the confirm goes on top.
+ */
+@Composable
+fun MhDialog(
+    title: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    dismissLabel: String? = null,
+    onDismiss: (() -> Unit)? = null,
+    dismissible: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { onDismiss?.invoke() },
+        confirmButton = { MhPrimaryButton(confirmLabel, onConfirm) },
+        dismissButton = dismissLabel?.let { label ->
+            { MhTextButton(label, onClick = { onDismiss?.invoke() }, modifier = Modifier.fillMaxWidth()) }
+        },
+        title = { Text(title) },
+        text = { MotoHubDialogBody(content = content) },
+        properties = DialogProperties(dismissOnBackPress = dismissible, dismissOnClickOutside = dismissible)
+    )
+}
 
 /**
  * Body slot for every MOTO-HUB [androidx.compose.material3.AlertDialog].

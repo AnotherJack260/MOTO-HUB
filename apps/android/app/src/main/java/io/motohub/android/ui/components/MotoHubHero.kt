@@ -77,6 +77,10 @@ fun ModeIcon(mode: String, color: Color, iconSize: Dp = 24.dp) {
 
 /** A screen's single most important action. Drawn as the primary button; [subtitle] and [color] are
  *  kept for callers written against the old lime card and are no longer shown. */
+@Deprecated(
+    "Use MhPrimaryButton.",
+    ReplaceWith("MhPrimaryButton(motoHubText(title), onClick, icon = modeIconVector(icon))", "io.motohub.android.i18n.motoHubText")
+)
 @Composable
 fun HeroPrimaryAction(
     title: String,
@@ -89,6 +93,13 @@ fun HeroPrimaryAction(
 }
 
 /** A secondary target with a little room to explain itself: neutral icon, title, one line. */
+@Deprecated(
+    "Use MhListRow inside an MhListGroup.",
+    ReplaceWith(
+        "MhListRow(title = motoHubText(title), modifier = modifier, subtitle = motoHubText(subtitle), icon = modeIconVector(icon), onClick = onClick)",
+        "io.motohub.android.i18n.motoHubText"
+    )
+)
 @Composable
 fun HeroTile(
     title: String,
@@ -117,6 +128,13 @@ fun HeroTile(
 }
 
 /** One option in a grouped list: icon, what it is, what it does, chevron. */
+@Deprecated(
+    "Use MhListRow inside an MhListGroup.",
+    ReplaceWith(
+        "MhListRow(title = motoHubText(title), modifier = modifier, subtitle = motoHubText(description), icon = modeIconVector(icon), onClick = onClick)",
+        "io.motohub.android.i18n.motoHubText"
+    )
+)
 @Composable
 fun HeroOptionRow(
     title: String,

@@ -3,6 +3,11 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@color/moto_hub_night</item>
         <item name="android:navigationBarColor">@color/moto_hub_night</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <!-- Without these the platform's #303030 shows on cold start, and on Android 12+ it is
+             also the splash colour, until Compose draws its first frame. -->
+        <item name="android:windowBackground">@color/moto_hub_night</item>
+        <item name="android:windowSplashScreenBackground">@color/moto_hub_night</item>
     </style>
 </resources>
 
