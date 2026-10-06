@@ -1998,4 +1998,446 @@
     <string name="legacy_dashboard_navigation_and_trips_the_free_app_that_141e7bbe">Panel, navegación y viajes: la app gratuita que sustituye a esta</string>
     <string name="legacy_less_8775b50b">Menos ▲</string>
     <string name="legacy_details_1d7b33e">Detalles ▼</string>
+
+    <!-- UI redesign (2026-10) -->
+    <!-- MainActivity.kt -->
+    <string name="legacy_allow_the_camera_to_scan_qr_codes_417c933a">Permite el acceso a la cámara para escanear códigos QR</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_open_app_settings_10ca5c92">No se han podido abrir los ajustes de la app</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_log_copied_e71aa340">Registro copiado</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_create_the_log_file_504d3105">No se ha podido crear el archivo de registro</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_share_moto_hub_log_cd773e0a">Compartir el registro de MOTO-HUB</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_open_github_832a3133">No se ha podido abrir GitHub</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_open_discord_43675dbc">No se ha podido abrir Discord</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_install_the_update_9f439703">No se ha podido instalar la actualización</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_motorcycle_saved_4ffdf758">Moto guardada</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_save_the_motorcycle_38e2825d">No se ha podido guardar la moto</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_you_have_the_latest_version_9a492165">Tienes la última versión</string>
+    <!-- MainActivity.kt -->
+    <string name="legacy_couldn_t_check_for_updates_c5622895">No se han podido buscar actualizaciones</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_community_1f374fc9">Comunidad</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_ask_questions_and_report_a_problem_64fc70b7">Haz preguntas e informa de un problema</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_source_code_releases_and_issues_7d3db311">Código fuente, versiones e incidencias</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_experimental_software_tested_on_a_cfmoto_700mt_a_a7592ff">Software experimental, probado en una CFMOTO 700MT-ADV con teléfonos OnePlus 13 y Galaxy Z Fold4. Otras motos y teléfonos pueden comportarse de otra forma o no conectarse. No dependas de él para la navegación crítica; úsalo bajo tu propia responsabilidad.</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_maps_and_data_d528779c">Mapas y datos</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_mirroring_and_android_auto_for_dashboards_that_p_e4cefb71">Duplicación y Android Auto para cuadros que se emparejan por EasyConn.</string>
+    <!-- AboutScreen.kt -->
+    <string name="legacy_version_782db4b8">Versión</string>
+    <!-- AndroidAutoPreviewScreen.kt -->
+    <string name="legacy_android_auto_isn_t_running_start_it_from_the_rid_99f33cf1">Android Auto no está en marcha. Inícialo desde la pestaña Rodar.</string>
+    <!-- AndroidAutoPreviewScreen.kt -->
+    <string name="legacy_live_24250c">En directo</string>
+    <!-- AndroidAutoPreviewScreen.kt -->
+    <string name="legacy_starting_52574460">Iniciando</string>
+    <!-- AndroidAutoPreviewScreen.kt -->
+    <string name="legacy_stopped_f2e829ad">Detenido</string>
+    <!-- AndroidAutoPreviewScreen.kt -->
+    <string name="legacy_failed_7cfb805d">Fallido</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_1_s_is_using_the_dashboard_6d0b6e58">%1$s está usando el cuadro</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_another_app_is_using_the_dashboard_df720b4f">Otra app está usando el cuadro</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_force_stop_it_in_its_app_settings_then_try_again_dfd79386">Fuérzala a detenerse en los ajustes de la app y vuelve a intentarlo.</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_force_stop_your_motorcycle_s_companion_app_then__f2ae11c7">Fuerza la detención de la app oficial de tu moto y vuelve a intentarlo.</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_running_a_session_in_your_other_moto_hub_app_sto_d9007392">¿Tienes una sesión en tu otra app MOTO-HUB? Detenla allí.</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_busy_ports_1_s_b24949ac">Puertos ocupados: %1$s</string>
+    <!-- CompanionConflictGateHost.kt -->
+    <string name="legacy_open_1_s_app_settings_e661b091">Abrir los ajustes de %1$s</string>
+    <!-- BluetoothStatus.kt -->
+    <string name="legacy_bluetooth_is_off_turn_it_on_then_pair_the_motorc_f98e2f09">El Bluetooth está apagado. Enciéndelo y empareja la moto.</string>
+    <!-- BluetoothStatus.kt -->
+    <string name="legacy_allow_bluetooth_access_to_see_the_motorcycle_8e679acf">Permite el acceso al Bluetooth para ver la moto.</string>
+    <!-- BluetoothStatus.kt -->
+    <string name="legacy_connected_1_s_ae7012ca">Conectado: %1$s</string>
+    <!-- BluetoothStatus.kt -->
+    <string name="legacy_nothing_connected_turn_the_motorcycle_on_or_pair_f6af49f2">Nada conectado. Enciende la moto o emparéjala en los ajustes de Bluetooth.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_move_the_cursor_c1838174">Mover el cursor</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_music_473fe05">Música</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_navigate_to_d521e76a">Navegar a</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_reset_all_actions_aa5449d2">¿Restablecer todas las acciones?</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_every_press_goes_back_to_its_default_taught_butt_7ffd7ac8">Cada pulsación vuelve a su acción predeterminada. Los botones aprendidos se mantienen.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_reset_4b32d2f">Restablecer</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_actions_reset_1fa3384c">Acciones restablecidas</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_teach_it_once_then_pick_what_each_press_does_506f7bfa">Enseña el manillar una vez y elige qué hace cada pulsación.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_use_the_motorcycle_s_buttons_without_looking_dow_f381421d">Usa los botones de la moto sin mirar hacia abajo.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_reset_actions_98ac730c">Restablecer acciones</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_button_presses_are_off_cea4dbe6">Las pulsaciones de botones están desactivadas</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_moto_hub_advanced_manages_this_turn_them_on_ther_96e557a5">Lo gestiona MOTO-HUB ADVANCED. Actívalas allí.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_they_still_show_up_here_but_do_nothing_c28856a1">Siguen apareciendo aquí, pero no hacen nada.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_they_show_up_here_but_do_nothing_until_buttons_c_6a9b57fe">Aparecen aquí, pero no hacen nada hasta que actives «Los botones controlan Android Auto» en Botones del manillar.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_turn_on_29ab7042">Activar</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_teaching_needs_android_auto_running_to_hear_the__c5d7c494">Para enseñar, Android Auto tiene que estar en marcha y oír los botones.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_android_auto_on_this_phone_7c0d6b2d">Android Auto en este teléfono</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_no_motorcycle_needed_f1110a5">Sin necesidad de moto</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_bluetooth_is_off_turn_it_on_then_pair_the_remote_5f1a74f4">El Bluetooth está apagado. Enciéndelo y empareja el mando.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_allow_bluetooth_access_to_read_the_remote_b0867e21">Permite el acceso al Bluetooth para leer el mando.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_bluetooth_is_on_hid_remotes_don_t_show_as_connec_bcd95d47">El Bluetooth está encendido. Los mandos HID no aparecen aquí como conectados.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_a_button_not_taught_yet_a6c23fcf">Un botón aún sin aprender</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_not_taught_yet_af2437e0">Aún sin aprender</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_this_button_has_no_hold_skipping_it_1c4109f2">Este botón no tiene pulsación larga. Se omite.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_that_was_one_press_press_twice_quickly_be95e048">Eso fue una pulsación. Pulsa dos veces, rápido.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_that_was_a_tap_hold_it_a_moment_longer_b0d05d3e">Eso fue un toque. Mantenlo pulsado un poco más.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_not_on_my_motorcycle_721ea1d1">No está en mi moto</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_step_1_d_of_2_d_ef83f5d6">Paso %1$d de %2$d</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_press_once_e2e4785e">Pulsa una vez</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_press_twice_quickly_46187dbb">Pulsa dos veces, rápido</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_press_and_hold_c0de1cc5">Mantén pulsado</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_nothing_happens_some_dashboards_keep_a_button_to_704544c">¿No pasa nada? Algunos cuadros se reservan un botón. Toca «No está en mi moto».</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_handlebar_taught_f69b000">Manillar aprendido</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_1_d_presses_learned_missing_ones_are_hidden_9be187b1">%1$d pulsaciones aprendidas. Las que faltan se ocultan.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_no_presses_learned_613744b5">Ninguna pulsación aprendida</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_nothing_reached_the_phone_check_the_bluetooth_pa_fbf6051d">No ha llegado nada al teléfono. Revisa el emparejamiento Bluetooth y vuelve a intentarlo.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_a_press_acts_at_once_a_double_runs_the_single_fi_3f82eac2">Una pulsación actúa al instante. Una doble ejecuta antes la simple.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_turn_off_if_every_click_needs_a_long_press_2bb083c1">Desactívalo si cada clic necesita una pulsación larga.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_1_d_ms_fb0d4fda">%1$d ms</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_how_long_to_wait_for_a_second_press_47fe47c7">Cuánto esperar a una segunda pulsación.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_snappier_singles_fce5305b">Simples más rápidas</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_balanced_911fd128">Equilibrado</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_forgiving_doubles_3b456d19">Dobles más tolerantes</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_how_long_a_press_must_last_to_count_as_a_hold_c28cad35">Cuánto debe durar una pulsación para contar como larga.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_quicker_hold_12c0d5e5">Pulsación larga más rápida</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_deliberate_hold_2bde0a7e">Pulsación larga más pausada</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_only_works_while_the_ride_dashboard_is_running_9f79e661">Solo funciona mientras el Ride Dashboard está en marcha.</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_press_49cb423">Pulsación</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_double_press_f0eba754">Doble pulsación</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_hold_2268df">Pulsación larga</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_scroll_forward_e37cc492">Desplazar adelante</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_scroll_back_db05ee3a">Desplazar atrás</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_cursor_up_a0e6cb85">Cursor arriba</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_cursor_down_25a4f0c">Cursor abajo</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_cursor_left_25dca71">Cursor a la izquierda</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_cursor_right_49b1e4f2">Cursor a la derecha</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_voice_assistant_88f2d950">Asistente de voz</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_saved_place_1_d_eeded53e">Lugar guardado %1$d</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_next_panel_d43342b7">Panel siguiente</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_full_screen_map_bdcffd86">Mapa a pantalla completa</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_center_map_on_me_5c9e89ca">Centrar el mapa en mí</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_change_left_widget_6fd02d">Cambiar widget izquierdo</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_change_right_widget_c428ab18">Cambiar widget derecho</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_play_pause_cb8921f9">Reproducir / pausa</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_next_track_d47329fe">Pista siguiente</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_previous_track_6c7d3702">Pista anterior</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_volume_up_f8963141">Subir volumen</string>
+    <!-- HandlebarMappingScreen.kt -->
+    <string name="legacy_volume_down_2bc735c8">Bajar volumen</string>
+    <!-- ApplicationLogScreen.kt -->
+    <string name="legacy_clear_the_log_bf32505d">¿Vaciar el registro?</string>
+    <!-- ApplicationLogScreen.kt -->
+    <string name="legacy_this_deletes_all_1_d_entries_from_this_phone_it__8c1de525">Se borrarán las %1$d entradas de este teléfono. No se puede deshacer.</string>
+    <!-- ApplicationLogScreen.kt -->
+    <string name="legacy_log_cleared_f67cc6b0">Registro vaciado</string>
+    <!-- ApplicationLogScreen.kt -->
+    <string name="legacy_1_d_entries_newest_first_39ec0083">%1$d entradas · las más recientes primero</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_devices_1_d_3b01dcd8">Dispositivos (%1$d)</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_named_devices_only_f928deb6">Solo dispositivos con nombre</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_1_s_not_connectable_3a99f3a9">%1$s · no conectable</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_services_1_s_fc7309f">Servicios: %1$s</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_manufacturer_1_s_18bf91d2">Fabricante: %1$s</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_service_data_1_s_f691536">Datos de servicio: %1$s</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_connected_54ec12e9">Conectado</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_write_without_response_a48e42da">Escribir sin respuesta</string>
+    <!-- BleExplorerScreen.kt -->
+    <string name="legacy_traffic_239ab9dd">Tráfico</string>
+    <!-- ClockLabScreen.kt -->
+    <string name="legacy_live_log_5842ee30">Registro en directo</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_passed_8e109c90">Superado</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_running_bfa7ad9f">En curso</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_skipped_e337ff10">Omitido</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_not_run_e202e79e">Sin ejecutar</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_running_tests_bf258fc6">Ejecutando pruebas…</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_run_network_tests_369640ba">Ejecutar pruebas de red</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_result_91b2b43d">Resultado</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_no_events_recorded_95b1b798">Ningún evento registrado</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_1_d_events_480e94d">%1$d eventos</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_run_the_test_first_ef090f06">Ejecuta antes la prueba</string>
+    <!-- NetworkDiagnosticsScreen.kt -->
+    <string name="legacy_1_d_routes_1a549f7e">%1$d rutas</string>
+    <!-- CrashDiagnosticsConsentDialog.kt -->
+    <string name="legacy_sending_the_report_lets_the_developer_find_out_w_69773769">Enviar el informe permite al desarrollador averiguar por qué.</string>
+    <!-- CrashDiagnosticsConsentDialog.kt -->
+    <string name="legacy_don_t_send_a6ed6418">No enviar</string>
+    <!-- CrashDiagnosticsConsentDialog.kt -->
+    <string name="legacy_reports_hold_your_dashboard_and_phone_models_the_adfb4999">Los informes incluyen los modelos del cuadro y del teléfono, las versiones de Android, Android Auto y MOTO-HUB, y el registro de la app. Nunca contraseñas, posiciones ni direcciones de hardware.</string>
+    <!-- CrashDiagnosticsConsentDialog.kt -->
+    <string name="legacy_send_reports_automatically_3af5d48a">Enviar informes automáticamente</string>
+    <!-- DiagnosticReportNoticeDialog.kt -->
+    <string name="legacy_at_most_once_a_day_after_an_update_or_a_crash_54760f95">Como máximo una vez al día, tras una actualización o un fallo</string>
+    <!-- PrivacyNoticeDialog.kt -->
+    <string name="legacy_this_notice_is_in_english_only_so_its_legal_word_271f7da5">Este aviso solo está en inglés para que su redacción legal sea exacta.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_installed_on_this_phone_a8f39007">Instalada en este teléfono</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_free_app_with_navigation_trips_and_a_dashboard_2e100c2b">App gratuita con navegación, viajes y panel</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_a_free_app_from_the_same_developer_that_replaces_36c73c3">Una app gratuita del mismo desarrollador que sustituye a esta.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_open_adv_solo_393452cf">Abrir ADV-SOLO</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_download_adv_solo_65926651">Descargar ADV-SOLO</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_couldn_t_open_the_browser_5cd73729">No se ha podido abrir el navegador</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_installed_792d575a">Instalada</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_what_it_adds_4f94988b">Lo que añade</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_gps_speed_live_map_and_trip_stats_drawn_on_the_m_413bf439">Velocidad GPS, mapa en directo y datos del viaje en la pantalla de la moto.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_search_motorcycle_routing_route_preview_and_turn_6fe32512">Búsqueda, rutas para moto, vista previa del recorrido e indicaciones de giro.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_on_the_route_61aca8f9">En ruta</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_weather_ahead_fuel_prices_and_speed_cameras_alon_a9646fba">El tiempo que viene, precios de los carburantes y radares por el camino.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_recording_replay_analysis_and_gpx_export_of_ever_fa8294c3">Grabación, reproducción, análisis y exportación GPX de todo lo que recorres.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_discovery_and_coaching_1bc251c1">Descubrimiento y coaching</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_ai_place_search_while_you_ride_and_a_riding_coac_eacfbd0d">Búsqueda de lugares con IA mientras ruedas y un Riding Coach después.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_rider_to_rider_voice_over_the_internet_no_extra__c57dee53">Voz entre motoristas por Internet, sin caja extra para el casco.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_before_you_switch_5033d76">Antes de cambiar</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_adv_solo_connects_to_the_motorcycle_on_its_own_a_654f87f4">ADV-SOLO se conecta a la moto por sí sola y no necesita esta app.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_motorcycles_paired_here_don_t_move_across_pair_t_7210a22">Las motos emparejadas aquí no se transfieren: vuelve a emparejarlas en ADV-SOLO. Después puede quitar MOTO-HUB por ti.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_no_subscription_no_account_and_no_extra_hardware_5eee8be2">Sin suscripción, sin cuenta y sin hardware extra.</string>
+    <!-- AdvancedPromo.kt -->
+    <string name="legacy_couldn_t_open_adv_solo_18178329">No se ha podido abrir ADV-SOLO</string>
+    <!-- WireVerdictDialog.kt -->
+    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_2c50c19c">La última vez que te conectaste a %1$s, desde el teléfono todo parecía correcto. MOTO-HUB no ve el cuadro, así que tiene que preguntar.</string>
+    <!-- WireVerdictDialog.kt -->
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_trie_5aaac04b">Si se quedó en la pantalla de emparejamiento, la próxima vez MOTO-HUB probará otro formato de vídeo.</string>
+    <!-- WireVerdictDialog.kt -->
+    <string name="legacy_try_android_auto_once_427c9e5c">Prueba Android Auto una vez</string>
+    <!-- WireVerdictDialog.kt -->
+    <string name="legacy_moto_hub_can_only_test_a_new_video_format_while__40b204fe">MOTO-HUB solo puede probar un formato de vídeo nuevo mientras Android Auto está en marcha; la duplicación siempre usa el suyo. Conéctate una vez con Android Auto y la búsqueda avanzará sola.</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_keep_auto_unless_your_dashboard_asks_for_somethi_9fc1ebb3">Deja Automático salvo que tu cuadro pida otra cosa.</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_my_phone_hosts_the_hotspot_304590c5">El punto de acceso lo crea mi teléfono</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_set_up_over_bluetooth_b13ad609">Configurar por Bluetooth</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_kove_thinkerride_bluetooth_c2a105bc">KOVE / ThinkerRide (Bluetooth)</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_works_for_most_dashboards_3c624e07">Sirve para la mayoría de los cuadros</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_your_phone_joins_the_dashboard_s_wi_fi_734cfdb9">Tu teléfono se une al Wi-Fi del cuadro</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_for_dashboards_that_connect_over_wi_fi_direct_3afcc2d2">Para cuadros que se conectan por Wi-Fi Direct</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_your_dashboard_asks_you_to_turn_on_your_phone_s__9614c351">Tu cuadro te pide activar el punto de acceso del teléfono</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_for_dashboards_set_up_from_their_own_app_over_bl_64ec809a">Para cuadros que se configuran desde su propia app por Bluetooth</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_kove_and_other_thinkerride_dashboards_eed9c5ae">KOVE y otros cuadros ThinkerRide</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_use_the_wi_fi_name_and_password_shown_on_your_da_808ca01a">Usa el nombre y la contraseña del Wi-Fi que aparecen en tu cuadro o en su manual.</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_wi_fi_name_ssid_d38bf099">Nombre del Wi-Fi (SSID)</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_did_you_mean_1_s_77ab7940">¿Querías decir «%1$s»?</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_this_phone_knows_that_name_to_keep_yours_tap_sav_cb253640">Este teléfono conoce ese nombre. Para mantener el tuyo, toca Guardar otra vez.</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_use_this_name_c8d5ab54">Usar este nombre</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_password_4c641ebb">Contraseña</string>
+    <!-- ManualPairingScreen.kt -->
+    <string name="legacy_connection_type_ecba531c">Tipo de conexión</string>
+    <!-- QrImportSheet.kt -->
+    <string name="legacy_reading_the_code_2c949eb6">Leyendo el código…</string>
+    <!-- QrImportSheet.kt -->
+    <string name="legacy_couldn_t_read_the_qr_code_8e426dd9">No se ha podido leer el código QR</string>
+    <!-- QrImportSheet.kt -->
+    <string name="legacy_import_qr_code_217e2731">Importar código QR</string>
+    <!-- QrImportSheet.kt -->
+    <string name="legacy_try_a_sharper_photo_with_the_whole_code_in_frame_eadddf40">Prueba con una foto más nítida y el código entero en el encuadre.</string>
+    <!-- QrImportSheet.kt -->
+    <string name="legacy_downloads_cloud_drives_and_other_folders_45da60bf">Descargas, nubes y otras carpetas</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_point_at_the_qr_code_on_your_dashboard_b5782b48">Apunta al código QR de tu cuadro</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_hold_steady_54956e73">No te muevas</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_turn_off_flash_cc15a3c">Apagar el flash</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_turn_on_flash_971dba92">Encender el flash</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_enter_details_manually_f2896459">Introducir los datos a mano</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_that_s_not_a_dashboard_qr_code_e51c3447">No es un código QR de cuadro</string>
+    <!-- TBoxQrScannerScreen.kt -->
+    <string name="legacy_couldn_t_read_it_hold_steady_and_try_again_f5e7dc6a">No se ha podido leer. No te muevas y vuelve a intentarlo.</string>
+    <!-- UnverifiedQrDialog.kt -->
+    <string name="legacy_unfamiliar_qr_code_6c562aa">Código QR desconocido</string>
+    <!-- UnverifiedQrDialog.kt -->
+    <string name="legacy_this_code_has_wi_fi_details_for_1_s_but_it_comes_694bfb5e">Este código contiene los datos de Wi-Fi de «%1$s», pero viene de una fuente desconocida. Pasa a menudo con cuadros vendidos con otra marca. Continúa solo si has escaneado tu propio cuadro.</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_configure_and_check_everything_only_while_parked_9cf36d5b">Configura y comprueba todo solo con la moto parada, y usa MOTO-HUB solo donde sea completamente seguro y controlado.</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_not_a_safety_device_45231678">No es un dispositivo de seguridad</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_moto_hub_can_t_prevent_distraction_crashes_injur_1075bab">MOTO-HUB no puede evitar distracciones, accidentes, lesiones ni daños. Solo tú eres responsable de conducir con seguridad y dentro de la ley.</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_don_t_show_this_again_1b1445d1">No volver a mostrar</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_i_understand_65150835">Entendido</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_before_you_ride_af8d97ba">Antes de salir</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_riding_needs_your_full_attention_58551fe2">Conducir exige toda tu atención.</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_hands_off_while_moving_6f454e0a">No lo toques en marcha</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_never_use_moto_hub_mirroring_android_auto_naviga_e2dad7c8">No uses nunca MOTO-HUB, la duplicación, Android Auto, la navegación ni ningún control en pantalla mientras la moto está en movimiento.</string>
+    <!-- SafetyDisclaimerDialog.kt -->
+    <string name="legacy_set_up_while_parked_da74c35f">Configura con la moto parada</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_new_version_bb926a38">Nueva versión</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_pre_release_52c212bd">Versión preliminar</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_installed_version_6f101612">Versión instalada</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_what_s_new_de592890">Novedades</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_this_release_has_no_apk_to_install_ecd93098">Esta versión no tiene ningún APK que instalar</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_allow_installing_updates_48aee868">Permitir instalar actualizaciones</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_or_wait_for_wi_fi_the_update_will_still_be_here_8bf76fde">O espera al Wi-Fi: la actualización seguirá aquí.</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_wait_for_wi_fi_32b382bc">Esperar al Wi-Fi</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_starting_download_fe41d8de">Iniciando la descarga…</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_1_s_of_2_s_mb_cc055775">%1$s de %2$s MB</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_1_s_mb_fb141d5a">%1$s MB</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_update_available_67de8452">Actualización disponible</string>
+    <!-- GithubUpdateDialog.kt -->
+    <string name="legacy_moto_hub_1_s_is_2_s_your_only_internet_connectio_5f6bb34f">MOTO-HUB %1$s ocupa %2$s. Ahora mismo tu única conexión a Internet es %3$s, que tu operador puede cobrarte.</string>
+    <!-- MotoHubKit.kt -->
+    <string name="legacy_hide_details_80725d84">Ocultar detalles</string>
+    <!-- MotoHubKit.kt -->
+    <string name="legacy_details_c0118a22">Detalles</string>
+    <!-- MotoHubKit.kt -->
+    <string name="legacy_hide_password_981db799">Ocultar contraseña</string>
+    <!-- MotoHubKit.kt -->
+    <string name="legacy_show_password_630afc3e">Mostrar contraseña</string>
+    <!-- MotoHubUi.kt -->
+    <string name="legacy_ride_26dd18">Rodar</string>
+    <!-- MotoHubUi.kt -->
+    <string name="legacy_nav_13103">Navegar</string>
+    <!-- MotoHubUi.kt -->
+    <string name="legacy_garage_7eb44747">Garaje</string>
 </resources>
