@@ -40,9 +40,23 @@ object MotoHubColors {
     val TextPrimary = Color(0xFFF5F5F7)
     val TextSecondary = Color(0xFFA0A0A6)
 
+    /**
+     * Secondary text that sits on [Fill]: a field's label and placeholder, a neutral chip. Plain
+     * TextSecondary drops to 3.6:1 on Fill over a sheet; this holds 4.6:1 there.
+     */
+    val TextSecondaryOnFill = Color(0xFFB6B6BC)
+
     /** Disabled and decorative text only - too faint for anything the rider has to read. */
     val TextTertiary = Color(0xFF6E6E74)
+    /** Red for icons, dots and chips. Text uses [ErrorText]. */
     val Error = Color(0xFFFF5A52)
+
+    /**
+     * Red for text, and colorScheme.error. A destructive label sits on a Fill pill, and on a sheet
+     * that pill is light enough that [Error] reads 3.1:1; this lighter red holds 4.6:1 there. It
+     * is the same hue, so it still reads as red, as Material's own dark error colours do.
+     */
+    val ErrorText = Color(0xFFFF9994)
     val ErrorContainer = Color(0xFF2B1513)
     val Warning = Color(0xFFFFB340)
     val WarningContainer = Color(0xFF2B2111)
@@ -88,7 +102,7 @@ private val MotoHubColorScheme = darkColorScheme(
     inversePrimary = MotoHubColors.Lime,
     outline = MotoHubColors.SurfaceHighest,
     outlineVariant = MotoHubColors.SurfaceHigh,
-    error = MotoHubColors.Error,
+    error = MotoHubColors.ErrorText,
     onError = MotoHubColors.Background,
     errorContainer = MotoHubColors.ErrorContainer,
     onErrorContainer = Color(0xFFFFB4AE),

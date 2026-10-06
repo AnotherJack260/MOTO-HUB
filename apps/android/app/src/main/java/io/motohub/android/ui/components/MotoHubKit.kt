@@ -3,6 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.components
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,6 +38,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Visibility
@@ -66,6 +69,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -150,6 +154,31 @@ fun MhSecondaryButton(
 }
 
 private fun Modifier.fillWidthIf(fill: Boolean) = if (fill) fillMaxWidth() else this
+
+/**
+ * How a sheet's or dialog's main action is drawn. LIME is the one action of that layer; NEUTRAL
+ * is for answers the app must not nudge (consent, trust); DESTRUCTIVE is red text on a Fill pill
+ * and gives the confirm haptic itself, so no caller has to remember it.
+ */
+enum class MhActionStyle { LIME, NEUTRAL, DESTRUCTIVE }
+
+/** The stacked pill MhSheet and MhDialog draw for [style]. */
+@Composable
+internal fun MhActionButton(text: String, style: MhActionStyle, onClick: () -> Unit) {
+    val view = LocalView.current
+    when (style) {
+        MhActionStyle.LIME -> MhPrimaryButton(text, onClick)
+        MhActionStyle.NEUTRAL -> MhSecondaryButton(text, onClick)
+        MhActionStyle.DESTRUCTIVE -> MhSecondaryButton(
+            text,
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                onClick()
+            },
+            destructive = true
+        )
+    }
+}
 
 /** "Cancel", "Details", "Not now": text with a full-size touch target. */
 @Composable
@@ -372,7 +401,7 @@ enum class MhTone { LIVE, PROGRESS, NEUTRAL, WARNING, ERROR }
 private fun MhTone.colors(): Pair<Color, Color> = when (this) {
     MhTone.LIVE -> MotoHubColors.Lime to MotoHubColors.LimeContainer
     MhTone.PROGRESS -> MotoHubColors.Lime to MotoHubColors.Fill
-    MhTone.NEUTRAL -> MotoHubColors.TextSecondary to MotoHubColors.Fill
+    MhTone.NEUTRAL -> MotoHubColors.TextSecondaryOnFill to MotoHubColors.Fill
     MhTone.WARNING -> MotoHubColors.Warning to MotoHubColors.WarningContainer
     MhTone.ERROR -> MotoHubColors.Error to MotoHubColors.ErrorContainer
 }
@@ -417,6 +446,7 @@ fun MhBanner(
     tone: MhTone = MhTone.ERROR,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null,
     details: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val (fg, bg) = tone.colors()
@@ -447,6 +477,17 @@ fun MhBanner(
                 if (body != null) {
                     Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            if (onDismiss != null) {
+                // Pulled into the corner so the glyph lines up with the banner's padding while
+                // the target stays 48 dp.
+                MhIconButton(
+                    Icons.Rounded.Close,
+                    contentDescription = motoHubText("Close"),
+                    onClick = onDismiss,
+                    modifier = Modifier.offset(x = 12.dp, y = (-12).dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         if ((actionLabel != null && onAction != null) || details != null) {
@@ -528,7 +569,7 @@ fun MhTextField(
                     if (revealed) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                     contentDescription = if (revealed) motoHubText("Hide password") else motoHubText("Show password"),
                     onClick = { revealed = !revealed },
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MotoHubColors.TextSecondaryOnFill
                 )
             }
         },
@@ -543,7 +584,9 @@ fun MhTextField(
             disabledIndicatorColor = Color.Transparent,
             errorIndicatorColor = Color.Transparent,
             focusedLabelColor = MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedLabelColor = MotoHubColors.TextSecondaryOnFill,
+            focusedPlaceholderColor = MotoHubColors.TextSecondaryOnFill,
+            unfocusedPlaceholderColor = MotoHubColors.TextSecondaryOnFill,
             cursorColor = MaterialTheme.colorScheme.primary
         ),
         modifier = modifier.fillMaxWidth()
@@ -558,7 +601,8 @@ fun MhEmptyState(
     body: String,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
-    onAction: (() -> Unit)? = null
+    onAction: (() -> Unit)? = null,
+    actionIcon: ImageVector? = null
 ) {
     Column(
         modifier = modifier
@@ -580,7 +624,7 @@ fun MhEmptyState(
         )
         if (actionLabel != null && onAction != null) {
             Spacer(Modifier.size(4.dp))
-            MhPrimaryButton(actionLabel, onAction)
+            MhPrimaryButton(actionLabel, onAction, icon = actionIcon)
         }
     }
 }

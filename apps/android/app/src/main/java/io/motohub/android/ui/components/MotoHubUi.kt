@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -108,23 +110,29 @@ fun HubAppBar(
 
 enum class HubTab { RIDE, NAV, TRIPS, GARAGE, SETTINGS }
 
+/**
+ * The dock: full width on the Surface colour, which runs on under the gesture bar - the inset is
+ * padded inside, after the background, so callers add nothing. Filled icon and white label for
+ * the selected tab, outlined and grey for the rest; no indicator pill, no top border. [rideLive]
+ * puts a small lime dot on Ride while something is streaming, so the rider can see it from any tab.
+ */
 @Composable
 fun HubBottomNavigation(
     selected: HubTab,
     onSelect: (HubTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    rideLive: Boolean = false
 ) {
     Row(
-        // The caller reserves the gesture-bar inset with navigationBarsPadding(); each item's
-        // own height keeps the tap target glove-sized.
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .background(MotoHubColors.Surface)
+            .navigationBarsPadding()
+            .padding(horizontal = 8.dp)
             .selectableGroup(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        NavItem(motoHubText("Ride"), Icons.Rounded.TwoWheeler, Icons.Outlined.TwoWheeler, selected == HubTab.RIDE, Modifier.weight(1f)) { onSelect(HubTab.RIDE) }
+        NavItem(motoHubText("Ride"), Icons.Rounded.TwoWheeler, Icons.Outlined.TwoWheeler, selected == HubTab.RIDE, Modifier.weight(1f), dot = rideLive) { onSelect(HubTab.RIDE) }
         // Nav and Trips are PRO-only features. CORE ships without them (see build.gradle.kts flavors).
         if (io.motohub.android.BuildConfig.IS_PRO) {
             NavItem(motoHubText("Nav"), Icons.Rounded.Navigation, Icons.Outlined.Navigation, selected == HubTab.NAV, Modifier.weight(1f)) { onSelect(HubTab.NAV) }
@@ -142,6 +150,7 @@ private fun NavItem(
     idleIcon: ImageVector,
     active: Boolean,
     modifier: Modifier = Modifier,
+    dot: Boolean = false,
     onClick: () -> Unit
 ) {
     // Selected is white, not lime: lime stays for the one action on the screen. Idle is the
@@ -156,7 +165,18 @@ private fun NavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)
     ) {
-        Icon(if (active) activeIcon else idleIcon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+        Box {
+            Icon(if (active) activeIcon else idleIcon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+            if (dot) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 2.dp, y = (-1).dp)
+                        .size(6.dp)
+                        .background(MotoHubColors.Lime, CircleShape)
+                )
+            }
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

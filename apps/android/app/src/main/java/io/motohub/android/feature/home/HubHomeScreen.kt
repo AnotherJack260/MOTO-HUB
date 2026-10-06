@@ -239,7 +239,6 @@ fun HubHomeScreen(
             HubBottomNavigation(
                 selected = selectedTab,
                 onSelect = onTabSelected,
-                modifier = Modifier.navigationBarsPadding()
             )
         }
     }

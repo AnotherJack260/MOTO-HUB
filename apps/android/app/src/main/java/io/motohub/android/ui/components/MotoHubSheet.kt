@@ -40,10 +40,15 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,41 +64,68 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
+ * How many kit sheets and dialogs are on screen right now. Startup prompts wait for zero, so they
+ * never land on top of a sheet the rider has just opened. Only the kit writes it.
+ */
+object MhModals {
+    var open by mutableIntStateOf(0)
+        internal set
+}
+
+/** Counts the calling sheet or dialog in [MhModals] for as long as it is composed. */
+@Composable
+internal fun CountAsModal() {
+    DisposableEffect(Unit) {
+        MhModals.open++
+        onDispose { MhModals.open-- }
+    }
+}
+
+/**
  * A decision that does not need the whole screen: grabber, title, a line or two, then the actions
  * stacked as pills (primary on top). [content] goes between the body and the actions for the
- * sheets that carry a list or a field.
+ * sheets that carry a list or a field. It is inset 4 dp, so an MhListRow or MhChoiceRow (16 dp of
+ * its own) lines up with the 20 dp title; anything else in the slot pads itself 16 dp.
  *
  * [onDismiss] means "the sheet is gone", whichever way it went: scrim, back, swipe, or any button.
- * It runs exactly once, so clear your `showX` flag there and nowhere else - a sheet whose flag is
- * never cleared leaves an invisible window that swallows every touch. Put Cancel's own logic in
- * [onSecondary], not in [onDismiss].
+ * It runs exactly once and only clears the caller's `showX` flag - a flag that is never cleared
+ * leaves an invisible window that swallows every touch. Cancel's own logic goes in [onSecondary].
  *
- * Actions run after the sheet has slid away, so the screen underneath never changes while the
- * sheet is still covering it, and only once: a double tap with gloves would otherwise start two
- * slides and run the action twice. Set [dismissible] to false only for something the rider must
- * answer.
+ * Actions run after the sheet has slid away and after [onDismiss], so the screen underneath never
+ * changes while the sheet still covers it. That order is why an action must capture what it needs
+ * in a local `val` first and never read state its [onDismiss] clears:
+ * ```
+ * val bike = editing ?: return
+ * MhSheet(onDismiss = { editing = null }, onPrimary = { remove(bike) }, ...)
+ * ```
+ * Actions run once: a double tap with gloves would otherwise start two slides and run them twice.
+ * Set [dismissible] to false only for something the rider must answer.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MhSheet(
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     title: String? = null,
     body: String? = null,
     primaryLabel: String? = null,
     onPrimary: (() -> Unit)? = null,
     secondaryLabel: String? = null,
     onSecondary: (() -> Unit)? = null,
-    destructivePrimary: Boolean = false,
+    primaryStyle: MhActionStyle = MhActionStyle.LIME,
     dismissible: Boolean = true,
     content: (@Composable ColumnScope.(close: (after: () -> Unit) -> Unit) -> Unit)? = null
 ) {
+    CountAsModal()
     // Declared before the sheet state, whose veto reads it: once a button has started closing a
     // non-dismissible sheet, Hidden has to be allowed or the sheet slides off screen while still
-    // counting itself as open.
+    // counting itself as open. Both are read through State so the veto lambda never changes -
+    // the sheet state is keyed on it, and a new lambda would rebuild the sheet mid-flight.
     val closing = remember { mutableStateOf(false) }
+    val canDismiss by rememberUpdatedState(dismissible)
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { dismissible || closing.value || it != SheetValue.Hidden }
+        confirmValueChange = { canDismiss || closing.value || it != SheetValue.Hidden }
     )
     val scope = rememberCoroutineScope()
     val close: (() -> Unit) -> Unit = { after ->
@@ -109,6 +141,7 @@ fun MhSheet(
     }
     ModalBottomSheet(
         onDismissRequest = { if (dismissible) onDismiss() },
+        modifier = modifier,
         sheetState = sheetState,
         containerColor = MotoHubColors.SurfaceHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -131,25 +164,27 @@ fun MhSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
+                .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 16.dp)
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val inset = Modifier.padding(horizontal = 16.dp)
             if (title != null) {
-                Text(title, modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+                Text(title, modifier = inset.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
             }
             if (body != null) {
-                Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    body,
+                    modifier = inset,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             content?.invoke(this, close)
             if (primaryLabel != null || secondaryLabel != null) {
-                Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(inset.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (primaryLabel != null && onPrimary != null) {
-                        if (destructivePrimary) {
-                            MhSecondaryButton(primaryLabel, { close(onPrimary) }, destructive = true)
-                        } else {
-                            MhPrimaryButton(primaryLabel, { close(onPrimary) })
-                        }
+                        MhActionButton(primaryLabel, primaryStyle) { close(onPrimary) }
                     }
                     if (secondaryLabel != null) {
                         // Not `?: onDismiss`: close() already calls it.
@@ -262,7 +297,8 @@ object MotoHubSnackbar {
                 color = MaterialTheme.colorScheme.onSurface
             )
             data.visuals.actionLabel?.let { label ->
-                MhTextButton(label, onClick = { data.performAction() }, color = MotoHubColors.Lime)
+                // onSurface, not lime: the snackbar floats over a screen that has its own lime action.
+                MhTextButton(label, onClick = { data.performAction() })
             }
         }
     }
