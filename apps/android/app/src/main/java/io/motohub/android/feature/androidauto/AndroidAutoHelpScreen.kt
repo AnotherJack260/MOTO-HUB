@@ -3,30 +3,34 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.androidauto
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.i18n.motoHubText
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubActionRow
-import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubDetailScreen
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhScreen
+import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.MotoHubSnackbar
+import io.motohub.android.ui.theme.MotoHubColors
 
 /**
  * How to get Android Auto to project when it will not start on its own.
@@ -48,123 +52,89 @@ import io.motohub.android.ui.components.MotoHubDetailScreen
  * says so in as many words, because the rider who scrolls Developer settings looking for it
  * finds nothing and concludes the whole page is wrong.
  *
- * Shown as a full-screen overlay straight from MainActivity, not inside the hub, so it has to
- * bring its own background and its own back handling the way the About and diagnostics screens
- * do. Without [MotoHubBackground] the theme never provides a content colour and every
- * Text that does not name one falls back to Compose's default black on the near-black
- * background; without the [BackHandler] the swipe-back gesture reaches the activity and
- * minimises the app instead of closing the page.
+ * Shown as a full-screen overlay straight from MainActivity, not inside the hub. MhScreen brings
+ * the background and the back handling, so the swipe-back gesture closes the page instead of
+ * minimising the app. The one button that matters is pinned to the bottom, not buried mid-page.
  */
 @Composable
 fun AndroidAutoHelpScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    BackHandler(onBack = onBack)
-    MotoHubBackground(Modifier.fillMaxSize()) {
-        MotoHubDetailScreen(
-            title = motoHubText("Android Auto does not start"),
-            backLabel = "‹ ${motoHubText("Back")}",
-            onBack = onBack
-        ) {
-            // Body copy on this page is what the rider is here to read, not a secondary hint, so
-            // it stays on the full-contrast content colour rather than the muted variant.
-            Text(
-                motoHubText(
-                    "Android Auto 17.4 removed the way an app can ask it to project. MOTO-HUB still " +
-                        "tries, and on older versions it works — but when it does not, the four " +
-                        "steps below start Android Auto from its own developer menu instead. This " +
-                        "is the part that works when nothing else does, and you do not need to " +
-                        "install anything."
-                ),
-                style = MaterialTheme.typography.bodyMedium
+    MhScreen(
+        title = motoHubText("Android Auto won't start"),
+        subtitle = motoHubText("Start it from Android Auto's own settings. Nothing to install."),
+        onBack = onBack,
+        bottomBar = {
+            MhPrimaryButton(
+                motoHubText("Open Android Auto settings"),
+                icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                onClick = {
+                    if (!AndroidAutoSelfModeHelp.openAndroidAutoSettings(context)) {
+                        MotoHubSnackbar.error(context, motoHubText("Couldn't open Android Auto"))
+                    }
+                }
             )
-
-            HorizontalDivider()
-            MonoLabel(motoHubText("START ANDROID AUTO YOURSELF"))
-            HelpStep(
-                number = "1",
-                text = motoHubText(
-                    "Open the Android Auto app's settings, scroll to the bottom and tap " +
-                        "\"Version\" ten times. That unlocks its developer options — you only have " +
-                        "to do it once."
-                )
-            )
-            HelpStep(
-                number = "2",
-                text = motoHubText(
-                    "Stay on that same Android Auto settings screen, open the three-dot menu at " +
-                        "the top right and choose \"Start head unit server\". It is in that menu, " +
-                        "not inside Developer settings. This is the step that does it."
-                )
-            )
-            HelpStep(
-                number = "3",
-                text = motoHubText(
-                    "A notification confirms the server is running. Leave it running: it stays up " +
-                        "until you stop it or restart the phone."
-                )
-            )
-            HelpStep(
-                number = "4",
-                text = motoHubText(
-                    "Go back to MOTO-HUB and start Android Auto. It connects on its own within a " +
-                        "couple of seconds — there is nothing else to press."
-                )
-            )
-
-            HorizontalDivider()
-            MonoLabel(motoHubText("WHILE YOU ARE IN THERE"))
-            HelpStep(
-                number = "5",
-                text = motoHubText(
-                    "Open Developer settings from that same screen and turn on \"Add new cars to " +
-                        "Android Auto\" (older versions call it \"Unknown sources\"). On Android " +
-                        "Auto 17.2 and older that switch on its own is often enough. From 17.3 on " +
-                        "it is not — step 2 is — so do not stop here if Android Auto still will " +
-                        "not start."
-                )
-            )
-
-            Spacer(Modifier.height(4.dp))
-            MotoHubActionRow(
-                title = motoHubText("Open Android Auto settings"),
-                description = motoHubText("Jumps straight to the app where the menu above lives"),
-                onClick = { AndroidAutoSelfModeHelp.openAndroidAutoSettings(context) }
-            )
-
-            HorizontalDivider()
-            MonoLabel(motoHubText("WHY"))
-            Text(
-                motoHubText(
-                    "Normally MOTO-HUB waits and asks Android Auto to connect to it. Version 17.4 " +
-                        "closed that door for every app of this kind, not just this one. The head " +
-                        "unit server reverses the direction — Android Auto waits and MOTO-HUB " +
-                        "connects to it — which is a door Google left open for its own testing tools."
-                ),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(Modifier.height(8.dp))
         }
+    ) {
+        MhListGroup {
+            StepRow(
+                1,
+                motoHubText("Unlock developer options"),
+                motoHubText("In Android Auto settings, scroll down and tap “Version” 10 times.")
+            )
+            StepRow(
+                2,
+                motoHubText("Start the head unit server"),
+                motoHubText("Same screen, three-dot menu at the top right. Not in Developer settings.")
+            )
+            StepRow(
+                3,
+                motoHubText("Leave it running"),
+                motoHubText("A notification confirms it. It stays on until you stop it or restart the phone.")
+            )
+            StepRow(
+                4,
+                motoHubText("Start Android Auto in MOTO-HUB"),
+                motoHubText("It connects by itself within a few seconds.")
+            )
+        }
+        MhSectionHeader(motoHubText("Also worth doing"))
+        MhListGroup {
+            StepRow(
+                5,
+                motoHubText("Turn on “Add new cars to Android Auto”"),
+                motoHubText("In Developer settings. Older versions call it “Unknown sources”.")
+            )
+        }
+        MhFootnote(
+            motoHubText(
+                "Android Auto 17.4 stopped apps from asking it to start. The head unit server lets " +
+                    "MOTO-HUB connect to it instead."
+            )
+        )
     }
 }
 
+/**
+ * A numbered step laid out like an MhListRow: the number in a neutral circle where a row's icon
+ * goes, never lime - nothing here is tappable. ponytail: MhListRow takes only an icon, and the
+ * kit has no numeral glyphs.
+ */
 @Composable
-private fun HelpStep(number: String, text: String) {
+private fun StepRow(number: Int, title: String, body: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            number,
-            style = MaterialTheme.typography.titleMedium,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.width(20.dp)
-        )
-        Text(
-            text,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
+        Box(
+            Modifier.size(32.dp).background(MotoHubColors.Fill, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("$number", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }

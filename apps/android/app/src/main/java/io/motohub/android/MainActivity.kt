@@ -1130,6 +1130,8 @@ class MainActivity : ComponentActivity() {
                     } else if (!granted) {
                         MotoHubSettings.setSeamlessResume(context, false)
                         seamlessResumeEnabled = false
+                        // Otherwise the switch the rider just turned on silently flips back.
+                        MotoHubSnackbar.error(context, motoHubText("Seamless resume needs “Display over other apps”"))
                     }
                     seamlessResumePermissionPending = false
                     ProjectionEventLog.record(
