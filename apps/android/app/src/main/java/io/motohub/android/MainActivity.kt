@@ -113,7 +113,6 @@ import io.motohub.android.feature.pairing.QrImageSource
 import io.motohub.android.feature.pairing.QrImportSheet
 import io.motohub.android.feature.pairing.TBoxQrScannerScreen
 import io.motohub.android.tbox.WifiDirectGate
-import io.motohub.android.ui.components.MhSnackTone
 import io.motohub.android.feature.pairing.UnverifiedQrDialog
 import io.motohub.android.feature.safety.SafetyDisclaimerDialog
 import io.motohub.android.feature.settings.AutostartService
