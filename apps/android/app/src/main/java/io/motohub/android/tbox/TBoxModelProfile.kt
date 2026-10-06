@@ -94,6 +94,8 @@ enum class TBoxModelProfile(
      * session, while KoveMirror's plain 1s-IDR stream runs indefinitely on the same panel.
      */
     val encoderPlainGopWithoutIntraRefresh: Boolean = false,
+    /** Leave a GOP stream on the codec's default VBR instead of CBR (see EncoderProfile.variableBitrate). */
+    val encoderVariableBitrate: Boolean = false,
     /**
      * Send the phone-to-car page sequence once the dash says STREAM_START.
      *
@@ -400,6 +402,49 @@ enum class TBoxModelProfile(
         // the one Zontes known to work elsewhere is fed - zanderp's open-cfmoto encodes a 1s
         // GOP with no intra refresh at all, and its 125X is community-confirmed.
         encoderPlainGopWithoutIntraRefresh = true
+    ),
+    /**
+     * Picture-quality experiment for the Zontes 350D / 350E dash (HUName `JCDZ21-*`, channel
+     * 21321, 1024x464, issue #12), which paints on [GENERIC] since the daemon answers CHECK_SN on
+     * the dash's 0x20000 connection (see tooling/ridedaemon.lock).
+     *
+     * GENERIC is all-intra: every frame a keyframe in ~130 kbit, so text is soft. CarbitRide 2.4
+     * encodes this dash with `i-frame-interval` 3 and no intra refresh (net/easyconn/carman/m.java),
+     * and that GOP is the one delta here. First run (2026-10-06, 350D, ~2 min across three
+     * sessions, link clean): sharper still frames but smearing and trailing on motion, which the
+     * rider found worse than GENERIC - so manual selection only, [score] never claims it, and the
+     * dash's QR modelId stays on GENERIC. One untested difference from CarbitRide remains: it
+     * leaves the codec on its default (VBR) rate control, where this app picks CBR for a GOP stream.
+     */
+    ZONTES_350D_GOP_TEST(
+        key = "zontes_350d_gop_test",
+        displayName = "Zontes 350D (test GOP)",
+        modelIds = emptySet(),
+        mapTilesRequireCellular = true,
+        fallbackTBoxVideoArea = TBoxEvent.VideoArea(1024, 464),
+        allowsPlainVideoFraming = true,
+        requiresProactivePxcHeartbeat = true,
+        encoderKeyframeIntervalSeconds = 3,
+        encoderPlainGopWithoutIntraRefresh = true
+    ),
+    /**
+     * [ZONTES_350D_GOP_TEST] with the one difference from CarbitRide it left untested: the codec's
+     * own (VBR) rate control instead of the CBR this app picks for every GOP stream. CBR caps each
+     * frame, so on motion the encoder spends less on the picture; the GOP run that smeared lost
+     * no frame on the link, which points at the encoder rather than the Wi-Fi. Manual selection
+     * only, like its sibling.
+     */
+    ZONTES_350D_VBR_TEST(
+        key = "zontes_350d_vbr_test",
+        displayName = "Zontes 350D (test bitrate variabile)",
+        modelIds = emptySet(),
+        mapTilesRequireCellular = true,
+        fallbackTBoxVideoArea = TBoxEvent.VideoArea(1024, 464),
+        allowsPlainVideoFraming = true,
+        requiresProactivePxcHeartbeat = true,
+        encoderKeyframeIntervalSeconds = 3,
+        encoderPlainGopWithoutIntraRefresh = true,
+        encoderVariableBitrate = true
     ),
     /**
      * Compatibility experiment for the Voge dashes (flavor 51, channel 37504, 592x752 portrait
@@ -1105,6 +1150,8 @@ enum class TBoxModelProfile(
                 // whose Zontes dashes already stream fine would silently change wire format.
                 ZONTES_368G_TEST -> 0
                 ZONTES_368G_TEST_B -> 0
+                ZONTES_350D_GOP_TEST -> 0
+                ZONTES_350D_VBR_TEST -> 0
                 // Same rule for the Voge stream experiment: a Voge that streams fine today
                 // must never be moved off all-intra by detection.
                 VOGE_TEST -> 0

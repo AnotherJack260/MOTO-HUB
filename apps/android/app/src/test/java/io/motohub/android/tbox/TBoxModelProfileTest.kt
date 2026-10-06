@@ -355,6 +355,8 @@ class TBoxModelProfileTest {
         assertEquals(
             listOf(
                 TBoxModelProfile.ZONTES_368G_TEST_B,
+                TBoxModelProfile.ZONTES_350D_GOP_TEST,
+                TBoxModelProfile.ZONTES_350D_VBR_TEST,
                 TBoxModelProfile.VOGE_TEST,
                 TBoxModelProfile.QJ_SRK921_RR,
                 TBoxModelProfile.GENERIC
@@ -634,5 +636,35 @@ class TBoxModelProfileTest {
         )
         assertEquals(TBoxModelProfile.CFMOTO_800NK, TBoxModelProfile.resolve("unknown", crcp))
         assertEquals(true, TBoxModelProfile.hasValidatedAndroidAutoPreset("unknown", crcp))
+    }
+
+    @Test
+    fun `the Zontes 350D GOP test is GENERIC's wire with CarbitRide's 3s GOP, by hand only`() {
+        val wire = TBoxModelProfile.ZONTES_350D_GOP_TEST.wireConfig
+        assertEquals(
+            TBoxWireLadder.RUNGS.first().copy(
+                encoderKeyframeIntervalSeconds = 3,
+                encoderPlainGopWithoutIntraRefresh = true
+            ),
+            wire
+        )
+        val pin = ProfileOverride.byKey("zontes_350d_gop_test")
+        assertEquals(TBoxModelProfile.ZONTES_350D_GOP_TEST, pin.resolve())
+        assertEquals(true, pin.experimental)
+        // It smeared on motion (2026-10-06): Auto must keep this dash on GENERIC.
+        val jcdz21 = TBoxCapabilities(huName = "JCDZ21-E42b", flavor = "51", channel = "21321")
+        assertEquals(TBoxModelProfile.GENERIC, TBoxModelProfile.resolve("21321", jcdz21))
+    }
+
+    @Test
+    fun `the Zontes 350D variable-bitrate test is the GOP test on the codec's own rate control`() {
+        val vbr = TBoxModelProfile.ZONTES_350D_VBR_TEST
+        assertEquals(TBoxModelProfile.ZONTES_350D_GOP_TEST.wireConfig, vbr.wireConfig)
+        // The one delta, and nothing else in the table may pick it up.
+        assertEquals(listOf(vbr), TBoxModelProfile.entries.filter { it.encoderVariableBitrate })
+        val pin = ProfileOverride.byKey("zontes_350d_vbr_test")
+        assertEquals(vbr, pin.resolve())
+        assertEquals(true, pin.experimental)
+        assertEquals(TBoxModelProfile.GENERIC, TBoxModelProfile.resolve("21321", null))
     }
 }

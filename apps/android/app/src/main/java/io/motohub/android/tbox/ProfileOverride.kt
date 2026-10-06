@@ -55,6 +55,18 @@ enum class ProfileOverride(
         "Same experiment with plain framing instead: the dash's ext byte decides, plus a 1s GOP",
         experimental = true
     ),
+    ZONTES_350D_GOP_TEST(
+        "zontes_350d_gop_test",
+        "Zontes 350D (test GOP)",
+        "Sharper text with a keyframe every 3s, like Carbit Ride; may smear on motion",
+        experimental = true
+    ),
+    ZONTES_350D_VBR_TEST(
+        "zontes_350d_vbr_test",
+        "Zontes 350D (test bitrate variabile)",
+        "The GOP test on variable bitrate, exactly as Carbit Ride encodes it",
+        experimental = true
+    ),
     VOGE_TEST(
         "voge_test",
         "Voge (test)",
@@ -115,6 +127,8 @@ enum class ProfileOverride(
         CL_C450 -> TBoxModelProfile.CL_C450
         ZONTES_368G_TEST -> TBoxModelProfile.ZONTES_368G_TEST
         ZONTES_368G_TEST_B -> TBoxModelProfile.ZONTES_368G_TEST_B
+        ZONTES_350D_GOP_TEST -> TBoxModelProfile.ZONTES_350D_GOP_TEST
+        ZONTES_350D_VBR_TEST -> TBoxModelProfile.ZONTES_350D_VBR_TEST
         VOGE_TEST -> TBoxModelProfile.VOGE_TEST
         QJ_SRK921_RR -> TBoxModelProfile.QJ_SRK921_RR
         KOVE_800X -> TBoxModelProfile.KOVE_800X

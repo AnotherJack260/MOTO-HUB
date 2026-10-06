@@ -619,6 +619,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             plainGopWithoutIntraRefresh =
                 sessionWire.encoderPlainGopWithoutIntraRefresh ||
                     sessionModelProfile.transportFamily == TBoxTransportFamily.YUNMO,
+            variableBitrate = sessionModelProfile.encoderVariableBitrate,
             // ThinkerRide's video header declares the exact stream size; encode precisely that
             // instead of the 16-aligned canvas, like the reference app does.
             width = if (sessionModelProfile.encoderUsesExactVideoArea) {

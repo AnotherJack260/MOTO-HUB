@@ -102,4 +102,15 @@ class EncoderProfileTest {
 
         assertEquals(900_000L, repeatFrameAfterUs(effective))
     }
+
+    @Test
+    fun `a GOP stream is CBR unless its profile asks for the codec's own rate control`() {
+        // CarbitRide leaves the codec on its default (VBR) for a 3s GOP on the Zontes 350D; on
+        // this app's CBR the same GOP smeared on motion with no frame lost on the link.
+        assertEquals(true, gopUsesCbr(streamInterval = 3, variableBitrate = false, cbrSupported = true))
+        assertEquals(false, gopUsesCbr(streamInterval = 3, variableBitrate = true, cbrSupported = true))
+        assertEquals(false, gopUsesCbr(streamInterval = 3, variableBitrate = false, cbrSupported = false))
+        // All-intra never set a rate-control mode and still does not.
+        assertEquals(false, gopUsesCbr(streamInterval = 0, variableBitrate = false, cbrSupported = true))
+    }
 }

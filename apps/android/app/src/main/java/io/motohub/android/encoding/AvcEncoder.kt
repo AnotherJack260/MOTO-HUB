@@ -30,7 +30,11 @@ data class EncoderProfile(
      *  should set it: Yunmo splits each keyframe into standalone SPS / PPS / picture frames, and
      *  intra refresh makes full keyframes rare enough that the split path would seldom run. The
      *  dash it targets is also known to receive a plain 2-second GOP from its OEM app. */
-    val plainGopWithoutIntraRefresh: Boolean = false
+    val plainGopWithoutIntraRefresh: Boolean = false,
+    /** Leaves a GOP stream on the codec's default (VBR) rate control instead of CBR, the way
+     *  CarbitRide encodes the Zontes 350D. Experimental: see [gopUsesCbr] for why CBR is the
+     *  default. */
+    val variableBitrate: Boolean = false
 ) {
     companion object {
         fun forTBoxArea(width: Int, height: Int): EncoderProfile = EncoderProfile(
@@ -72,6 +76,14 @@ internal fun effectiveKeyframeIntervalSeconds(
 } else {
     requestedSeconds
 }
+
+/**
+ * GOP streams ride links with shallow queues (the CORE video pipe): VBR spikes on keyframes and
+ * fast map motion overflow them and every dropped frame smears the picture until the next IDR.
+ * CBR bounds the per-frame burst instead - unless a profile asks to test the codec's own VBR.
+ */
+internal fun gopUsesCbr(streamInterval: Int, variableBitrate: Boolean, cbrSupported: Boolean): Boolean =
+    streamInterval > 0 && !variableBitrate && cbrSupported
 
 /** Owns the AVC codec and emits complete AVCC access units from a surface input. */
 class AvcEncoder(
@@ -239,13 +251,14 @@ class AvcEncoder(
             plainGopWithoutIntraRefresh = profile.plainGopWithoutIntraRefresh,
             intraRefreshAvailable = useIntraRefresh
         )
-        // GOP streams ride links with shallow queues (the CORE video pipe): VBR spikes on
-        // keyframes and fast map motion overflow them and every dropped frame smears the
-        // picture until the next IDR. CBR bounds the per-frame burst instead.
-        val useCbr = streamInterval > 0 && runCatching {
-            capabilities?.encoderCapabilities
-                ?.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR)
-        }.getOrNull() == true
+        val useCbr = gopUsesCbr(
+            streamInterval = streamInterval,
+            variableBitrate = profile.variableBitrate,
+            cbrSupported = runCatching {
+                capabilities?.encoderCapabilities
+                    ?.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR)
+            }.getOrNull() == true
+        )
         if (profile.keyframeIntervalSeconds > 0) {
             if (streamInterval == 0) {
                 ProjectionEventLog.record(
@@ -262,7 +275,11 @@ class AvcEncoder(
                 ProjectionEventLog.record(
                     "ENCODER",
                     "GOP stream rate control on ${configuredCodec.name}: " +
-                        (if (useCbr) "CBR" else "codec default (CBR unsupported)") +
+                        when {
+                            useCbr -> "CBR"
+                            profile.variableBitrate -> "codec default (VBR, asked by the profile)"
+                            else -> "codec default (CBR unsupported)"
+                        } +
                         ", intra refresh: " +
                         if (useIntraRefresh) "enabled." else "disabled (plain periodic IDRs)."
                 )

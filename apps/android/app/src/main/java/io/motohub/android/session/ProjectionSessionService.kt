@@ -251,6 +251,7 @@ class ProjectionSessionService : Service() {
             plainGopWithoutIntraRefresh =
                 sessionWire.encoderPlainGopWithoutIntraRefresh ||
                     modelProfile.transportFamily == TBoxTransportFamily.YUNMO,
+            variableBitrate = modelProfile.encoderVariableBitrate,
             // ThinkerRide's video header declares the exact stream size; encode precisely that
             // instead of the 16-aligned canvas, like the reference app does.
             width = if (modelProfile.encoderUsesExactVideoArea) {
