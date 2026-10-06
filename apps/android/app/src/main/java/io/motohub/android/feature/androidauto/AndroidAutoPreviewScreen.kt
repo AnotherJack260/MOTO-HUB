@@ -12,25 +12,25 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Fullscreen
+import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -59,8 +59,13 @@ import io.motohub.android.androidauto.AndroidAutoRuntimeState
 import io.motohub.android.androidauto.AndroidAutoPreviewView
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.i18n.motoHubText
-import io.motohub.android.ui.components.LivePill
-import io.motohub.android.ui.components.MotoHubHeader
+import io.motohub.android.ui.components.MOTION_MILLIS
+import io.motohub.android.ui.components.MhIconButton
+import io.motohub.android.ui.components.MhNavIcon
+import io.motohub.android.ui.components.MhStatusChip
+import io.motohub.android.ui.components.MhTone
+import io.motohub.android.ui.components.MhTopBar
+import io.motohub.android.ui.components.MhTopBarAction
 
 @Composable
 fun AndroidAutoPreviewScreen(onBack: () -> Unit, startFullscreen: Boolean = false) {
@@ -101,7 +106,7 @@ fun AndroidAutoPreviewScreen(onBack: () -> Unit, startFullscreen: Boolean = fals
     // and one with no entry falls back to itself.
     val status = when (val state = runtimeState) {
         AndroidAutoRuntimeState.Idle ->
-            motoHubText("Android Auto is not running. Start a session from Home.")
+            motoHubText("Android Auto isn't running. Start it from the Ride tab.")
         AndroidAutoRuntimeState.Preparing -> motoHubText("Preparing Android Auto…")
         // Not "connected": at this point MOTO-HUB is only listening, and is still asking Google
         // Android Auto to project here — which can take several seconds and several attempts.
@@ -126,12 +131,12 @@ fun AndroidAutoPreviewScreen(onBack: () -> Unit, startFullscreen: Boolean = fals
     // slide transition would keep both the windowed and fullscreen layouts composed together
     // for the length of the animation, and two of these would each try to bind their own
     // Surface to that single registration - see the PRO edition of this screen for the same
-    // reasoning. So the view is mounted exactly once here; only the header chrome slides.
+    // reasoning. So the view is mounted exactly once here; only the top bar slides.
     val headerHeightPx = remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val topInset by animateDpAsState(
         targetValue = if (fullscreen) 0.dp else with(density) { headerHeightPx.floatValue.toDp() },
-        animationSpec = tween(TRANSITION_MILLIS, easing = FastOutSlowInEasing),
+        animationSpec = tween(MOTION_MILLIS, easing = FastOutSlowInEasing),
         label = "aa-preview-top-inset"
     )
     Box(
@@ -146,69 +151,54 @@ fun AndroidAutoPreviewScreen(onBack: () -> Unit, startFullscreen: Boolean = fals
         ) {
             preview()
             if (!sessionActive) {
-                PreviewStatusOverlay(status, Modifier.align(Alignment.Center))
+                PreviewStatusCard(status, Modifier.align(Alignment.Center))
             }
             if (fullscreen) {
-                Row(
+                // The one control over the stream: a way back out, on a dark disc so it reads on
+                // whatever Android Auto is drawing underneath.
+                MhIconButton(
+                    Icons.Rounded.FullscreenExit,
+                    contentDescription = motoHubText("Exit fullscreen"),
+                    onClick = { fullscreen = false },
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PreviewStatusPill(streaming = streaming)
-                    PreviewActionButton("Exit fullscreen") { fullscreen = false }
-                }
-            } else {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(14.dp),
-                    color = Color.Black.copy(alpha = 0.78f),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = motoHubText("Android Auto"),
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                        PreviewActionButton(motoHubText("Fullscreen")) { fullscreen = true }
-                    }
-                }
+                        .align(Alignment.TopEnd)
+                        .windowInsetsPadding(WindowInsets.displayCutout)
+                        .padding(12.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), CircleShape),
+                    tint = Color.White
+                )
             }
         }
         AnimatedVisibility(
             visible = !fullscreen,
-            enter = fadeIn(tween(TRANSITION_MILLIS)) + slideInVertically(tween(TRANSITION_MILLIS)) { -it },
-            exit = fadeOut(tween(TRANSITION_MILLIS)) + slideOutVertically(tween(TRANSITION_MILLIS)) { -it }
+            enter = fadeIn(tween(MOTION_MILLIS)) + slideInVertically(tween(MOTION_MILLIS)) { -it },
+            exit = fadeOut(tween(MOTION_MILLIS)) + slideOutVertically(tween(MOTION_MILLIS)) { -it }
         ) {
+            // Measured whole, status bar included, so the preview starts right under it.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .statusBarsPadding()
                     .onGloballyPositioned { headerHeightPx.floatValue = it.size.height.toFloat() }
-                    .padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(bottom = 12.dp)
             ) {
-                MotoHubHeader(
-                    modifier = Modifier.fillMaxWidth(),
-                    trailing = { TextButton(onClick = onBack) { Text(motoHubText("Close")) } }
+                MhTopBar(
+                    onBack = onBack,
+                    navIcon = MhNavIcon.CLOSE,
+                    title = motoHubText("Android Auto"),
+                    actions = {
+                        PreviewStatusChip(runtimeState)
+                        Spacer(Modifier.width(8.dp))
+                        MhTopBarAction(Icons.Rounded.Fullscreen, motoHubText("Fullscreen"), onClick = { fullscreen = true })
+                    }
                 )
-                PreviewStatusPill(streaming = streaming)
-                // Its own full-width line, under the pill rather than beside it. Sharing a
-                // SpaceBetween row with the pill left this text whatever width the pill did not
-                // want - fine for "Live preview", unreadable for an Android Auto failure, which
-                // is seven lines of instructions. Nothing caps it and nothing sizes it: the
-                // header grows and the preview below is inset by however tall it ends up.
+                // Its own full-width line under the bar rather than squeezed beside the chip: an
+                // Android Auto failure is seven lines of instructions. Nothing caps it and
+                // nothing sizes it: the bar grows and the preview below is inset by however tall
+                // it ends up.
                 Text(
                     text = if (streaming) motoHubText("Touch the preview to control Android Auto") else status,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -217,26 +207,17 @@ fun AndroidAutoPreviewScreen(onBack: () -> Unit, startFullscreen: Boolean = fals
     }
 }
 
-/** Matches the pace the rest of the app's screen transitions run at. */
-private const val TRANSITION_MILLIS = 320
-
 @Composable
-private fun PreviewStatusPill(streaming: Boolean) {
-    LivePill(if (streaming) "ANDROID AUTO LIVE" else "ANDROID AUTO STANDBY")
-}
-
-@Composable
-private fun PreviewActionButton(label: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.height(36.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color(0xE6141B17),
-            contentColor = Color.White
-        ),
-        border = BorderStroke(1.dp, Color(0x55FFFFFF))
-    ) { Text(label, style = MaterialTheme.typography.labelMedium) }
+private fun PreviewStatusChip(state: AndroidAutoRuntimeState) {
+    val (label, tone) = when (state) {
+        AndroidAutoRuntimeState.Streaming -> motoHubText("Live") to MhTone.LIVE
+        AndroidAutoRuntimeState.Preparing,
+        AndroidAutoRuntimeState.ReceiverReady -> motoHubText("Starting") to MhTone.PROGRESS
+        AndroidAutoRuntimeState.Idle,
+        is AndroidAutoRuntimeState.Stopped -> motoHubText("Stopped") to MhTone.NEUTRAL
+        is AndroidAutoRuntimeState.Failed -> motoHubText("Failed") to MhTone.ERROR
+    }
+    MhStatusChip(label, tone)
 }
 
 /**
@@ -247,15 +228,15 @@ private fun PreviewActionButton(label: String, onClick: () -> Unit) {
  * it would hide the one step that fixes the ride, so it scrolls instead.
  */
 @Composable
-private fun PreviewStatusOverlay(status: String, modifier: Modifier = Modifier) {
+private fun PreviewStatusCard(status: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.padding(24.dp),
-        color = Color.Black.copy(alpha = 0.82f),
-        shape = RoundedCornerShape(20.dp)
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large
     ) {
         Text(
             text = status,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .verticalScroll(rememberScrollState())

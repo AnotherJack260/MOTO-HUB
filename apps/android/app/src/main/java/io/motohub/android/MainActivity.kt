@@ -26,6 +26,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import io.motohub.android.ui.components.MotoHubSnackbar
+import io.motohub.android.ui.components.MhModals
+import io.motohub.android.ui.components.MhSnackTone
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -46,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.platform.LocalContext
@@ -454,7 +457,8 @@ class MainActivity : ComponentActivity() {
                         MotoHubSettings.setLastAutoUpdateCheckAtMillis(context, System.currentTimeMillis())
                         MotoHubSettings.setLastAutoUpdateCheckVersion(context, BuildConfig.VERSION_NAME)
                     }
-                    if (openDialog) showUpdateDialog = true
+                    // Nothing opens up front: About's row shows the check running, and the
+                    // result decides - the sheet for a newer release, a snackbar otherwise.
                     if (updateLoading) return
                     updateLoading = true
                     updateError = null
@@ -475,17 +479,30 @@ class MainActivity : ComponentActivity() {
                                     BuildConfig.VERSION_CODE
                                 )
                             ).filter { openDialog || it.tagName != skippedTag }
-                            if (!openDialog && updateReleases.isEmpty()) {
+                            if (updateReleases.isNotEmpty()) {
+                                showUpdateDialog = true
+                            } else if (openDialog) {
+                                MotoHubSnackbar.success(context, motoHubText("You have the latest version"))
+                            } else {
                                 ProjectionEventLog.debug(
                                     "UPDATES",
                                     "Automatic GitHub check found no newer, non-skipped APK release."
                                 )
-                            } else {
-                                showUpdateDialog = true
                             }
                         }.onFailure { failure ->
                             updateError = "Unable to check GitHub releases: ${failure.message}"
                             ProjectionEventLog.warning("UPDATES", updateError.orEmpty(), failure)
+                            // The automatic check stays silent; the rider who asked gets told.
+                            // The raw reason is the log line above, not the snackbar.
+                            if (openDialog) {
+                                MotoHubSnackbar.show(
+                                    context,
+                                    motoHubText("Couldn't check for updates"),
+                                    MhSnackTone.ERROR,
+                                    actionLabel = motoHubText("Try again"),
+                                    onAction = { checkForUpdates(openDialog = true) }
+                                )
+                            }
                         }
                     }
                 }
@@ -1242,7 +1259,7 @@ class MainActivity : ComponentActivity() {
                                 ClipData.newPlainText(motoHubText("MOTO-HUB diagnostics"), text)
                             )
                             ProjectionEventLog.record("LOG", "Diagnostic log copied to the clipboard.")
-                            MotoHubSnackbar.success(context, motoHubText("Log copied to clipboard"))
+                            MotoHubSnackbar.success(context, motoHubText("Log copied"))
                         },
                         onShare = {
                             val text = ProjectionEventLog.exportText()
@@ -1250,11 +1267,11 @@ class MainActivity : ComponentActivity() {
                                 DiagnosticLogShare.createShareIntent(context, text)
                             }.onFailure { failure ->
                                 ProjectionEventLog.error("LOG", "Diagnostic log file share failed.", failure)
-                            MotoHubSnackbar.error(context, motoHubText("Unable to create log file"))
+                            MotoHubSnackbar.error(context, motoHubText("Couldn't create the log file"))
                             }.getOrNull()
                             if (shareIntent != null) {
                                 ProjectionEventLog.record("LOG", "Diagnostic log file share sheet opened.")
-                                context.startActivity(Intent.createChooser(shareIntent, "Share MOTO-HUB log"))
+                                context.startActivity(Intent.createChooser(shareIntent, motoHubText("Share MOTO-HUB log")))
                             }
                         },
                         onClear = ProjectionEventLog::clear,
@@ -1287,7 +1304,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }.onFailure {
                                 ProjectionEventLog.error("UI", "Unable to open the GitHub repository.", it)
-                                MotoHubSnackbar.error(context, motoHubText("Unable to open GitHub"))
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open GitHub"))
                             }
                         },
                         onOpenDiscord = {
@@ -1298,13 +1315,14 @@ class MainActivity : ComponentActivity() {
                                 )
                             }.onFailure {
                                 ProjectionEventLog.error("UI", "Unable to open the Discord link.", it)
-                                MotoHubSnackbar.error(context, motoHubText("Unable to open Discord"))
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open Discord"))
                             }
                         },
                         onCheckUpdates = {
                             ProjectionEventLog.record("UPDATES", "Manual GitHub update check requested.")
                             checkForUpdates(openDialog = true)
                         },
+                        checkingForUpdates = updateLoading,
                         onBack = {
                             ProjectionEventLog.record("UI", "About screen closed.")
                             showAbout = false
@@ -1774,16 +1792,38 @@ class MainActivity : ComponentActivity() {
                     )
                     }
                 }
-                if (showUpdateDialog) {
+                // One interruption at a time, most important first; the rest wait their turn (see
+                // nextOverlay). Composed independently they used to stack, least important on top.
+                // Asked only of riders who never opted in; the scheduler raises this after a
+                // crash and clears it on either answer.
+                val crashConsentRequired by DiagnosticReportScheduler.crashConsentRequired
+                    .collectAsStateWithLifecycle()
+                // Swiping the wire question away puts it off to the next launch rather than
+                // guessing an answer. The VM still holds the question, so the deferral lives here.
+                var wireQuestionDeferred by rememberSaveable { mutableStateOf(false) }
+                var shownOverlay by remember { mutableStateOf<StartupOverlay?>(null) }
+                val overlay = nextOverlay(
+                    shown = shownOverlay,
+                    pending = buildSet {
+                        if (showSafetyDisclaimer) add(StartupOverlay.SAFETY)
+                        if (companionConflictGate.pending != null) add(StartupOverlay.COMPANION)
+                        if (crashConsentRequired) add(StartupOverlay.CRASH_CONSENT)
+                        if (showUpdateDialog && updateReleases.isNotEmpty()) add(StartupOverlay.UPDATE)
+                        if (state.wireQuestionFor != null && !wireQuestionDeferred) add(StartupOverlay.WIRE_VERDICT)
+                        if (state.wireNeedsAndroidAutoFor != null) add(StartupOverlay.WIRE_NUDGE)
+                    },
+                    modalsOpen = MhModals.open
+                )
+                SideEffect { shownOverlay = overlay }
+                val updateRelease = updateReleases.firstOrNull()
+                if (overlay == StartupOverlay.UPDATE && updateRelease != null) {
                     GithubUpdateDialog(
-                        releases = updateReleases,
-                        isLoading = updateLoading,
+                        release = updateRelease,
                         error = updateError,
                         installingTag = installingUpdateTag,
                         installingProgress = installingUpdateProgress,
                         canInstallUnknownSources = unknownSourcesAllowed,
                         onDismiss = { showUpdateDialog = false },
-                        onRetry = { checkForUpdates(openDialog = true) },
                         onSkip = { release ->
                             MotoHubSettings.setSkippedUpdateTag(context, release.tagName)
                             updateReleases = updateReleases.filterNot { it.tagName == release.tagName }
@@ -1808,6 +1848,10 @@ class MainActivity : ComponentActivity() {
                                     updateError = "Unable to install ${release.versionName}: " +
                                         (failure.message ?: "unknown error")
                                     ProjectionEventLog.error("UPDATES", updateError.orEmpty(), failure)
+                                    // The sheet says it inline; swiped away mid-download, it can't.
+                                    if (!showUpdateDialog) {
+                                        MotoHubSnackbar.error(context, motoHubText("Couldn't install the update"))
+                                    }
                                 }
                                 installingUpdateTag = null
                                 installingUpdateProgress = null
@@ -1871,23 +1915,26 @@ class MainActivity : ComponentActivity() {
                 // The rider had to be on the motorcycle to answer this, so it is asked when they
                 // are back at the phone rather than the instant the session ended.
                 androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refreshWireQuestion() }
-                state.wireQuestionFor?.let { motorcycle ->
+                val wireQuestion = state.wireQuestionFor
+                if (overlay == StartupOverlay.WIRE_VERDICT && wireQuestion != null) {
                     WireVerdictDialog(
-                        motorcycleName = motorcycle.displayName?.takeIf { it.isNotBlank() } ?: motorcycle.ssid,
-                        onAnswer = { seen -> viewModel.answerWireQuestion(seen) },
-                        onDismiss = { /* Ask again next time rather than guess an answer. */ }
+                        motorcycleName = wireQuestion.displayName?.takeIf { it.isNotBlank() } ?: wireQuestion.ssid,
+                        onAnswer = { seen ->
+                            wireQuestionDeferred = false
+                            viewModel.answerWireQuestion(seen)
+                        },
+                        // Ask again next time rather than guess an answer. The sheet closes this
+                        // way before an answer as well, and the answer then takes it back.
+                        onDismiss = { wireQuestionDeferred = true }
                     )
                 }
-                state.wireNeedsAndroidAutoFor?.let {
+                if (overlay == StartupOverlay.WIRE_NUDGE) {
                     WireNeedsAndroidAutoDialog(onDismiss = { viewModel.dismissWireAndroidAutoNudge() })
                 }
-                CompanionConflictGateDialog(companionConflictGate)
-                // Asked only of riders who never opted in; the scheduler raises this after a
-                // crash and clears it on either answer. Queued behind the safety disclaimer,
-                // which cannot be dismissed and would otherwise sit under it.
-                val crashConsentRequired by DiagnosticReportScheduler.crashConsentRequired
-                    .collectAsStateWithLifecycle()
-                if (crashConsentRequired && !showSafetyDisclaimer) {
+                if (overlay == StartupOverlay.COMPANION) {
+                    CompanionConflictGateDialog(companionConflictGate)
+                }
+                if (overlay == StartupOverlay.CRASH_CONSENT) {
                     var alwaysSendReports by rememberSaveable { mutableStateOf(false) }
                     var readingPrivacyNotice by rememberSaveable { mutableStateOf(false) }
                     // The notice replaces the prompt rather than stacking on top of it: the
@@ -1905,13 +1952,16 @@ class MainActivity : ComponentActivity() {
                             onDecline = { DiagnosticReportScheduler.onCrashReportDeclined(context) },
                             onOpenPrivacyNotice = { readingPrivacyNotice = true },
                             // Not an answer: the question comes back next launch. Only the
-                            // rider's own yes or no closes it.
+                            // rider's own yes or no closes it. Also runs, harmlessly, ahead of
+                            // either answer.
                             onDismiss = { DiagnosticReportScheduler.dismissCrashPromptForNow() }
                         )
                     }
                 }
-                if (showSafetyDisclaimer) {
-                    var doNotShowAgain by rememberSaveable { mutableStateOf(false) }
+                if (overlay == StartupOverlay.SAFETY) {
+                    // On by default: a full page on every cold start is harassment, and
+                    // "I understand" is still the rider's own acknowledgement.
+                    var doNotShowAgain by rememberSaveable { mutableStateOf(true) }
                     SafetyDisclaimerDialog(
                         doNotShowAgain = doNotShowAgain,
                         onDoNotShowAgainChanged = { doNotShowAgain = it },

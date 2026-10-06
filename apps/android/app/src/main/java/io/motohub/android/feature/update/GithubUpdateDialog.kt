@@ -5,19 +5,18 @@ package io.motohub.android.feature.update
 
 import io.motohub.android.i18n.motoHubText
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +24,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,18 +40,32 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.motohub.android.BuildConfig
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubDialogBody
+import io.motohub.android.ui.components.MhBanner
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhStatusChip
+import io.motohub.android.ui.components.MhTextButton
+import io.motohub.android.ui.components.MhTone
+import io.motohub.android.ui.theme.MotoHubColors
 
+/**
+ * The newer release, as a sheet that opens only when there is one: an empty or failed manual check
+ * is a snackbar in the host, not this. [error] is an install failure only.
+ *
+ * Its buttons do not close it. The download runs with the sheet up, so the rider sees it progress
+ * and, when it fails, the reason - and swiping it away is "later".
+ */
 @Composable
 fun GithubUpdateDialog(
-    releases: List<GithubRelease>,
-    isLoading: Boolean,
+    release: GithubRelease,
     error: String?,
     installingTag: String?,
     installingProgress: DownloadProgress?,
     onDismiss: () -> Unit,
-    onRetry: () -> Unit,
     onInstall: (GithubRelease) -> Unit,
     onSkip: (GithubRelease) -> Unit,
     onAllowUnknownSources: () -> Unit,
@@ -63,72 +78,115 @@ fun GithubUpdateDialog(
     // Off the main thread: choosing the network walks ConnectivityManager.allNetworks and reads
     // capabilities for each, which is binder work, and this runs from a tap.
     val networkScope = rememberCoroutineScope()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("MOTO-HUB updates")) },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText("Installed version: %1\$s (%2\$d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace
-                )
-                if (isLoading) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                        Text(motoHubText("Checking GitHub releases..."))
+    val installing = installingTag == release.tagName
+    val metered = meteredConfirmation
+    // The metered question is the same sheet with its words swapped, not a second window on top.
+    MhSheet(
+        onDismiss = onDismiss,
+        title = if (metered != null) {
+            motoHubText("Download over %1\$s?", metered.networkDescription)
+        } else {
+            motoHubText("Update available")
+        },
+        body = metered?.let {
+            motoHubText(
+                "MOTO-HUB %1\$s is %2\$s. Your only Internet connection right now is %3\$s, which " +
+                    "your operator may charge for.",
+                it.release.versionName,
+                with(GithubUpdateInstaller) { it.release.apkAsset.sizeText() },
+                it.networkDescription
+            )
+        }
+    ) { close ->
+        if (metered != null) {
+            MeteredQuestion(
+                onDownload = {
+                    meteredConfirmation = null
+                    onInstall(metered.release)
+                },
+                onWait = { meteredConfirmation = null }
+            )
+        } else {
+            MhListRow(
+                title = motoHubText("New version"),
+                trailing = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (release.isPrerelease) MhStatusChip(motoHubText("Pre-release"), MhTone.NEUTRAL)
+                        MonoValue(release.versionName)
                     }
                 }
-                error?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
-                    OutlinedButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-                        Text(motoHubText("Retry"))
+            )
+            MhListRow(
+                title = motoHubText("Installed version"),
+                trailing = { MonoValue("${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") }
+            )
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (release.title.isNotBlank() && release.title != release.versionName) {
+                    Text(release.title, style = MaterialTheme.typography.titleMedium)
+                }
+                if (release.notes.isNotBlank()) {
+                    MhSectionHeader(motoHubText("What's new"))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        Text(
+                            releaseNotesAnnotated(release.notes),
+                            modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
-                if (!isLoading && error == null && releases.isEmpty()) {
-                    Text(motoHubText("No newer version is available."))
-                }
-                releases.forEach { release ->
-                    ReleaseEntry(
-                        release = release,
-                        installing = installingTag == release.tagName,
-                        progress = installingProgress?.takeIf { installingTag == release.tagName },
-                        canInstallUnknownSources = canInstallUnknownSources,
-                        onInstall = {
-                            // The one place the metered question is asked, so no caller can ship
-                            // an Install button that skips it. A definitely-metered network gets
-                            // a confirmation; everything else - Wi-Fi, an unmetered plan, a
-                            // network Android will not describe - starts the download as before.
-                            networkScope.launch {
-                                val network = withContext(Dispatchers.IO) {
-                                    GithubUpdateInstaller.downloadNetwork(context)
-                                }
-                                if (network.metered) {
-                                    meteredConfirmation = MeteredDownload(release, network.description)
-                                } else {
-                                    onInstall(release)
-                                }
-                            }
-                        },
-                        onSkip = { onSkip(release) },
-                        onAllowUnknownSources = onAllowUnknownSources
+                if (error != null) {
+                    MhBanner(
+                        title = motoHubText("Couldn't install the update"),
+                        details = {
+                            Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     )
                 }
+                when {
+                    release.apkAsset == null ->
+                        MhBanner(title = motoHubText("This release has no APK to install"), tone = MhTone.WARNING)
+                    !canInstallUnknownSources ->
+                        MhPrimaryButton(motoHubText("Allow installing updates"), onAllowUnknownSources)
+                    else -> {
+                        if (installing) DownloadProgressRow(installingProgress)
+                        MhPrimaryButton(
+                            motoHubText("Download and install"),
+                            loading = installing,
+                            onClick = {
+                                // The one place the metered question is asked, so no caller can
+                                // ship an Install button that skips it. A definitely-metered
+                                // network gets a confirmation; everything else - Wi-Fi, an
+                                // unmetered plan, a network Android will not describe - starts
+                                // the download as before.
+                                networkScope.launch {
+                                    val network = withContext(Dispatchers.IO) {
+                                        GithubUpdateInstaller.downloadNetwork(context)
+                                    }
+                                    if (network.metered) {
+                                        meteredConfirmation = MeteredDownload(release, network.description)
+                                    } else {
+                                        onInstall(release)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                MhTextButton(
+                    motoHubText("Skip this version"),
+                    onClick = { close { onSkip(release) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !installing
+                )
             }
-        },
-        confirmButton = {
-            OutlinedButton(onClick = onDismiss) { Text(motoHubText("Close")) }
         }
-    )
-    meteredConfirmation?.let { pending ->
-        MeteredDownloadDialog(
-            pending = pending,
-            onConfirm = {
-                meteredConfirmation = null
-                onInstall(pending.release)
-            },
-            onDismiss = { meteredConfirmation = null }
-        )
     }
 }
 
@@ -143,113 +201,28 @@ private data class MeteredDownload(val release: GithubRelease, val networkDescri
  * (see GithubUpdateInstaller) - so without this the fix would quietly turn "the update button
  * does nothing" into "the update button costs money", and the second is the worse surprise.
  *
- * Names the size and the network, because those are the two facts the answer turns on, and
- * neither is guessed: the size comes from the GitHub asset and the network from the same function
- * the download then uses. "Not now" is a real answer and costs nothing - the release stays in the
- * list, and the same button works on Wi-Fi later without asking anything.
+ * The sheet's title and body name the network and the size, because those are the two facts the
+ * answer turns on, and neither is guessed: the size comes from the GitHub asset and the network
+ * from the same function the download then uses. "Wait for Wi-Fi" is a real answer and costs
+ * nothing - the release stays offered, and the same button works on Wi-Fi later without asking.
  */
 @Composable
-private fun MeteredDownloadDialog(
-    pending: MeteredDownload,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(motoHubText("Download over %1\$s?", pending.networkDescription)) },
-        text = {
-            MotoHubDialogBody {
-                Text(
-                    motoHubText(
-                        "MOTO-HUB %1\$s is %2\$s, and right now the only connection that reaches " +
-                            "the Internet is %3\$s, which your operator charges for. On the " +
-                            "motorcycle that is normal - the dashboard's Wi-Fi has no Internet " +
-                            "at all.",
-                        pending.release.versionName,
-                        with(GithubUpdateInstaller) { pending.release.apkAsset.sizeText() },
-                        pending.networkDescription
-                    )
-                )
-                Text(
-                    motoHubText("Waiting for Wi-Fi costs nothing: the update stays in this list."),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) { Text(motoHubText("Download anyway")) }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text(motoHubText("Not now")) }
-        }
-    )
+private fun MeteredQuestion(onDownload: () -> Unit, onWait: () -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        MhFootnote(motoHubText("Or wait for Wi-Fi: the update will still be here."))
+        MhPrimaryButton(motoHubText("Download anyway"), onDownload, modifier = Modifier.padding(top = 8.dp))
+        MhSecondaryButton(motoHubText("Wait for Wi-Fi"), onWait)
+    }
 }
 
 @Composable
-private fun ReleaseEntry(
-    release: GithubRelease,
-    installing: Boolean,
-    progress: DownloadProgress?,
-    canInstallUnknownSources: Boolean,
-    onInstall: () -> Unit,
-    onSkip: () -> Unit,
-    onAllowUnknownSources: () -> Unit
-) {
-    Surface(
-        tonalElevation = 2.dp,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    release.versionName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
-                )
-                if (release.isPrerelease) {
-                    MonoLabel(motoHubText("PRE-RELEASE"))
-                }
-            }
-            if (release.title.isNotBlank() && release.title != release.versionName) {
-                Text(release.title, fontWeight = FontWeight.SemiBold)
-            }
-            HorizontalDivider()
-            Text(
-                releaseNotesAnnotated(release.notes.ifBlank { "No release notes provided." }),
-                style = MaterialTheme.typography.bodySmall
-            )
-            if (release.apkAsset == null) {
-                Text(motoHubText("No APK asset attached to this release."), color = MaterialTheme.colorScheme.error)
-            } else if (!canInstallUnknownSources) {
-                OutlinedButton(onClick = onAllowUnknownSources, modifier = Modifier.fillMaxWidth()) {
-                    Text(motoHubText("Allow APK installation"))
-                }
-            } else {
-                if (installing) {
-                    DownloadProgressRow(progress)
-                }
-                Button(
-                    onClick = onInstall,
-                    enabled = !installing,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(if (installing) motoHubText("Downloading...") else motoHubText("Download and install"))
-                }
-            }
-            OutlinedButton(
-                onClick = onSkip,
-                enabled = !installing,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(motoHubText("Skip this version"))
-            }
-        }
-    }
+private fun MonoValue(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        fontFamily = FontFamily.Monospace,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 /** Compact, dependency-free Markdown presentation for GitHub release notes. */
@@ -295,28 +268,32 @@ private fun AnnotatedString.Builder.appendInlineMarkdown(text: String) {
 
 @Composable
 private fun DownloadProgressRow(progress: DownloadProgress?) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         val fraction = progress?.fraction
         if (fraction != null) {
             LinearProgressIndicator(
                 progress = { fraction },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                trackColor = MotoHubColors.Fill
             )
         } else {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), trackColor = MotoHubColors.Fill)
         }
-        Text(downloadStatusText(progress), style = MaterialTheme.typography.bodySmall)
+        Text(
+            downloadStatusText(progress),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 private fun downloadStatusText(progress: DownloadProgress?): String {
-    if (progress == null) return "Starting download..."
-    val downloadedMb = progress.bytesDownloaded / 1_000_000.0
-    val totalMb = progress.totalBytes.takeIf { it > 0 }?.let { it / 1_000_000.0 }
-    val percent = progress.fraction?.let { (it * 100).toInt() }
-    return if (totalMb != null && percent != null) {
-        "Downloading... %.1f MB / %.1f MB (%d%%)".format(downloadedMb, totalMb, percent)
+    if (progress == null) return motoHubText("Starting download…")
+    val downloaded = "%.1f".format(progress.bytesDownloaded / 1_000_000.0)
+    val total = progress.totalBytes.takeIf { it > 0 }?.let { "%.1f".format(it / 1_000_000.0) }
+    return if (total != null) {
+        motoHubText("%1\$s of %2\$s MB", downloaded, total)
     } else {
-        "Downloading... %.1f MB".format(downloadedMb)
+        motoHubText("%1\$s MB", downloaded)
     }
 }
