@@ -17,6 +17,7 @@ import io.motohub.android.session.cancelEvidenceStillStands
 import io.motohub.android.session.dashReachable
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.SessionPhase
+import io.motohub.android.session.SessionFailureKind
 import io.motohub.android.session.ProjectionRuntime
 import io.motohub.android.session.ProjectionRuntimeState
 import io.motohub.android.session.DashboardDeliveryMonitor
@@ -647,7 +648,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
                         TBoxVpnDiagnostics.userFacingMessage(
                             error = networkFailure,
                             routing = null
-                        ) ?: "Unable to connect to the T-Box network: ${networkFailure.message}",
+                        ) ?: "$TBOX_NETWORK_FAILURE_PREFIX: ${networkFailure.message}",
                         // Android never joined an access point. On a dash that is itself a Wi-Fi
                         // client there is no access point to join, so this is the only failure it
                         // can ever produce - and it is indistinguishable from a dash that is off.
@@ -1008,12 +1009,18 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onNearbyWifiPermissionDenied() {
         ProjectionEventLog.warning("PERMISSION", "Nearby Wi-Fi or Location permission denied.")
-        showError(motoHubText("Allow Nearby devices and Location to detect the T-Box Wi-Fi network."))
+        showError(
+            motoHubText("Allow Nearby devices and Location to detect the T-Box Wi-Fi network."),
+            failureKind = SessionFailureKind.NEARBY_PERMISSION
+        )
     }
 
     fun onNotificationPermissionDenied() {
         ProjectionEventLog.warning("PERMISSION", "Notification permission denied.")
-        showError(motoHubText("Allow MOTO-HUB notifications to keep streaming visible and controllable."))
+        showError(
+            motoHubText("Allow MOTO-HUB notifications to keep streaming visible and controllable."),
+            failureKind = SessionFailureKind.NOTIFICATION_PERMISSION
+        )
     }
 
     private companion object {
@@ -1099,7 +1106,8 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
     private fun showError(
         message: String,
         offerPhoneHotspotRetry: Boolean = false,
-        offerOfficialAppHelp: Boolean = false
+        offerOfficialAppHelp: Boolean = false,
+        failureKind: SessionFailureKind? = null
     ) {
         val userFacingMessage = TBoxConflictDiagnostics.userFacingMessage(
             message,
@@ -1117,7 +1125,8 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
                 phase = SessionPhase.ERROR,
                 message = userFacingMessage,
                 offerPhoneHotspotRetry = offerPhoneHotspotRetry,
-                offerOfficialAppHelp = offerOfficialAppHelp
+                offerOfficialAppHelp = offerOfficialAppHelp,
+                failureKind = failureKind
             )
         )
     }

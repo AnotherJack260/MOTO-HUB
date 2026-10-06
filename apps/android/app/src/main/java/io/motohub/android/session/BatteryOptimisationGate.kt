@@ -43,10 +43,6 @@ internal object BatteryOptimisationGate {
             "optimisation makes that much less likely during a long ride."
     }
 
-    /** Label for the action that goes with [advice]. */
-    fun actionLabel(context: Context): String =
-        if (isExempt(context)) "Open app info" else "Open battery settings"
-
     /**
      * Opens the screen that matches the advice.
      *

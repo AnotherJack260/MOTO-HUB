@@ -119,14 +119,6 @@ fun AdvancedPromoRow(onOpenDetails: () -> Unit) {
     )
 }
 
-/** The old card's name, kept until the Ride tab calls [AdvancedPromoRow] itself. */
-@Deprecated("Use AdvancedPromoRow inside an MhListGroup.", ReplaceWith("MhListGroup { AdvancedPromoRow(onOpenDetails) }"))
-@Composable
-fun AdvancedPromoCard(onOpenDetails: () -> Unit) {
-    if (BuildConfig.IS_PRO) return
-    MhListGroup { AdvancedPromoRow(onOpenDetails) }
-}
-
 /**
  * The pitch, as a screen rather than a dialog.
  *

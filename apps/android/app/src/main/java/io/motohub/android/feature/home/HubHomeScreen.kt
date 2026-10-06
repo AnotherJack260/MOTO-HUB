@@ -5,9 +5,15 @@ package io.motohub.android.feature.home
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
+import android.content.Intent
+import android.provider.Settings
+import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,37 +21,40 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ScreenShare
+import androidx.compose.material.icons.rounded.Brightness4
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Keyboard
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material.icons.rounded.Usb
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import io.motohub.android.tbox.ProfileOverride
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.motohub.android.androidauto.AndroidAutoRuntime
-import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,49 +62,49 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.motohub.android.BuildConfig
+import io.motohub.android.androidauto.AndroidAutoRuntime
+import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
+import io.motohub.android.feature.garage.MotorcyclePhoto
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.SessionPhase
-import io.motohub.android.feature.garage.MotorcyclePhoto
-import io.motohub.android.ui.components.ConnectionRail
-import io.motohub.android.ui.components.SystemKillNotice
-import io.motohub.android.ui.components.ConnectionState
-import io.motohub.android.ui.components.HubAppBar
+import io.motohub.android.session.TBoxConnectionMode
+import io.motohub.android.tbox.ProfileOverride
+import io.motohub.android.tbox.WifiDirectGate
+import io.motohub.android.tbox.WifiGate
 import io.motohub.android.ui.components.HubBottomNavigation
-import io.motohub.android.ui.components.HeroPrimaryAction
-import io.motohub.android.ui.components.HeroOptionRow
-import io.motohub.android.ui.components.HeroTile
 import io.motohub.android.ui.components.HubTab
-import io.motohub.android.ui.components.LivePill
-import io.motohub.android.ui.components.MonoLabel
+import io.motohub.android.ui.components.MOTION_MILLIS
+import io.motohub.android.ui.components.MhBanner
+import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhIconCircle
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhStatusChip
+import io.motohub.android.ui.components.MhSwitchRow
+import io.motohub.android.ui.components.MhTextButton
+import io.motohub.android.ui.components.MhTone
+import io.motohub.android.ui.components.MhTopBar
 import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubCardGroup
 import io.motohub.android.ui.components.MotoHubNotice
+import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.ui.components.NoticeTone
 import io.motohub.android.ui.components.ScreenCrossfade
-import io.motohub.android.ui.components.ScreenSlideTransition
-import io.motohub.android.ui.components.StatusPill
-import io.motohub.android.ui.theme.MotoHubAndroidAuto
-import io.motohub.android.ui.theme.MotoHubImport
-import io.motohub.android.ui.theme.MotoHubManual
-import io.motohub.android.ui.theme.MotoHubMirror
-import io.motohub.android.tbox.TBoxConflictDiagnostics
-import io.motohub.android.tbox.WifiGate
+import io.motohub.android.ui.components.SystemKillNotice
+import io.motohub.android.ui.theme.MotoHubColors
 
 @Composable
 fun HubHomeScreen(
@@ -140,14 +149,6 @@ fun HubHomeScreen(
 ) {
     val session = state.session
     val destination = resolveHubDestination(session, androidAutoActive, externalDisplayActive = externalDisplayActive)
-    val connectionState = when {
-        session.phase == SessionPhase.CONNECTING_NETWORK ||
-            session.phase == SessionPhase.DISCOVERING_TBOX -> ConnectionState.CONNECTING
-        session.phase == SessionPhase.READY ||
-            session.phase == SessionPhase.REQUESTING_PROJECTION ||
-            session.phase == SessionPhase.CAPTURING -> ConnectionState.CONNECTED
-        else -> ConnectionState.DISCONNECTED
-    }
 
     // A drill-down rather than an expanding card: this is a decision with its own evidence and
     // its own list, and the rider taking it has already been told the wrong thing once.
@@ -177,59 +178,146 @@ fun HubHomeScreen(
         )
     }
 
+    // Whether what was started is actually on the dashboard yet, by whichever mode is running.
+    val ready = when {
+        androidAutoActive -> androidAutoStreaming
+        externalDisplayActive -> externalDisplayStreaming
+        else -> session.phase == SessionPhase.CAPTURING
+    }
+    // Starting Google Android Auto can take several seconds and several attempts; the narration
+    // says which one is running so the screen is not a motionless "getting ready".
+    val androidAutoStartupDetail by AndroidAutoRuntime.startupDetail.collectAsStateWithLifecycle()
+    // A step the rider has to carry out by hand is not a status line: it gets a notice of its own.
+    val riderStep = androidAutoStartupDetail
+        ?.takeIf { androidAutoActive && !ready }
+        ?.let(AndroidAutoSelfModeHelp::riderStepOf)
+    // Everything Android Auto says about its own startup while it is still working on it: a
+    // runtime string, sometimes a paragraph. Never a row subtitle.
+    val narration = androidAutoStartupDetail
+        ?.takeIf { androidAutoActive && !ready && riderStep == null }
+        ?.let(::motoHubText)
+    val failure = if (session.phase != SessionPhase.ERROR) null else rideFailureOf(
+        session.message,
+        session.failureKind,
+        session.offerPhoneHotspotRetry,
+        session.offerOfficialAppHelp,
+        companionAppName
+    )
+
     MotoHubBackground(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().statusBarsPadding()
         ) {
-            ConnectionRail(connectionState)
-            HubAppBar(
-                motorcycleName = session.motorcycle?.displayName?.takeIf(String::isNotBlank)
-                    ?: session.motorcycle?.ssid,
-                isConnected = connectionState == ConnectionState.CONNECTED,
-                onMotorcycleTap = { onTabSelected(HubTab.GARAGE) }
-            )
             // Only the failing verdict is a banner. The healthy one travels the same field and
             // is what the confirmation above is built on - showing it here would put "your
             // dashboard is not showing this" over a dashboard that is showing it.
-            session.deliveryWarning?.takeIf { !it.healthy }?.let {
+            deliveryWarning?.takeIf { !it.healthy }?.let {
                 DeliveryWarningBanner(onOpen = { showProfileTrial = true })
             }
 
-            Box(Modifier.weight(1f)) {
+            // The dock pads the navigation bar itself. Consumed here, so a page inside a tab
+            // (MhScreen ends its scroll clear of that bar) does not leave the same gap again above it.
+            Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.navigationBars)) {
                 ScreenCrossfade(screen = selectedTab, label = "tab") { tab ->
                     when (tab) {
-                        HubTab.RIDE, HubTab.NAV, HubTab.TRIPS -> HomeTabContent(
-                            state = state,
-                            destination = destination,
-                            onScanQr = onScanQr,
-                            onImportQrPhoto = onImportQrPhoto,
-                            onManualPairing = onManualPairing,
-                            onConnectAndDiscover = onConnectAndDiscover,
-                            companionAppName = companionAppName,
-                            onCloseCompanionAppAndRetry = onCloseCompanionAppAndRetry,
-                            onOpenCompanionAppSettings = onOpenCompanionAppSettings,
-                            onOpenWifiSettings = onOpenWifiSettings,
-                            onOpenAndroidAutoSettings = onOpenAndroidAutoSettings,
-                            onCancelConnection = onCancelConnection,
-                            onDisconnect = onDisconnect,
-                            onStartProjection = onStartProjection,
-                            androidAutoActive = androidAutoActive,
-                            androidAutoStreaming = androidAutoStreaming,
-                            onStartAndroidAuto = onStartAndroidAuto,
-                            onStopAndroidAuto = onStopAndroidAuto,
-                            onOpenAndroidAutoPreview = onOpenAndroidAutoPreview,
-                            onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto,
-                            dimDisplayEnabled = dimDisplayEnabled,
-                            onDimDisplayChanged = onDimDisplayChanged,
-                            onStopProjection = onStopProjection,
-                            aoaAccessoryConnected = aoaAccessoryConnected,
-                            externalDisplayActive = externalDisplayActive,
-                            externalDisplayStreaming = externalDisplayStreaming,
-                            onStartExternalDisplay = onStartExternalDisplay,
-                            onStopExternalDisplay = onStopExternalDisplay,
-                            onTryPhoneHotspot = onTryPhoneHotspot,
-                            onOpenAdvancedPromo = onOpenAdvancedPromo
-                        )
+                        HubTab.RIDE, HubTab.NAV, HubTab.TRIPS -> RidePage {
+                            ConfirmOnChange(destination) { from, to ->
+                                from == HubDestination.CONNECTION && to == HubDestination.CONNECTING
+                            }
+                            ConfirmOnChange(ready) { from, to -> !from && to }
+
+                            val motorcycle = session.motorcycle
+                            if (motorcycle == null) {
+                                PairingTitle()
+                            } else {
+                                RideHero(
+                                    motorcycle = motorcycle,
+                                    chip = rideChip(destination, ready, riderStep != null),
+                                    // At rest only: while connecting or riding, Cancel and Stop
+                                    // stay above the fold. The name and chip never move.
+                                    showPhoto = destination == HubDestination.CONNECTION ||
+                                        destination == HubDestination.MODE_SELECTION,
+                                    onSwitch = { onTabSelected(HubTab.GARAGE) }
+                                )
+                            }
+                            // Only after the phone has actually stopped a session: the one thing
+                            // on screen that explains something the rider has already lived through.
+                            SystemKillNotice()
+
+                            val errorBanner: @Composable () -> Unit = {
+                                failure?.let {
+                                    RideErrorBanner(
+                                        failure = it,
+                                        companionAppName = companionAppName,
+                                        onOpenWifiSettings = onOpenWifiSettings,
+                                        onTryPhoneHotspot = onTryPhoneHotspot,
+                                        onOpenCompanionAppSettings = onOpenCompanionAppSettings,
+                                        onOpenAndroidAutoHelp = onOpenAndroidAutoSettings
+                                    )
+                                }
+                            }
+                            // On the two resting states only: a promo never competes with a
+                            // connection in progress or a ride.
+                            val promo: @Composable () -> Unit = {
+                                if (!BuildConfig.IS_PRO) MhListGroup { AdvancedPromoRow(onOpenAdvancedPromo) }
+                            }
+                            // Connection states are not navigation, so they fade rather than slide.
+                            ScreenCrossfade(screen = destination, label = "ride") { shown ->
+                                when (shown) {
+                                    HubDestination.PAIRING -> PairingContent(
+                                        errorBanner = errorBanner,
+                                        promo = promo,
+                                        onScanQr = onScanQr,
+                                        onImportQrPhoto = onImportQrPhoto,
+                                        onManualPairing = onManualPairing
+                                    )
+                                    HubDestination.CONNECTION -> ConnectionContent(
+                                        failure = failure,
+                                        errorBanner = errorBanner,
+                                        promo = promo,
+                                        // A port conflict's retry is the companion-app one: it
+                                        // waits for the rider to come back from force-stopping it.
+                                        onRetry = if (failure?.kind == RideFailureKind.PORT_CONFLICT) {
+                                            onCloseCompanionAppAndRetry
+                                        } else {
+                                            onConnectAndDiscover
+                                        },
+                                        onScanQr = onScanQr,
+                                        onImportQrPhoto = onImportQrPhoto,
+                                        onManualPairing = onManualPairing,
+                                        onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto
+                                    )
+                                    // ?.let, not checkNotNull: a fading-out state is drawn with
+                                    // the current session, which may have lost its motorcycle.
+                                    HubDestination.CONNECTING -> motorcycle?.let {
+                                        ConnectingContent(phase = session.phase, motorcycle = it, onCancel = onCancelConnection)
+                                    }
+                                    HubDestination.MODE_SELECTION -> ModeSelectionContent(
+                                        aoaAccessoryConnected = aoaAccessoryConnected,
+                                        onStartProjection = onStartProjection,
+                                        onStartAndroidAuto = onStartAndroidAuto,
+                                        onStartExternalDisplay = onStartExternalDisplay,
+                                        onDisconnect = onDisconnect
+                                    )
+                                    HubDestination.ACTIVE_SESSION -> ActiveSessionContent(
+                                        androidAutoActive = androidAutoActive,
+                                        externalDisplayActive = externalDisplayActive,
+                                        ready = ready,
+                                        riderStep = riderStep,
+                                        narration = narration,
+                                        dimDisplayEnabled = dimDisplayEnabled,
+                                        onDimDisplayChanged = onDimDisplayChanged,
+                                        onOpenAndroidAutoPreview = onOpenAndroidAutoPreview,
+                                        onOpenAndroidAutoHelp = onOpenAndroidAutoSettings,
+                                        onStop = when {
+                                            androidAutoActive -> onStopAndroidAuto
+                                            externalDisplayActive -> onStopExternalDisplay
+                                            else -> onStopProjection
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         HubTab.GARAGE -> garageContent()
                         HubTab.SETTINGS -> settingsContent()
                     }
@@ -239,539 +327,319 @@ fun HubHomeScreen(
             HubBottomNavigation(
                 selected = selectedTab,
                 onSelect = onTabSelected,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeTabContent(
-    state: HubUiState,
-    destination: HubDestination,
-    onScanQr: () -> Unit,
-    onImportQrPhoto: () -> Unit,
-    onManualPairing: () -> Unit,
-    onTryPhoneHotspot: () -> Unit,
-    onConnectAndDiscover: () -> Unit,
-    companionAppName: String?,
-    onCloseCompanionAppAndRetry: () -> Unit,
-    onOpenCompanionAppSettings: () -> Unit,
-    onOpenWifiSettings: () -> Unit,
-    onOpenAndroidAutoSettings: () -> Unit,
-    onCancelConnection: () -> Unit,
-    onDisconnect: () -> Unit,
-    onStartProjection: () -> Unit,
-    androidAutoActive: Boolean,
-    androidAutoStreaming: Boolean,
-    onStartAndroidAuto: () -> Unit,
-    onStopAndroidAuto: () -> Unit,
-    onOpenAndroidAutoPreview: () -> Unit,
-    onStartPhoneOnlyAndroidAuto: () -> Unit,
-    dimDisplayEnabled: Boolean,
-    onDimDisplayChanged: (Boolean) -> Unit,
-    onStopProjection: () -> Unit,
-    // ── External display (USB AOA) ──
-    aoaAccessoryConnected: Boolean = false,
-    externalDisplayActive: Boolean = false,
-    externalDisplayStreaming: Boolean = false,
-    onStartExternalDisplay: () -> Unit = {},
-    onStopExternalDisplay: () -> Unit = {},
-    onOpenAdvancedPromo: () -> Unit = {}
-) {
-    val session = state.session
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
-        // One rhythm for the whole column: 20dp between every block, whatever the destination.
-        // The old 24/18 pair made the gutters wider than the gaps, which reads as a list of
-        // cards rather than one screen.
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Spacer(Modifier.height(2.dp))
-
-        // Above the motorcycle, and only after the phone has actually stopped a session: this is
-        // the one thing on screen that explains something the rider has already lived through.
-        SystemKillNotice()
-
-        // The motorcycle identity (photo, name, SSID) stays on screen across every
-        // destination once a profile is chosen, instead of each destination re-deriving
-        // its own header - this is what keeps the screen feeling like one continuous
-        // place rather than a new layout every time the connection state changes.
-        session.motorcycle?.let { motorcycle ->
-            MotorcycleHero(
-                motorcycle = motorcycle,
-                compact = destination == HubDestination.CONNECTING ||
+                rideLive = destination == HubDestination.MODE_SELECTION ||
                     destination == HubDestination.ACTIVE_SESSION
             )
         }
-
-        // The connection state machine, not a drill-down: PAIRING is the floor a rider starts
-        // from before any motorcycle is chosen, and every other destination counts as forward
-        // from it - including the return trip through MODE_SELECTION after a stopped session,
-        // which is still "forward" by this model (see ScreenSlideTransition's doc comment on
-        // why that reads right rather than backwards).
-        ScreenSlideTransition(
-            screen = destination,
-            isBase = { it == HubDestination.PAIRING },
-            modifier = Modifier.fillMaxWidth()
-        ) { shown ->
-        when (shown) {
-            HubDestination.PAIRING -> PairingContent(
-                onScanQr = onScanQr,
-                onImportQrPhoto = onImportQrPhoto,
-                onManualPairing = onManualPairing
-            )
-            HubDestination.CONNECTING -> ConnectingContent(
-                phase = session.phase,
-                ssid = checkNotNull(session.motorcycle).ssid,
-                onCancel = onCancelConnection
-            )
-            HubDestination.ACTIVE_SESSION -> ActiveSessionContent(
-                androidAutoActive = androidAutoActive,
-                androidAutoStreaming = androidAutoStreaming,
-                mirrorStreaming = session.phase == SessionPhase.CAPTURING,
-                dimDisplayEnabled = dimDisplayEnabled,
-                onDimDisplayChanged = onDimDisplayChanged,
-                onOpenAndroidAutoPreview = onOpenAndroidAutoPreview,
-                onOpenAndroidAutoHelp = onOpenAndroidAutoSettings,
-                externalDisplayActive = externalDisplayActive,
-                externalDisplayStreaming = externalDisplayStreaming,
-                onStopExternalDisplay = onStopExternalDisplay,
-                onStop = if (androidAutoActive) onStopAndroidAuto else onStopProjection
-            )
-            HubDestination.MODE_SELECTION -> ModeSelectionContent(
-                onStartProjection = onStartProjection,
-                onStartAndroidAuto = onStartAndroidAuto,
-                onDisconnect = onDisconnect,
-                aoaAccessoryConnected = aoaAccessoryConnected,
-                onStartExternalDisplay = onStartExternalDisplay
-            )
-            HubDestination.CONNECTION -> ConnectionContent(
-                errorMessage = session.message.takeIf { session.phase == SessionPhase.ERROR },
-                showPhoneHotspotRetry = session.phase == SessionPhase.ERROR &&
-                    session.offerPhoneHotspotRetry,
-                onTryPhoneHotspot = onTryPhoneHotspot,
-                onConnect = onConnectAndDiscover,
-                companionAppName = companionAppName,
-                companionAppHelpApplies = session.offerOfficialAppHelp,
-                onCloseCompanionAppAndRetry = onCloseCompanionAppAndRetry,
-                onOpenCompanionAppSettings = onOpenCompanionAppSettings,
-                onOpenWifiSettings = onOpenWifiSettings,
-                onOpenAndroidAutoSettings = onOpenAndroidAutoSettings,
-                onScanQr = onScanQr,
-                onImportQrPhoto = onImportQrPhoto,
-                onManualPairing = onManualPairing,
-                onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto
-            )
-        }
-        }
-
-        // Last thing in the column, so a rider connecting a motorcycle never has to step around
-        // it. Turns into a shortcut once ADVANCED is installed - see AdvancedPromoCard.
-        AdvancedPromoCard(onOpenDetails = onOpenAdvancedPromo)
-
-        Spacer(Modifier.height(12.dp))
     }
 }
 
 /**
- * Persistent identity block: photo, display name, SSID, and a large monogram watermark
- * peeking out behind the name. [compact] shrinks it into a single row once the screen's
- * attention should be on connection/streaming status instead - it keeps the SSID, because
- * that is the line a rider checks against what the dash is showing them.
+ * MhTabPage's frame - the same empty bar and gutter, so the title here lines up with Garage's and
+ * Settings' - but with the title left to the content: on Ride it is the motorcycle's name, and
+ * that name is a button.
+ */
+// ponytail: MhTabPage takes its title as a String; a title slot in the kit would replace this.
+@Composable
+private fun RidePage(content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        MhTopBar(onBack = null)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            content()
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * The confirm haptic on the step from [value]'s last state to its new one, when [fires] says so.
+ * Remembered from the first composition, so coming back to the tab mid-ride does not buzz.
  */
 @Composable
-private fun MotorcycleHero(motorcycle: MotorcycleProfile, compact: Boolean) {
-    val displayName = motorcycle.displayName?.takeIf { it.isNotBlank() } ?: "My motorcycle"
-    if (compact) {
+private fun <T> ConfirmOnChange(value: T, fires: (from: T, to: T) -> Boolean) {
+    val view = LocalView.current
+    var last by remember { mutableStateOf(value) }
+    LaunchedEffect(value) {
+        if (fires(last, value)) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        last = value
+    }
+}
+
+@Composable
+private fun PairingTitle() {
+    // The large-title position and metrics, so it sits where every other tab's title does.
+    Column(
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            motoHubText("Connect your motorcycle"),
+            modifier = Modifier.semantics { heading() },
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            motoHubText("Scan the QR code on your dashboard to save its Wi-Fi details."),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun rideChip(destination: HubDestination, ready: Boolean, actionNeeded: Boolean): Pair<String, MhTone> =
+    when (destination) {
+        HubDestination.CONNECTING -> motoHubText("Connecting") to MhTone.PROGRESS
+        HubDestination.MODE_SELECTION -> motoHubText("Connected") to MhTone.LIVE
+        // "Starting" over a session that is in fact waiting on the rider reads as "sit still, it
+        // is working on it" - the exact wrong instruction.
+        HubDestination.ACTIVE_SESSION -> when {
+            actionNeeded -> motoHubText("Action needed") to MhTone.WARNING
+            ready -> motoHubText("Live") to MhTone.LIVE
+            else -> motoHubText("Starting") to MhTone.PROGRESS
+        }
+        else -> motoHubText("Not connected") to MhTone.NEUTRAL
+    }
+
+/**
+ * Which motorcycle, and how it is doing: the name in the large-title position (a tap switches
+ * motorcycles in the Garage), the status chip and the SSID - the line a rider checks against what
+ * the dashboard shows. The photo is there only at rest, and only if the rider took one.
+ */
+@Composable
+private fun RideHero(
+    motorcycle: MotorcycleProfile,
+    chip: Pair<String, MhTone>,
+    showPhoto: Boolean,
+    onSwitch: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(role = Role.Button, onClick = onSwitch)
+                .padding(start = 4.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // No maxLines: a long name wraps rather than losing its end.
+            Text(
+                motorcycle.displayName?.takeIf(String::isNotBlank) ?: motoHubText("My motorcycle"),
+                modifier = Modifier.weight(1f, fill = false).semantics { heading() },
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Icon(
+                Icons.Rounded.KeyboardArrowDown,
+                contentDescription = motoHubText("Switch motorcycle"),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Row(
+            modifier = Modifier.padding(start = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MhStatusChip(chip.first, chip.second)
+            Text(
+                motorcycle.ssid,
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        AnimatedVisibility(
+            visible = showPhoto && !motorcycle.photoPath.isNullOrBlank(),
+            enter = fadeIn(tween(MOTION_MILLIS)) + expandVertically(tween(MOTION_MILLIS)),
+            exit = fadeOut(tween(MOTION_MILLIS)) + shrinkVertically(tween(MOTION_MILLIS))
         ) {
             MotorcyclePhoto(
                 path = motorcycle.photoPath,
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(16.dp)
-            )
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                Text(
-                    displayName,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    motorcycle.ssid,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    } else {
-        val monogram = displayName.trim().take(1).uppercase().ifBlank { "M" }
-        val hasPhoto = !motorcycle.photoPath.isNullOrBlank()
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(216.dp)
-                .clip(RoundedCornerShape(22.dp))
-        ) {
-            if (hasPhoto) {
-                MotorcyclePhoto(
-                    path = motorcycle.photoPath,
-                    modifier = Modifier.fillMaxSize(),
-                    // MotorcyclePhoto types this as RoundedCornerShape, so it cannot read the
-                    // theme's Shapes directly; kept in step with shapes.large by hand.
-                    shape = RoundedCornerShape(22.dp)
-                )
-            } else {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface)
-                )
-            }
-            // Ghost monogram stamped over the art (not behind it - a user photo has no
-            // transparency to peek through, unlike a studio product render), corner-anchored
-            // so it reads as a stylistic accent instead of competing with the photo.
-            Text(
-                text = monogram,
-                fontSize = 150.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (hasPhoto) 0.10f else 0.16f),
-                maxLines = 1,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 26.dp, y = (-34).dp)
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .padding(top = 8.dp)
                     .fillMaxWidth()
-                    // Three stops, not two. A straight transparent-to-solid ramp puts half its
-                    // darkness where the name is not, and still leaves the first line of text
-                    // sitting on bare photo; this one is clear for the top half and then dark
-                    // enough, fast enough, that white type lands on a real scrim whatever the
-                    // rider photographed.
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color.Transparent,
-                                0.45f to MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
-                                1.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.94f)
-                            )
-                        )
-                    )
-                    .padding(horizontal = 18.dp, vertical = 16.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        displayName,
-                        style = MaterialTheme.typography.displaySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        motorcycle.ssid,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 3.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+                    .heightIn(max = 200.dp)
+                    .aspectRatio(16f / 9f),
+                // MotorcyclePhoto types this as RoundedCornerShape, so it cannot take the theme's
+                // Shapes directly; kept in step with shapes.large by hand.
+                shape = RoundedCornerShape(20.dp)
+            )
         }
     }
 }
 
 @Composable
 private fun PairingContent(
+    errorBanner: @Composable () -> Unit,
+    promo: @Composable () -> Unit,
     onScanQr: () -> Unit,
     onImportQrPhoto: () -> Unit,
     onManualPairing: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            MonoLabel(motoHubText("FIRST-TIME SETUP"))
-            Text(motoHubText("Connect your motorcycle."), style = MaterialTheme.typography.displaySmall)
-            Text(
-                motoHubText("Scan the T-Box QR code to save the network credentials automatically."),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        // The same hero vocabulary the Garage tab is built from, rather than a stack of buttons
-        // in three different weights: one filled card for the thing to do, tiles for the ways
-        // round it. A rider arriving here for the first time should see one target, not five.
-        HeroPrimaryAction(
-            title = "Scan motorcycle QR code",
-            subtitle = "Point the camera at the code on the dash",
-            icon = "QrScan",
-            color = MaterialTheme.colorScheme.primary,
-            onClick = onScanQr
-        )
-        // IntrinsicSize.Max, not a fixed height: the pair is measured from whichever tile
-        // needs more room and both grow to match, so they line up without either being capped.
-        Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            HeroTile(
-                title = "Import QR",
-                subtitle = "From a photo you already took",
-                icon = "Import",
-                color = MotoHubImport,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        errorBanner()
+        MhPrimaryButton(motoHubText("Scan QR code"), onScanQr, icon = Icons.Rounded.QrCodeScanner)
+        MhListGroup {
+            MhListRow(
+                title = motoHubText("Import QR code"),
+                subtitle = motoHubText("From a photo or screenshot"),
+                icon = Icons.Rounded.Image,
                 onClick = onImportQrPhoto
             )
-            HeroTile(
-                title = "Manual setup",
-                subtitle = "Type the network name and password",
-                icon = "Manual",
-                color = MotoHubManual,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+            MhListRow(
+                title = motoHubText("Enter details manually"),
+                subtitle = motoHubText("Wi-Fi name and password"),
+                icon = Icons.Rounded.Keyboard,
                 onClick = onManualPairing
             )
         }
+        promo()
     }
 }
 
 @Composable
 private fun ConnectionContent(
-    errorMessage: String?,
-    showPhoneHotspotRetry: Boolean,
-    onTryPhoneHotspot: () -> Unit,
-    onConnect: () -> Unit,
-    companionAppName: String?,
-    companionAppHelpApplies: Boolean,
-    onCloseCompanionAppAndRetry: () -> Unit,
-    onOpenCompanionAppSettings: () -> Unit,
-    onOpenWifiSettings: () -> Unit,
-    onOpenAndroidAutoSettings: () -> Unit,
+    failure: RideFailure?,
+    errorBanner: @Composable () -> Unit,
+    promo: @Composable () -> Unit,
+    onRetry: () -> Unit,
     onScanQr: () -> Unit,
     onImportQrPhoto: () -> Unit,
     onManualPairing: () -> Unit,
     onStartPhoneOnlyAndroidAuto: () -> Unit
 ) {
+    // Here rather than one level up, and not saveable: leaving this state (auto-connect starting,
+    // say) takes the sheet with it, and ScreenCrossfade's state holder would otherwise reopen it
+    // the next time the rider lands back here.
+    var showOptions by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        errorMessage?.let { message ->
-            ErrorBanner(
-                message = message,
-                showPortConflictHelp = TBoxConflictDiagnostics.isPortConflict(message),
-                companionAppName = companionAppName,
-                companionAppHelpApplies = companionAppHelpApplies,
-                onCloseCompanionAppAndRetry = onCloseCompanionAppAndRetry,
-                onOpenCompanionAppSettings = onOpenCompanionAppSettings,
-                showWifiSettingsAction = message == WifiGate.WIFI_OFF_MESSAGE,
-                onOpenWifiSettings = onOpenWifiSettings,
-                showAndroidAutoSetupHelp = AndroidAutoSelfModeHelp.isMessageAboutSelfMode(message),
-                onOpenAndroidAutoSettings = onOpenAndroidAutoSettings,
-                showPhoneHotspotRetry = showPhoneHotspotRetry,
-                onTryPhoneHotspot = onTryPhoneHotspot
-            )
-        }
-        // This screen used to be five controls in a vertical stack - a filled button, two
-        // outlined twins, a text link, a rule, and a third outlined button - which gave the one
-        // thing a rider opens this app to do the same visual weight as the ways round it. One
-        // filled hero for Connect, tiles for the alternatives, and the rule is gone: the mono
-        // eyebrow already separates the section below it.
-        HeroPrimaryAction(
-            title = "Connect",
-            subtitle = "Join the motorcycle network and find the T-Box",
-            icon = "Bike",
-            color = MaterialTheme.colorScheme.primary,
-            onClick = onConnect
+        errorBanner()
+        // Connect is the one thing a rider opens this app to do; after a failure the same button
+        // is the retry, and the banner above carries the fix.
+        MhPrimaryButton(
+            if (failure != null) motoHubText("Try again") else motoHubText("Connect"),
+            onRetry,
+            icon = Icons.Rounded.TwoWheeler
         )
-        // IntrinsicSize.Max, not a fixed height: the pair is measured from whichever tile
-        // needs more room and both grow to match, so they line up without either being capped.
-        Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            HeroTile(
-                title = "Scan new QR",
-                subtitle = "Replace the saved credentials",
-                icon = "QrScan",
-                color = MotoHubMirror,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = onScanQr
-            )
-            HeroTile(
-                title = "Import QR",
-                subtitle = "From a photo you already took",
-                icon = "Import",
-                color = MotoHubImport,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onClick = onImportQrPhoto
-            )
-        }
-        // The two ways round the main path, in one grouped card instead of what used to be
-        // here: a bare grey text link, a shouty mono eyebrow, and a full-width tile - three
-        // different idioms stacked in three rows. They are alternatives to Connect, not
-        // competitors to it, so they read as a list and carry their explanation with them.
-        MonoLabel(motoHubText("MORE WAYS TO START"))
-        MotoHubCardGroup {
-            HeroOptionRow(
-                title = "Connect manually",
-                description = "No QR code - type the network name and password shown on the dash.",
-                icon = "Manual",
-                color = MotoHubManual,
-                onClick = onManualPairing
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            // Runs Android Auto entirely on the phone's own screen via
-            // PhoneOnlyAndroidAutoBridge - no T-Box, no Bluetooth, no motorcycle required.
-            // Exists for testing the Android Auto path itself (identity, handlebar mapping,
-            // ...) without a bike to hand; Advanced offers the same shortcut from its own
-            // home screen.
-            HeroOptionRow(
-                title = "Android Auto on this phone",
-                description = "No T-Box and no motorcycle: Android Auto runs on this screen.",
-                icon = "Auto",
-                color = MotoHubAndroidAuto,
-                onClick = onStartPhoneOnlyAndroidAuto
-            )
+        MhTextButton(
+            motoHubText("Connection options"),
+            onClick = { showOptions = true },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        promo()
+    }
+    if (showOptions) {
+        MhSheet(onDismiss = { showOptions = false }, title = motoHubText("Connection options")) { close ->
+            Column {
+                MhListRow(
+                    title = motoHubText("Scan QR code"),
+                    icon = Icons.Rounded.QrCodeScanner,
+                    onClick = { close(onScanQr) }
+                )
+                MhListRow(
+                    title = motoHubText("Import QR code"),
+                    subtitle = motoHubText("From a photo or screenshot"),
+                    icon = Icons.Rounded.Image,
+                    onClick = { close(onImportQrPhoto) }
+                )
+                MhListRow(
+                    title = motoHubText("Enter details manually"),
+                    subtitle = motoHubText("Wi-Fi name and password"),
+                    icon = Icons.Rounded.Keyboard,
+                    onClick = { close(onManualPairing) }
+                )
+                // Runs Android Auto entirely on the phone's own screen via
+                // PhoneOnlyAndroidAutoBridge - no T-Box, no Bluetooth, no motorcycle required.
+                // Exists for testing the Android Auto path itself (identity, handlebar mapping,
+                // ...) without a bike to hand.
+                MhListRow(
+                    title = motoHubText("Android Auto on this phone"),
+                    subtitle = motoHubText("No motorcycle needed"),
+                    icon = Icons.Rounded.DirectionsCar,
+                    onClick = { close(onStartPhoneOnlyAndroidAuto) }
+                )
+            }
         }
     }
 }
+
 /**
- * The connection failure, drawn in a surface that grows with the message.
- *
- * The failure text is never capped, never truncated and never squeezed into a caption slot: some
- * of these messages - the Android Auto ones especially - are a paragraph of instructions, and the
- * rider reading them is stuck until they follow them. See [MotoHubNotice] for the rule.
- *
- * Only the secondary, situational help (the port-conflict explanation, the "one possible cause"
- * companion-app hint) sits behind the details fold. What went wrong, and any action that is the
- * rider's only way forward, stay in front of them.
+ * The connection failure: what went wrong in a few words, one line, and the one action that fixes
+ * it - never "Try again", the hero button is the retry. The raw message, which logic matches by
+ * identity and which is already in the rider's language where it can be, sits behind "Details".
  */
 @Composable
-private fun ErrorBanner(
-    message: String,
-    showPortConflictHelp: Boolean,
+private fun RideErrorBanner(
+    failure: RideFailure,
     companionAppName: String?,
-    companionAppHelpApplies: Boolean,
-    onCloseCompanionAppAndRetry: () -> Unit,
-    onOpenCompanionAppSettings: () -> Unit,
-    showWifiSettingsAction: Boolean,
     onOpenWifiSettings: () -> Unit,
-    showAndroidAutoSetupHelp: Boolean = false,
-    onOpenAndroidAutoSettings: () -> Unit = {},
-    showPhoneHotspotRetry: Boolean = false,
-    onTryPhoneHotspot: () -> Unit = {}
+    onTryPhoneHotspot: () -> Unit,
+    onOpenCompanionAppSettings: () -> Unit,
+    onOpenAndroidAutoHelp: () -> Unit
 ) {
-    // The official-app hint is evidence-based only for a port conflict; for every other
-    // connection failure it is one possible cause among several, so it moves behind the
-    // details fold - and it is dropped entirely for errors it cannot explain (phone Wi-Fi
-    // off, Android Auto self-mode), where it used to read as a false culprit.
-    // ...and it is dropped for any failure that never reached a session another app could be
-    // holding - see HubSessionState.offerOfficialAppHelp. A port conflict is its own evidence and
-    // stands on that alone, whatever stage reported it.
-    val companionAppMayHoldTBox = companionAppName != null &&
-        (companionAppHelpApplies || showPortConflictHelp) &&
-        !showWifiSettingsAction && !showAndroidAutoSetupHelp
-    val showCompanionAppHintProminently = companionAppMayHoldTBox && showPortConflictHelp
-    // Not threaded up as a callback like the others: a plain navigation intent with no session
-    // state behind it, and the screen it opens is fixed by the message that produced it.
+    // Not threaded up as callbacks like the others: plain navigation intents with no session
+    // state behind them, and the screen each opens is fixed by the failure that produced it.
     val context = LocalContext.current
-    val showHotspotSettingsAction = message == WifiGate.HOTSPOT_OFF_MESSAGE
-    val hasExtra = showPortConflictHelp || showWifiSettingsAction || showAndroidAutoSetupHelp ||
-        showHotspotSettingsAction ||
-        (companionAppMayHoldTBox && !showCompanionAppHintProminently)
-    val hasActions = showPhoneHotspotRetry || showCompanionAppHintProminently
-
-    MotoHubNotice(
-        label = motoHubText("CONNECTION FAILED"),
-        tone = NoticeTone.ERROR,
-        // Through the catalogue, like every other line here. The failure text is a plain
-        // string by the time it arrives - a constant compared by identity along the way,
-        // and forwarded over AIDL from the other install - so it cannot be localized where
-        // it is produced. Anything with no catalogue entry falls back to itself.
-        body = motoHubText(message),
-        actions = if (!hasActions) null else {
-            {
-                if (showPhoneHotspotRetry) {
-                    // Never behind the details fold. Whether a dash broadcasts at all or waits
-                    // for the phone to host cannot be told apart from the outside, and a rider
-                    // who cannot get past this screen has no other way to find out - so the one
-                    // action that settles it stays in front of them, with the credentials
-                    // already carried over so trying costs a tap.
-                    Text(
-                        motoHubText("Some dashboards never broadcast a network of their own: they join a hotspot your phone creates, using the Ssid and Password shown on the dash. If yours says \"open Android hotspot\", try that instead."),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    SecondaryAction(
-                        motoHubText("Try: my phone hosts the hotspot"),
-                        onTryPhoneHotspot,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                if (showCompanionAppHintProminently) {
-                    // A port conflict is the one failure the official app is known to cause, and
-                    // Android gives no way to ask whether another app is currently running -
-                    // "installed" is as close as detection gets. The only fix is the rider
-                    // force-stopping it from App info, so offer that directly.
-                    Text(
-                        motoHubText("%1\$s is installed and may be holding the dashboard. Force-stop it from its App info page, then retry.", companionAppName.orEmpty()),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    SecondaryAction(motoHubText("Open %1\$s app info", companionAppName.orEmpty()), onOpenCompanionAppSettings)
-                    SecondaryAction(motoHubText("Retry connection"), onCloseCompanionAppAndRetry)
-                }
+    val fix: Pair<String, () -> Unit>? = when (failure.fix) {
+        RideFix.NONE -> null
+        RideFix.WIFI_SETTINGS -> motoHubText("Open Wi-Fi settings") to onOpenWifiSettings
+        RideFix.HOTSPOT_SETTINGS -> motoHubText("Open hotspot settings") to {
+            if (!WifiGate.openHotspotSettings(context)) {
+                MotoHubSnackbar.error(context, motoHubText("Couldn't open hotspot settings"))
             }
-        },
-        details = if (!hasExtra) null else {
+        }
+        RideFix.PHONE_HOTSPOT -> motoHubText("Use phone hotspot") to onTryPhoneHotspot
+        RideFix.COMPANION_APP_SETTINGS ->
+            motoHubText("Open %1\$s app settings", companionAppName.orEmpty()) to onOpenCompanionAppSettings
+        RideFix.ANDROID_AUTO_HELP -> motoHubText("Show me how") to onOpenAndroidAutoHelp
+        RideFix.VPN_SETTINGS -> motoHubText("Open VPN settings") to {
+            runCatching {
+                context.startActivity(Intent(Settings.ACTION_VPN_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }.onFailure { MotoHubSnackbar.error(context, motoHubText("Couldn't open VPN settings")) }
+        }
+        RideFix.APP_SETTINGS -> motoHubText("Open app settings") to {
+            if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
+                MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
+            }
+        }
+    }
+    // The companion app is one possible cause among several when the dashboard does not answer,
+    // so its hint waits behind the fold. For a port conflict it is the evidence and the banner's
+    // own fix instead.
+    val companion = companionAppName?.takeIf { failure.kind == RideFailureKind.DASH_NOT_FOUND && it.isNotBlank() }
+    val raw = failure.details
+    MhBanner(
+        title = failure.title,
+        body = failure.body,
+        tone = failure.tone,
+        actionLabel = fix?.first,
+        onAction = fix?.second,
+        details = if (raw == null) null else {
             {
-                if (showPortConflictHelp) {
-                    Text(
-                        motoHubText("Another EasyConn app can keep the T-Box link occupied even after it leaves the foreground."),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (companionAppMayHoldTBox && !showCompanionAppHintProminently) {
-                    Text(
-                        motoHubText("One possible cause: %1\$s is installed and can keep the dashboard link busy even in the background. If the connection keeps failing, force-stop it from its App info page, then retry.", companionAppName.orEmpty()),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    SecondaryAction(motoHubText("Open %1\$s app info", companionAppName.orEmpty()), onOpenCompanionAppSettings)
-                    SecondaryAction(motoHubText("Retry connection"), onCloseCompanionAppAndRetry)
-                }
-                if (showWifiSettingsAction) {
-                    SecondaryAction("Open Wi-Fi settings", onOpenWifiSettings)
-                }
-                if (showHotspotSettingsAction) {
-                    SecondaryAction(
-                        motoHubText("Open hotspot settings"),
-                        onClick = { WifiGate.openHotspotSettings(context) }
-                    )
-                }
-                if (showAndroidAutoSetupHelp) {
+                Text(raw, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (companion != null) {
                     Text(
                         motoHubText(
-                            "Android Auto 17.4 removed the way apps ask it to project. It can " +
-                                "still be started from Android Auto's own developer menu."
+                            "%1\$s can keep the dashboard busy in the background. If this keeps happening, force-stop it.",
+                            companion
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    SecondaryAction("How to start Android Auto", onOpenAndroidAutoSettings)
+                    MhSecondaryButton(
+                        motoHubText("Open %1\$s app settings", companion),
+                        onOpenCompanionAppSettings,
+                        fillWidth = false
+                    )
                 }
             }
         }
@@ -781,362 +649,183 @@ private fun ErrorBanner(
 @Composable
 private fun ConnectingContent(
     phase: SessionPhase,
-    ssid: String,
+    motorcycle: MotorcycleProfile,
     onCancel: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.height(12.dp))
-        CircularProgressIndicator(
-            modifier = Modifier.size(40.dp),
-            color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 3.dp
-        )
-        Spacer(Modifier.height(18.dp))
-        Text(
-            motoHubText("Connecting"),
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            motoHubText("Setting up network and T-Box"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-        Spacer(Modifier.height(24.dp))
+    val discovering = phase == SessionPhase.DISCOVERING_TBOX
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        MhListGroup {
+            StepRow(motoHubText("Profile loaded"), done = true)
+            StepRow(motoHubText("Joining %1\$s", motorcycle.ssid), done = discovering, current = !discovering)
+            StepRow(motoHubText("Finding the dashboard"), current = discovering)
+        }
+        // On a hosted network discovery ends in a sweep that can run for a minute, and a rider
+        // with no idea of that reads the spinner as a hang and closes the app - which is exactly
+        // what ends the search.
+        if (discovering && motorcycle.connectionMode == TBoxConnectionMode.PHONE_HOTSPOT) {
+            MhFootnote(motoHubText("This can take up to 90 seconds. Keep MOTO-HUB open."))
+        }
+        MhSecondaryButton(motoHubText("Cancel"), onCancel)
+    }
+}
 
-        // Full width, not wrap-content. A centred card narrower than everything else in the
-        // column was the one block on this screen that did not line up with the rest.
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Column(Modifier.padding(horizontal = 18.dp, vertical = 4.dp)) {
-                ConnectionStep("Profile loaded", done = true)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                ConnectionStep(
-                    "Connecting to $ssid",
-                    done = phase == SessionPhase.DISCOVERING_TBOX,
-                    current = phase == SessionPhase.CONNECTING_NETWORK
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                ConnectionStep(
-                    "Finding T-Box service",
-                    current = phase == SessionPhase.DISCOVERING_TBOX
-                )
+/** One step of the connection, with MhListRow's metrics: a check, a spinner, or an empty circle. */
+@Composable
+private fun StepRow(text: String, done: Boolean = false, current: Boolean = false) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (done) {
+            MhIconCircle(Icons.Rounded.Check, tint = MaterialTheme.colorScheme.primary)
+        } else {
+            Box(Modifier.size(40.dp).background(MotoHubColors.Fill, CircleShape), contentAlignment = Alignment.Center) {
+                if (current) {
+                    CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 2.dp)
+                }
             }
         }
-        Spacer(Modifier.height(18.dp))
-        SecondaryAction("Cancel", onCancel, Modifier.fillMaxWidth(0.55f))
+        Text(
+            text,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (done || current) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
 private fun ModeSelectionContent(
+    aoaAccessoryConnected: Boolean,
     onStartProjection: () -> Unit,
     onStartAndroidAuto: () -> Unit,
-    onDisconnect: () -> Unit,
-    aoaAccessoryConnected: Boolean = false,
-    onStartExternalDisplay: () -> Unit = {}
+    onStartExternalDisplay: () -> Unit,
+    onDisconnect: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    // Equal rows, no lime: the choice is the rider's, and rows survive long translations better
+    // than side-by-side tiles.
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            LivePill(motoHubText("T-Box connected"))
-            Text(motoHubText("What to show?"), style = MaterialTheme.typography.displaySmall)
-        }
-        ModeGrid(
-            onMirror = onStartProjection,
-            onAndroidAuto = onStartAndroidAuto,
-            onExternal = if (aoaAccessoryConnected) onStartExternalDisplay else null
-        )
-        // The only way back once connect succeeds - without it, the rider had no path from
-        // "what to show?" to a different motorcycle or a plain Wi-Fi release except
-        // force-stopping the app.
-        Text(
-            motoHubText("Disconnect"),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.small)
-                .clickable(onClick = onDisconnect)
-                // A gloved thumb needs a target, not a line of text: 14dp of padding either
-                // side of the label is the difference between tappable and nearly tappable.
-                .padding(vertical = 14.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun ModeGrid(
-    onMirror: () -> Unit,
-    onAndroidAuto: () -> Unit,
-    onExternal: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        ModeGridItem("Mirror", MotoHubMirror, Modifier.weight(1f), onMirror)
-        ModeGridItem("Auto", MotoHubAndroidAuto, Modifier.weight(1f), onAndroidAuto)
-        if (onExternal != null) {
-            ModeGridItem("External", MotoHubMirror, Modifier.weight(1f), onExternal)
-        }
-    }
-}
-
-@Composable
-private fun ModeGridItem(name: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(color.copy(alpha = 0.12f), RoundedCornerShape(22.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                ModeIcon(name, color, iconSize = 32.dp)
-            }
-            // No maxLines: the tile is wrap-content in a weighted Row, so a longer name simply
-            // makes the row taller instead of losing its last letters.
-            Text(
-                name,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/** Hand-drawn line icons matching [io.motohub.android.ui.components.NavIcon]'s style - no icon-font dependency. */
-@Composable
-private fun ModeIcon(mode: String, color: Color, iconSize: Dp = 24.dp) {
-    Canvas(Modifier.size(iconSize)) {
-        val s = size.width
-        val stroke = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-        when (mode) {
-            "Mirror" -> {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(s * 0.28f, s * 0.06f),
-                    size = Size(s * 0.44f, s * 0.88f),
-                    cornerRadius = CornerRadius(s * 0.08f),
-                    style = stroke
+            MhSectionHeader(motoHubText("Show on the dashboard"))
+            MhListGroup {
+                MhListRow(
+                    title = motoHubText("Mirroring"),
+                    subtitle = motoHubText("Your phone's screen on the dashboard"),
+                    icon = Icons.AutoMirrored.Rounded.ScreenShare,
+                    onClick = onStartProjection
                 )
-                drawLine(color, Offset(s * 0.42f, s * 0.82f), Offset(s * 0.58f, s * 0.82f), stroke.width, cap = StrokeCap.Round)
-            }
-            "Auto" -> {
-                drawLine(color, Offset(s * 0.12f, s * 0.6f), Offset(s * 0.22f, s * 0.38f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.22f, s * 0.38f), Offset(s * 0.38f, s * 0.28f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.38f, s * 0.28f), Offset(s * 0.62f, s * 0.28f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.62f, s * 0.28f), Offset(s * 0.78f, s * 0.38f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.78f, s * 0.38f), Offset(s * 0.88f, s * 0.6f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.12f, s * 0.6f), Offset(s * 0.88f, s * 0.6f), stroke.width, cap = StrokeCap.Round)
-                drawCircle(color, radius = s * 0.09f, center = Offset(s * 0.28f, s * 0.62f), style = stroke)
-                drawCircle(color, radius = s * 0.09f, center = Offset(s * 0.72f, s * 0.62f), style = stroke)
-            }
-            "External" -> {
-                // USB connector icon: a rectangle with a trident fork.
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(s * 0.22f, s * 0.18f),
-                    size = Size(s * 0.56f, s * 0.44f),
-                    cornerRadius = CornerRadius(s * 0.06f),
-                    style = stroke
+                MhListRow(
+                    title = motoHubText("Android Auto"),
+                    subtitle = motoHubText("Maps, music and calls"),
+                    icon = Icons.Rounded.DirectionsCar,
+                    onClick = onStartAndroidAuto
                 )
-                drawLine(color, Offset(s * 0.50f, s * 0.62f), Offset(s * 0.50f, s * 0.84f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.36f, s * 0.72f), Offset(s * 0.50f, s * 0.84f), stroke.width, cap = StrokeCap.Round)
-                drawLine(color, Offset(s * 0.64f, s * 0.72f), Offset(s * 0.50f, s * 0.84f), stroke.width, cap = StrokeCap.Round)
+                if (aoaAccessoryConnected) {
+                    MhListRow(
+                        title = motoHubText("External display"),
+                        subtitle = motoHubText("Stream over USB"),
+                        icon = Icons.Rounded.Usb,
+                        onClick = onStartExternalDisplay
+                    )
+                }
             }
         }
+        // The only way back once connect succeeds - without it, the rider had no path from here
+        // to a different motorcycle or a plain Wi-Fi release except force-stopping the app.
+        MhSecondaryButton(motoHubText("Disconnect"), onDisconnect)
     }
 }
 
 @Composable
 private fun ActiveSessionContent(
     androidAutoActive: Boolean,
-    androidAutoStreaming: Boolean,
-    mirrorStreaming: Boolean,
+    externalDisplayActive: Boolean,
+    ready: Boolean,
+    riderStep: AndroidAutoSelfModeHelp.RiderStep?,
+    narration: String?,
     dimDisplayEnabled: Boolean,
     onDimDisplayChanged: (Boolean) -> Unit,
     onOpenAndroidAutoPreview: () -> Unit,
-    // Nullable rather than defaulted: the guide is a CORE-flavour screen, so the ADVANCED build
-    // genuinely has nowhere to send the rider, and a silently-defaulted no-op lambda would draw
-    // a button that does nothing instead of not drawing one.
-    onOpenAndroidAutoHelp: (() -> Unit)?,
-    externalDisplayActive: Boolean = false,
-    externalDisplayStreaming: Boolean = false,
-    onStopExternalDisplay: () -> Unit = {},
+    onOpenAndroidAutoHelp: () -> Unit,
     onStop: () -> Unit
 ) {
-    val ready = when {
-        androidAutoActive -> androidAutoStreaming
-        externalDisplayActive -> externalDisplayStreaming
-        else -> mirrorStreaming
-    }
-    val modeName = when {
-        androidAutoActive -> "Android Auto"
-        externalDisplayActive -> "External Display"
-        else -> "Mirroring"
-    }
-    val modeColor = when {
-        androidAutoActive -> MotoHubAndroidAuto
-        externalDisplayActive -> MotoHubMirror
-        else -> MotoHubMirror
-    }
-    // Starting Google Android Auto can take several seconds and several attempts; the narration
-    // says which one is running so the screen is not a motionless "being prepared".
-    val androidAutoStartupDetail by AndroidAutoRuntime.startupDetail.collectAsStateWithLifecycle()
-    // A step the rider has to carry out by hand is not a status line, and the caption slot it
-    // used to share with "Asking Android Auto to project…" made it unreadable: small, grey, two
-    // wrapped lines under a title that reports nothing is wrong. Lift it into a card of its own.
-    val riderStep = androidAutoStartupDetail
-        ?.takeIf { androidAutoActive && !ready }
-        ?.let(AndroidAutoSelfModeHelp::riderStepOf)
-
-    // The hero's status line is picked from this fixed list and nothing else. It is a caption
-    // slot inside a card whose height the layout was designed around, so only strings this file
-    // wrote itself are allowed in it - a runtime string of unknown length goes to a
-    // [MotoHubNotice] below, which grows. Through the catalogue, not around it: every branch
-    // here is a literal the rider reads, and tools/i18n/extract.py walks the whole
-    // when-expression inside a motoHubText() call.
-    val heroStatus = motoHubText(
-        when {
-            androidAutoActive && ready -> "Navigation active on TFT"
-            externalDisplayActive && ready -> "Streaming to external display via USB"
-            ready -> "TFT is receiving your screen"
-            riderStep != null -> "One step is waiting for you"
-            else -> "Session is being prepared"
-        }
-    )
-    // Everything Android Auto says about its own startup while it is still working on it: a
-    // runtime string, sometimes a sentence, sometimes a paragraph. Never the hero's caption.
-    val narration = androidAutoStartupDetail
-        ?.takeIf { androidAutoActive && !ready && riderStep == null }
-        ?.let(::motoHubText)
-
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ActiveSessionHero(ready, modeName, heroStatus, modeColor, actionRequired = riderStep != null)
-        if (riderStep != null) {
-            RiderStepNotice(riderStep, modeColor, onOpenAndroidAutoHelp)
-        } else if (narration != null) {
-            MotoHubNotice(
-                label = motoHubText("STARTING ANDROID AUTO"),
-                tone = NoticeTone.INFO,
-                accent = modeColor,
-                body = narration
-            )
-        }
-        MonoLabel(motoHubText("SESSION ACTIONS"))
-
-        if (androidAutoActive) {
-            ActiveSessionAction(
-                title = motoHubText("Preview & touch"),
-                description = motoHubText("View Android Auto and interact from your phone."),
-                accentColor = MotoHubAndroidAuto,
-                icon = "Auto",
-                onClick = onOpenAndroidAutoPreview
-            )
-        } else {
-            ToggleCard(
-                title = motoHubText("Dim phone display"),
-                description = motoHubText("Keep the TFT active while reducing phone distraction."),
-                checked = dimDisplayEnabled,
-                onCheckedChange = onDimDisplayChanged
-            )
-        }
-
-        StopAction(
-            text = motoHubText("Stop streaming"),
-            onClick = onStop
-        )
-    }
-}
-
-/**
- * What is running, at a glance.
- *
- * A report, not a message: the pill, the mode name and one short line the caller picked from a
- * fixed list. Nothing that arrives at runtime is drawn here - see [MotoHubNotice] for where that
- * goes and why. [statusText] still gets no `maxLines`, so a long translation of one of those
- * fixed lines wraps rather than being cut.
- */
-@Composable
-private fun ActiveSessionHero(
-    ready: Boolean,
-    modeName: String,
-    statusText: String,
-    accentColor: Color,
-    actionRequired: Boolean = false
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(accentColor.copy(alpha = 0.12f), RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                ModeIcon(
-                    mode = when (modeName) {
-                        "Android Auto" -> "Auto"
-                        else -> "Mirror"
-                    },
-                    color = accentColor,
-                    iconSize = 34.dp
-                )
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                // "PREPARING" over a session that is in fact waiting on the rider reads as
-                // "sit still, it is working on it" - the exact wrong instruction.
-                if (actionRequired) {
-                    StatusPill(motoHubText("ACTION NEEDED"), accentColor)
-                } else {
-                    LivePill(if (ready) "LIVE ON TFT" else "PREPARING")
+    val view = LocalView.current
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // A report, not a message: the mode and one short line picked from this fixed list, as
+        // literals the extractor finds inside the when. Anything that arrives at runtime goes to
+        // a MotoHubNotice below, which grows.
+        MhListGroup {
+            MhListRow(
+                title = motoHubText(
+                    when {
+                        androidAutoActive -> "Android Auto"
+                        externalDisplayActive -> "External display"
+                        else -> "Mirroring"
+                    }
+                ),
+                subtitle = motoHubText(
+                    when {
+                        externalDisplayActive && ready -> "Streaming over USB"
+                        ready -> "On your dashboard"
+                        riderStep != null -> "Waiting for you"
+                        else -> "Getting ready"
+                    }
+                ),
+                icon = when {
+                    androidAutoActive -> Icons.Rounded.DirectionsCar
+                    externalDisplayActive -> Icons.Rounded.Usb
+                    else -> Icons.AutoMirrored.Rounded.ScreenShare
                 }
-                Text(modeName, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    statusText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (riderStep != null) {
+            RiderStepNotice(riderStep, onOpenAndroidAutoHelp)
+        } else if (narration != null) {
+            MotoHubNotice(label = motoHubText("Starting Android Auto"), tone = NoticeTone.INFO, body = narration)
+        }
+        if (androidAutoActive) {
+            MhListGroup {
+                MhListRow(
+                    title = motoHubText("Preview and touch"),
+                    subtitle = motoHubText("See and control Android Auto here"),
+                    icon = Icons.Rounded.Visibility,
+                    onClick = onOpenAndroidAutoPreview
+                )
+            }
+        } else if (!externalDisplayActive) {
+            // The dimmer works on the mirroring capture only; external display has nothing to dim.
+            MhListGroup {
+                MhSwitchRow(
+                    title = motoHubText("Dim phone screen"),
+                    subtitle = motoHubText("The dashboard stays on"),
+                    icon = Icons.Rounded.Brightness4,
+                    checked = dimDisplayEnabled,
+                    onCheckedChange = onDimDisplayChanged
                 )
             }
         }
+        MhSecondaryButton(
+            motoHubText("Stop streaming"),
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                onStop()
+            },
+            destructive = true
+        )
     }
 }
 
 /**
  * The one thing Android Auto needs from the rider, set to be read at arm's length on a bike.
  *
- * Deliberately not the hero's caption style: this is the only text on the screen that is an
- * instruction rather than a report, so it gets the accent panel, full onSurface contrast, the
- * thing to tap on its own line above the menu path it is buried in, and the way into the full
- * guide for the rider who has never opened Android Auto's developer settings. It is a
- * [MotoHubNotice], so however long the instruction turns out to be it is drawn in full.
+ * Deliberately not a row subtitle: this is the only text on the screen that is an instruction
+ * rather than a report, so it gets the accent panel, full onSurface contrast, the thing to tap on
+ * its own line above the menu path it is buried in, and the way into the full guide for the rider
+ * who has never opened Android Auto's developer settings. It is a [MotoHubNotice], so however long
+ * the instruction turns out to be it is drawn in full.
  *
  * Every line goes through the catalogue. The step itself stays English wherever it is stored:
  * [AndroidAutoSelfModeHelp.RiderStep.flat] is IPC payload matched by identity, so it cannot be
@@ -1144,152 +833,16 @@ private fun ActiveSessionHero(
  * than compared. tools/i18n/extract.py collects the literals from the RiderStep declarations.
  */
 @Composable
-private fun RiderStepNotice(
-    step: AndroidAutoSelfModeHelp.RiderStep,
-    accentColor: Color,
-    onOpenHelp: (() -> Unit)?
-) {
-    val help = onOpenHelp
+private fun RiderStepNotice(step: AndroidAutoSelfModeHelp.RiderStep, onOpenHelp: () -> Unit) {
     MotoHubNotice(
-        label = motoHubText("DO THIS IN ANDROID AUTO"),
+        label = motoHubText("Do this in Android Auto"),
         tone = NoticeTone.ACTION,
-        accent = accentColor,
         headline = motoHubText(step.action),
         body = motoHubText(step.where),
         // The menu above only exists once Android Auto's developer options are unlocked, so the
         // rider who has not done that opens it and finds nothing. Muted: it is the one line here
         // that is background rather than the thing to do.
         footnote = step.prerequisite?.let { motoHubText(it) },
-        actions = if (help == null) null else {
-            { SecondaryAction(motoHubText("Show me how"), help) }
-        }
+        actions = { MhSecondaryButton(motoHubText("Show me how"), onOpenHelp) }
     )
-}
-
-@Composable
-private fun ActiveSessionAction(
-    title: String,
-    description: String,
-    accentColor: Color,
-    icon: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.heightIn(min = 132.dp).clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(accentColor.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                ModeIcon(icon, accentColor, iconSize = 23.dp)
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ToggleCard(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
-        }
-    }
-}
-
-@Composable
-private fun ConnectionStep(text: String, done: Boolean = false, current: Boolean = false) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier
-                .size(8.dp)
-                .background(
-                    when {
-                        done -> MaterialTheme.colorScheme.tertiary
-                        current -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.outline
-                    },
-                    CircleShape
-                )
-        )
-        Text(
-            text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (done || current) MaterialTheme.colorScheme.onSurface
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun SecondaryAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Text(motoHubText(text))
-    }
-}
-
-@Composable
-private fun StopAction(text: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-    ) {
-        Text(text, fontWeight = FontWeight.Bold)
-    }
 }

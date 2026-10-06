@@ -6,14 +6,12 @@ package io.motohub.android.ui.components
 import io.motohub.android.i18n.motoHubText
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -37,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -52,8 +49,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.motohub.android.ui.theme.MotoHubColors
 
-enum class ConnectionState { DISCONNECTED, CONNECTING, CONNECTED }
-
 @Composable
 fun MotoHubBackground(
     modifier: Modifier = Modifier,
@@ -63,47 +58,6 @@ fun MotoHubBackground(
         Box(
             modifier = modifier.background(MaterialTheme.colorScheme.background),
             content = content
-        )
-    }
-}
-
-/** A hairline under the status bar: grey, lime while connecting, lime when connected. */
-@Composable
-fun ConnectionRail(state: ConnectionState, modifier: Modifier = Modifier) {
-    Box(
-        modifier
-            .fillMaxWidth()
-            .height(2.dp)
-            .background(
-                when (state) {
-                    ConnectionState.DISCONNECTED -> Color.Transparent
-                    ConnectionState.CONNECTING -> MotoHubColors.Lime.copy(alpha = 0.4f)
-                    ConnectionState.CONNECTED -> MotoHubColors.Lime
-                }
-            )
-    )
-}
-
-/** Kept for the screens that still draw it; the hub no longer has a top bar of its own. */
-@Composable
-fun HubAppBar(
-    motorcycleName: String?,
-    isConnected: Boolean,
-    onMotorcycleTap: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.End
-    ) {
-        MhStatusChip(
-            text = motorcycleName ?: motoHubText("No motorcycle"),
-            tone = if (isConnected) MhTone.LIVE else MhTone.NEUTRAL,
-            // The chip is ~26 dp tall; the minimum size gives it a glove-sized 48 dp target.
-            modifier = Modifier
-                .minimumInteractiveComponentSize()
-                .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = onMotorcycleTap)
         )
     }
 }

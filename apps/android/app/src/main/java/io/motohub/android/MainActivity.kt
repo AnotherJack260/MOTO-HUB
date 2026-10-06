@@ -1587,7 +1587,7 @@ class MainActivity : ComponentActivity() {
                             if (companion == null ||
                                 !CompanionAppRegistry.openAppSettings(context, companion)
                             ) {
-                                MotoHubSnackbar.error(context, motoHubText("Unable to open the companion app settings"))
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
                             }
                         },
                         onOpenAndroidAutoSettings = {
@@ -1599,7 +1599,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenWifiSettings = {
                             if (!WifiGate.openWifiSettings(context)) {
-                                MotoHubSnackbar.error(context, motoHubText("Unable to open Wi-Fi settings"))
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open Wi-Fi settings"))
                             }
                         },
                         onCancelConnection = viewModel::cancelConnection,
