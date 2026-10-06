@@ -41,22 +41,13 @@ object BluetoothStatus {
     ) {
         val connected: Boolean get() = connectedNames.isNotEmpty()
 
-        /** One-line summary for the handlebar settings card. */
+        /** The "Motorcycle Bluetooth" row's subtitle on the button mapping screen: two lines at most. */
         fun describe(): String = when {
             !supported -> motoHubText("This phone has no Bluetooth.")
-            !enabled -> motoHubText("Bluetooth is off — turn it on, then pair the motorcycle.")
-            !permitted -> motoHubText(
-                "Allow Bluetooth access so the app can see whether the motorcycle is connected."
-            )
-            connected -> motoHubText(
-                "Connected now: %1\$s. If that is the motorcycle, the handlebar buttons can " +
-                    "reach the phone.",
-                connectedNames.joinToString(", ")
-            )
-            else -> motoHubText(
-                "No audio device is connected right now. With the motorcycle on, its dash " +
-                    "should appear here — if it never does, pair it from Bluetooth settings."
-            )
+            !enabled -> motoHubText("Bluetooth is off. Turn it on, then pair the motorcycle.")
+            !permitted -> motoHubText("Allow Bluetooth access to see the motorcycle.")
+            connected -> motoHubText("Connected: %1\$s", connectedNames.joinToString(", "))
+            else -> motoHubText("Nothing connected. Turn the motorcycle on, or pair it in Bluetooth settings.")
         }
     }
 
