@@ -405,10 +405,11 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun applyQrPairing(payload: TBoxQrPayload) {
+    /** @return true once the profile is saved; false when there was nothing to save or it failed. */
+    fun applyQrPairing(payload: TBoxQrPayload): Boolean {
         if (needsPhoneHotspotCredentials(payload)) {
             prepareQrPhoneHotspotSetup(payload)
-            return
+            return false
         }
         ProjectionEventLog.record(
             "PAIRING",
@@ -461,6 +462,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             ProjectionEventLog.record("PAIRING", "QR motorcycle profile persisted successfully.")
         }
+        return persistenceFailure == null
     }
 
     fun selectMotorcycle(profileId: String) {
@@ -1012,16 +1014,6 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
     fun onNotificationPermissionDenied() {
         ProjectionEventLog.warning("PERMISSION", "Notification permission denied.")
         showError(motoHubText("Allow MOTO-HUB notifications to keep streaming visible and controllable."))
-    }
-
-    fun onCameraPermissionDenied() {
-        ProjectionEventLog.warning("PERMISSION", "Camera permission denied.")
-        showError(motoHubText("Camera permission is required to read the T-Box QR code."))
-    }
-
-    fun onQrImportFailed(message: String) {
-        ProjectionEventLog.warning("PAIRING", message)
-        showError(message)
     }
 
     private companion object {

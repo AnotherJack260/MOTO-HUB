@@ -22,21 +22,25 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Slider
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FlashOff
+import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,8 +51,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -62,7 +74,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit
 import android.util.Size
 import androidx.activity.compose.BackHandler
-import io.motohub.android.ui.components.MotoHubHeader
+import io.motohub.android.ui.components.MhNavIcon
+import io.motohub.android.ui.components.MhSecondaryButton
+import io.motohub.android.ui.components.MhTopBar
+import io.motohub.android.ui.components.MhTopBarAction
+import io.motohub.android.ui.theme.MotoHubColors
 
 @Composable
 fun TBoxQrScannerScreen(
@@ -93,7 +109,7 @@ fun TBoxQrScannerScreen(
             BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
         )
     }
-    var scanStatus by remember { mutableStateOf("Frame the EasyConn QR code shown on the TFT") }
+    var scanStatus by remember { mutableStateOf(motoHubText("Point at the QR code on your dashboard")) }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var minZoomRatio by remember { mutableStateOf(1f) }
@@ -185,110 +201,98 @@ fun TBoxQrScannerScreen(
                                 .setAutoCancelDuration(3, TimeUnit.SECONDS)
                                 .build()
                         )
-                        scanStatus = "Focus locked. Hold the phone steady..."
+                        scanStatus = motoHubText("Hold steady")
+                    }
+                }
+                // Pinch for fine zoom. A separate detector: it only takes over once a touch moves
+                // past the slop, so a tap still reaches the focus detector above.
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, _, zoom, _ ->
+                        if (zoom != 1f) setZoom(zoomRatio * zoom)
                     }
                 }
         )
 
-        Column(
+        // The close glyph is the plain one every screen has; the shade behind it keeps it readable
+        // over a bright camera image.
+        MhTopBar(
+            onBack = onClose,
+            navIcon = MhNavIcon.CLOSE,
             modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            MotoHubHeader(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        RoundedCornerShape(16.dp)
-                    )
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                trailing = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (torchAvailable) {
-                            TextButton(
-                                onClick = {
-                                    val enabled = !torchEnabled
-                                    camera?.cameraControl?.enableTorch(enabled)
-                                    torchEnabled = enabled
-                                }
-                            ) {
-                                Text(if (torchEnabled) motoHubText("Flash ON") else motoHubText("Flash"))
-                            }
+                .align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent))),
+            actions = {
+                if (torchAvailable) {
+                    MhTopBarAction(
+                        icon = if (torchEnabled) Icons.Rounded.FlashOn else Icons.Rounded.FlashOff,
+                        contentDescription = if (torchEnabled) motoHubText("Turn off flash") else motoHubText("Turn on flash"),
+                        onClick = {
+                            val enabled = !torchEnabled
+                            camera?.cameraControl?.enableTorch(enabled)
+                            torchEnabled = enabled
                         }
-                        TextButton(onClick = onClose) { Text(motoHubText("Close")) }
-                    }
+                    )
                 }
-            )
+            }
+        )
 
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
                     .size(268.dp)
                     .border(
-                        width = 3.dp,
-                        color = MaterialTheme.colorScheme.primary,
+                        width = 2.dp,
+                        color = Color.White.copy(alpha = 0.9f),
                         shape = RoundedCornerShape(28.dp)
                     )
             )
-
-            Column(
+            // No line limit: the parser's own verdict on an unusable code runs to three sentences.
+            Text(
+                scanStatus,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                        RoundedCornerShape(20.dp)
-                    )
-                    .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    motoHubText("T-BOX SCAN"),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    scanStatus,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                // Some dashes print the SSID and passphrase instead of a code, and a code the
-                // parser cannot use leaves this screen scanning indefinitely. Without a way out
-                // from here the rider has to guess that the home screen offers one.
-                TextButton(onClick = onManualPairing) {
-                    Text(motoHubText("No QR? Connect manually"))
+                    .padding(horizontal = 16.dp)
+                    .widthIn(max = 320.dp)
+                    .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                .navigationBarsPadding()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (maxZoomRatio > minZoomRatio + 0.01f) {
+                // The presets are the glove path; pinch does the rest.
+                Row(
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .padding(4.dp)
+                        .selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    ZoomButton("1×", minZoomRatio, zoomRatio, ::setZoom)
+                    ZoomButton("2×", 2f, zoomRatio, ::setZoom)
+                    ZoomButton(motoHubText("Max"), maxZoomRatio, zoomRatio, ::setZoom)
                 }
-                if (maxZoomRatio > minZoomRatio + 0.01f) {
-                    Text(
-                        text = motoHubText("Zoom %1\$s", formatZoom(zoomRatio)),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                    Slider(
-                        value = zoomRatio,
-                        onValueChange = ::setZoom,
-                        valueRange = minZoomRatio..maxZoomRatio
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        ZoomButton("1×", minZoomRatio, zoomRatio, Modifier.weight(1f), ::setZoom)
-                        ZoomButton("2×", 2f, zoomRatio, Modifier.weight(1f), ::setZoom)
-                        ZoomButton(motoHubText("Max"), maxZoomRatio, zoomRatio, Modifier.weight(1f), ::setZoom)
-                    }
-                }
-                Text(
-                    text = motoHubText("Tap the QR code to focus • Use zoom if it is small"),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall
-                )
             }
+            // Some dashes print the SSID and passphrase instead of a code, and a code the
+            // parser cannot use leaves this screen scanning indefinitely. Without a way out
+            // from here the rider has to guess that the home screen offers one.
+            MhSecondaryButton(motoHubText("Enter details manually"), onManualPairing)
         }
     }
 }
@@ -298,32 +302,25 @@ private fun ZoomButton(
     label: String,
     requestedRatio: Float,
     currentRatio: Float,
-    modifier: Modifier,
     onZoom: (Float) -> Unit
 ) {
-    Button(
-        onClick = { onZoom(requestedRatio) },
-        modifier = modifier,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (kotlin.math.abs(currentRatio - requestedRatio) < 0.08f) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (kotlin.math.abs(currentRatio - requestedRatio) < 0.08f) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
+    val selected = kotlin.math.abs(currentRatio - requestedRatio) < 0.08f
+    Box(
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .widthIn(min = 64.dp)
+            .clip(CircleShape)
+            .background(if (selected) MotoHubColors.SurfaceHighest else Color.Transparent)
+            .selectable(selected, role = Role.RadioButton, onClick = { onZoom(requestedRatio) }),
+        contentAlignment = Alignment.Center
     ) {
-        Text(label)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
-
-private fun formatZoom(value: Float): String =
-    if (value >= 10f) "${value.toInt()}×" else "%.1f×".format(java.util.Locale.US, value)
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -355,24 +352,21 @@ private class TBoxQrAnalyzer(
             .addOnSuccessListener { codes ->
                 val rawValue = codes.firstOrNull { it.rawValue != null }?.rawValue
                 if (rawValue == null) return@addOnSuccessListener
-                onStatus("QR code detected. Checking T-Box details...")
+                onStatus(motoHubText("Reading the code…"))
                 val payload = TBoxQrParser.parse(rawValue).getOrElse { failure ->
                     // The parser names what it actually read (vehicle-info code, a bare web
                     // address, the wrong Moto Morini screen), so its own words beat a generic
                     // "unrecognized" that leaves the rider polishing the display.
                     onStatus(
                         failure.message?.takeIf(String::isNotBlank)
-                            ?: "Unrecognized QR code."
+                            ?: motoHubText("That's not a dashboard QR code")
                     )
                     return@addOnSuccessListener
-                }
-                if (payload.origin == TBoxQrOrigin.UNVERIFIED) {
-                    onStatus("Network details read from an unfamiliar code. Confirm to continue.")
                 }
                 if (delivered.compareAndSet(false, true)) onPayload(payload)
             }
             .addOnFailureListener {
-                onStatus("Scan failed. Hold the phone steady and try again.")
+                onStatus(motoHubText("Couldn't read it. Hold steady and try again."))
             }
             .addOnCompleteListener {
                 processing.set(false)

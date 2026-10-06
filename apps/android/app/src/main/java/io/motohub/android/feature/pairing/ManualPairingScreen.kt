@@ -5,33 +5,26 @@ package io.motohub.android.feature.pairing
 
 import io.motohub.android.i18n.motoHubText
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import io.motohub.android.ui.components.MonoLabel
-import io.motohub.android.ui.components.MotoHubBackground
-import io.motohub.android.ui.components.MotoHubHeader
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
 import io.motohub.android.session.TBoxConnectionMode
+import io.motohub.android.ui.components.MhBanner
+import io.motohub.android.ui.components.MhChoiceRow
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhNavIcon
+import io.motohub.android.ui.components.MhPrimaryButton
+import io.motohub.android.ui.components.MhScreen
+import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhTextField
+import io.motohub.android.ui.components.MhTone
 
 /**
  * Fallback pairing path for motorcycles that don't show an EasyConn QR code
@@ -59,120 +52,106 @@ fun ManualPairingScreen(
     onSave: () -> Unit,
     onClose: () -> Unit
 ) {
-    BackHandler(onBack = onClose)
+    var showModes by rememberSaveable { mutableStateOf(false) }
 
-    MotoHubBackground(Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            MotoHubHeader(
-                modifier = Modifier.fillMaxWidth(),
-                trailing = { TextButton(onClick = onClose) { Text(motoHubText("Close")) } }
+    MhScreen(
+        title = motoHubText("Enter details manually"),
+        onBack = onClose,
+        navIcon = MhNavIcon.CLOSE,
+        subtitle = motoHubText("Use the Wi-Fi name and password shown on your dashboard or in its manual."),
+        // Disabled while blank, so the ViewModel's empty-name error cannot be reached from here;
+        // its guard stays for every other caller.
+        bottomBar = { MhPrimaryButton(motoHubText("Save"), onSave, enabled = ssid.isNotBlank()) }
+    ) {
+        // Monospace also switches off autocorrect and capitalisation: a keyboard that "fixes"
+        // CFMOTO6627 into "CFMOTO 6627" creates a motorcycle that can never be joined.
+        MhTextField(
+            value = ssid,
+            onValueChange = onSsidChanged,
+            label = motoHubText("Wi-Fi name (SSID)"),
+            monospace = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+        )
+        // Deliberately not an error colour, and deliberately not blocking. The rider may well
+        // be right; this only makes the other reading visible before a second motorcycle is
+        // created that can never be joined.
+        ssidSuggestion?.let { suggestion ->
+            MhBanner(
+                title = motoHubText("Did you mean “%1\$s”?", suggestion),
+                body = motoHubText("This phone knows that name. To keep yours, tap Save again."),
+                tone = MhTone.NEUTRAL,
+                actionLabel = motoHubText("Use this name"),
+                onAction = onAcceptSsidSuggestion
             )
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MonoLabel(motoHubText("MANUAL SETUP"))
-                Text(motoHubText("Connect without a QR code"), style = MaterialTheme.typography.displaySmall)
-                Text(
-                    motoHubText("Some motorcycles don't show a pairing QR code on the dash. If you already know ") +
-                        "the T-Box's Wi-Fi network name and password - from the bike itself, its manual, " +
-                        "or a dealer - enter them here instead of scanning.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            OutlinedTextField(
-                value = ssid,
-                onValueChange = onSsidChanged,
-                label = { Text(motoHubText("Wi-Fi network name (SSID)")) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+        }
+        MhTextField(
+            value = password,
+            onValueChange = onPasswordChanged,
+            label = motoHubText("Password"),
+            isPassword = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+        )
+        // A subtitle rather than a trailing value: the value slot cuts long text, and a translated
+        // mode name must never be cut.
+        MhListGroup {
+            MhListRow(
+                title = motoHubText("Connection type"),
+                subtitle = connectionMode.label(),
+                onClick = { showModes = true }
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(motoHubText("T-Box Wi-Fi transport"), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    motoHubText("Auto detects DIRECT- networks. Choose Wi-Fi Direct for a dashboard that is a P2P Group Owner."),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                TBoxConnectionMode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = connectionMode == mode,
-                        onClick = { onConnectionModeChanged(mode) },
-                        label = { Text(motoHubText(mode.label())) }
-                    )
+        }
+        // In practice a persistence failure: the raw reason stays one tap away for support.
+        formError?.let { reason ->
+            MhBanner(
+                title = motoHubText("Couldn't save the motorcycle"),
+                details = {
+                    Text(reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-            OutlinedTextField(
-                value = password,
-                onValueChange = onPasswordChanged,
-                label = { Text(motoHubText("Wi-Fi password")) },
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
             )
-            formError?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
-            // Deliberately not an error colour, and deliberately not blocking. The rider may well
-            // be right; this only makes the other reading visible before a second motorcycle is
-            // created that can never be joined.
-            ssidSuggestion?.let { suggestion ->
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // One sentence with both names in it, not four fragments glued around them:
-                    // a translator handed "No network called " and " has been seen, but this
-                    // phone knows " separately cannot move them, and every language that puts
-                    // its verb elsewhere would come out wrong. Same for the button.
-                    Text(
-                        motoHubText(
-                            "No network called “%1\$s” has been seen, but this phone knows " +
-                                "“%2\$s”, which differs only in spacing. Save again to keep " +
-                                "what you typed.",
-                            ssid,
-                            suggestion
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    TextButton(onClick = onAcceptSsidSuggestion) {
-                        Text(motoHubText("Use %1\$s", suggestion))
-                    }
-                }
-            }
+        }
+    }
 
-            Button(
-                onClick = onSave,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text(motoHubText("Save"), fontWeight = FontWeight.Bold)
+    if (showModes) {
+        MhSheet(
+            onDismiss = { showModes = false },
+            title = motoHubText("Connection type"),
+            body = motoHubText("Keep Auto unless your dashboard asks for something else.")
+        ) { close ->
+            TBoxConnectionMode.entries.forEach { mode ->
+                MhChoiceRow(
+                    title = mode.label(),
+                    subtitle = mode.hint(),
+                    selected = mode == connectionMode,
+                    onClick = { close { onConnectionModeChanged(mode) } }
+                )
             }
         }
     }
 }
 
 private fun TBoxConnectionMode.label(): String = when (this) {
-    TBoxConnectionMode.AUTO -> "Auto"
-    TBoxConnectionMode.ACCESS_POINT -> "Access point"
-    TBoxConnectionMode.WIFI_DIRECT -> "Wi-Fi Direct (P2P)"
+    TBoxConnectionMode.AUTO -> motoHubText("Auto")
+    TBoxConnectionMode.ACCESS_POINT -> motoHubText("Access point")
+    TBoxConnectionMode.WIFI_DIRECT -> motoHubText("Wi-Fi Direct (P2P)")
     // Named from the rider's point of view: what they have to do, not what the dash is. They pick
     // this after their dash asks them to open a hotspot, so "phone hotspot" is the phrase they
     // just read on the screen.
-    TBoxConnectionMode.PHONE_HOTSPOT -> "My phone hosts the hotspot"
+    TBoxConnectionMode.PHONE_HOTSPOT -> motoHubText("My phone hosts the hotspot")
     // For a dash that shows no credentials anywhere and no network in any scan: the app hosts a
     // hotspot itself and hands it over on Bluetooth. Named for what the rider observes - their
     // dash asked them to open an app and did nothing else.
-    TBoxConnectionMode.BLE_PROVISIONED -> "Set up over Bluetooth (no network shown)"
+    TBoxConnectionMode.BLE_PROVISIONED -> motoHubText("Set up over Bluetooth")
     // Normally set by scanning the ThinkerRide QR; offered here for rebadged units whose code
     // points at an OEM host. "KOVE" is the brand a rider would look for, ThinkerRide the tech.
-    TBoxConnectionMode.THINKERRIDE -> "KOVE / ThinkerRide (Bluetooth)"
+    TBoxConnectionMode.THINKERRIDE -> motoHubText("KOVE / ThinkerRide (Bluetooth)")
+}
+
+private fun TBoxConnectionMode.hint(): String = when (this) {
+    TBoxConnectionMode.AUTO -> motoHubText("Works for most dashboards")
+    TBoxConnectionMode.ACCESS_POINT -> motoHubText("Your phone joins the dashboard's Wi-Fi")
+    TBoxConnectionMode.WIFI_DIRECT -> motoHubText("For dashboards that connect over Wi-Fi Direct")
+    TBoxConnectionMode.PHONE_HOTSPOT -> motoHubText("Your dashboard asks you to turn on your phone's hotspot")
+    // Says nothing about the name field, which this mode still requires.
+    TBoxConnectionMode.BLE_PROVISIONED -> motoHubText("For dashboards set up from their own app over Bluetooth")
+    TBoxConnectionMode.THINKERRIDE -> motoHubText("KOVE and other ThinkerRide dashboards")
 }
