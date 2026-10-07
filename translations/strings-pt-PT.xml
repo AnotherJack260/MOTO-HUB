@@ -7,7 +7,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -1156,7 +1156,7 @@
     <string name="legacy_this_button_has_no_hold_skipping_automatically_44873c53">Este botão não tem pressão longa: é ignorado automaticamente.</string>
     <string name="legacy_that_was_a_single_press_press_twice_quickly_for__e774e0f2">Isso foi uma pressão simples: carregue duas vezes rapidamente para a dupla.</string>
     <string name="legacy_that_was_a_quick_tap_press_and_hold_a_moment_lon_5b9c9d4d">Isso foi um toque rápido: mantenha carregado mais um instante.</string>
-    <string name="legacy_open_hotspot_settings_7d1f3d4a">Abrir as definições do hotspot</string>
+    <string name="legacy_open_hotspot_settings_7d1f3d4a">Definições do hotspot</string>
     <!-- The "MOTO-HUB is still looking" notification shown while a connection attempt runs,
          and the hosted-network wording that tells the rider not to close the app. %1$s is
          the motorcycle network name. -->
@@ -2315,7 +2315,7 @@
     <!-- SettingsScreen.kt -->
     <string name="legacy_keyboard_remote_presses_aren_t_seen_until_you_tu_141a3f7e">As pressões do comando de teclado só são detetadas depois de o ativar.</string>
     <!-- SettingsScreen.kt -->
-    <string name="legacy_open_accessibility_settings_70d3e92b">Abrir as definições de Acessibilidade</string>
+    <string name="legacy_open_accessibility_settings_70d3e92b">Abrir Acessibilidade</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_switch_greyed_out_7f4e6707">Interruptor a cinzento?</string>
     <!-- SettingsScreen.kt -->
@@ -2377,5 +2377,7 @@
     <!-- SystemKillNotice.kt -->
     <string name="legacy_open_app_settings_b20ae938">Abrir as definições da app</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_open_battery_settings_67b273cc">Abrir as definições da bateria</string>
+    <string name="legacy_open_battery_settings_67b273cc">Definições da bateria</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Mais leve</string>
 </resources>

@@ -185,14 +185,14 @@ private fun SettingsRoot(
             MhListRow(
                 title = motoHubText("Video quality"),
                 icon = Icons.Rounded.HighQuality,
-                value = "${context.getString(MotoHubSettings.videoQuality(context).labelRes)} · " +
-                    MotoHubSettings.videoPowerMode(context).title(),
+                // One value per row: the frame rate is one tap in.
+                value = MotoHubSettings.videoQuality(context).title(context),
                 onClick = { open(SettingsDetail.VIDEO) }
             )
             MhListRow(
                 title = motoHubText("Android Auto"),
                 icon = Icons.Rounded.DirectionsCar,
-                value = androidAutoValue(context),
+                value = MotoHubSettings.androidAutoResolution(context).title(context),
                 onClick = { open(SettingsDetail.ANDROID_AUTO) }
             )
             // "On" while presses can't arrive is the one answer that sends a rider hunting, so
@@ -288,13 +288,6 @@ private fun SettingsRoot(
     }
 }
 
-/** "Auto", or the source in pixels, plus the interface size when it is not the source's own. */
-private fun androidAutoValue(context: Context): String {
-    val source = MotoHubSettings.androidAutoResolution(context).title(context)
-    val density = MotoHubSettings.androidAutoDensity(context)
-    return if (density == AndroidAutoDensityMode.AUTO) source else "$source · ${context.getString(density.labelRes)}"
-}
-
 /** Pixels are machine values, so they are not translated; AUTO keeps its catalogue label. */
 private fun AndroidAutoResolutionMode.title(context: Context): String =
     preset?.source?.let { "${it.width} × ${it.height}" } ?: context.getString(labelRes)
@@ -304,6 +297,13 @@ private fun AutostartService.title(): String = when (this) {
     AutostartService.ANDROID_AUTO -> motoHubText("Android Auto")
     AutostartService.RIDE_DASHBOARD -> motoHubText("Ride Dashboard")
 }
+
+/**
+ * "Smoother" sat right above frame rate's "Smoothest", two meanings of one word on one screen, so
+ * the light picture is named by what it saves. The stored enum and its logs keep SMOOTHER.
+ */
+private fun VideoQuality.title(context: Context): String =
+    if (this == VideoQuality.SMOOTHER) motoHubText("Lighter") else context.getString(labelRes)
 
 /**
  * Named by frame rate: the catalogue's "Balanced" also named a Picture choice, and "Smooth" sat
@@ -446,7 +446,7 @@ private fun VideoQualityDetail(onBack: () -> Unit) {
         MhListGroup {
             VideoQuality.entries.forEach { candidate ->
                 MhChoiceRow(
-                    title = context.getString(candidate.labelRes),
+                    title = candidate.title(context),
                     subtitle = when (candidate) {
                         VideoQuality.SMOOTHER -> motoHubText("Lower bitrate, less heat and network load")
                         VideoQuality.BALANCED -> motoHubText("Recommended")

@@ -9,7 +9,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -1732,7 +1732,7 @@
     <string name="legacy_this_button_has_no_hold_skipping_automatically_44873c53">Ce bouton n\'a pas d\'appui long : il est ignoré automatiquement.</string>
     <string name="legacy_that_was_a_single_press_press_twice_quickly_for__e774e0f2">C\'était un appui simple : appuyez deux fois rapidement pour le double.</string>
     <string name="legacy_that_was_a_quick_tap_press_and_hold_a_moment_lon_5b9c9d4d">C\'était une pression brève : maintenez appuyé un instant de plus.</string>
-    <string name="legacy_open_hotspot_settings_7d1f3d4a">Ouvrir les paramètres du point d\'accès</string>
+    <string name="legacy_open_hotspot_settings_7d1f3d4a">Réglages du point d\'accès</string>
     <!-- The "MOTO-HUB is still looking" notification shown while a connection attempt runs,
          and the hosted-network wording that tells the rider not to close the app. %1$s is
          the motorcycle network name. -->
@@ -2679,7 +2679,7 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_couldn_t_open_hotspot_settings_bde173a4">Impossible d\'ouvrir les réglages du point d\'accès</string>
     <!-- HubHomeScreen.kt -->
-    <string name="legacy_use_phone_hotspot_891dab24">Utiliser le point d\'accès du téléphone</string>
+    <string name="legacy_use_phone_hotspot_891dab24">Utiliser le point d\'accès</string>
     <!-- HubHomeScreen.kt -->
     <string name="legacy_open_vpn_settings_4f116fe5">Ouvrir les réglages VPN</string>
     <!-- HubHomeScreen.kt -->
@@ -2891,7 +2891,7 @@
     <!-- SettingsScreen.kt -->
     <string name="legacy_keyboard_remote_presses_aren_t_seen_until_you_tu_141a3f7e">Les appuis de la télécommande clavier ne sont pas détectés tant que vous ne l\'activez pas.</string>
     <!-- SettingsScreen.kt -->
-    <string name="legacy_open_accessibility_settings_70d3e92b">Ouvrir les réglages d\'Accessibilité</string>
+    <string name="legacy_open_accessibility_settings_70d3e92b">Réglages d\'accessibilité</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_switch_greyed_out_7f4e6707">Interrupteur grisé ?</string>
     <!-- SettingsScreen.kt -->
@@ -2951,7 +2951,9 @@
     <!-- SystemKillNotice.kt -->
     <string name="legacy_at_1_s_while_it_was_running_battery_optimisation_f2787443">À %1$s, pendant son fonctionnement. C\'est généralement dû à l\'optimisation de la batterie.</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_open_app_settings_b20ae938">Ouvrir les réglages de l\'app</string>
+    <string name="legacy_open_app_settings_b20ae938">Réglages de l\'app</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_open_battery_settings_67b273cc">Ouvrir les réglages de la batterie</string>
+    <string name="legacy_open_battery_settings_67b273cc">Réglages de la batterie</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Plus léger</string>
 </resources>

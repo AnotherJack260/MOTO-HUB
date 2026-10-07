@@ -92,6 +92,7 @@ import io.motohub.android.tbox.WifiGate
 import io.motohub.android.ui.components.HubBottomNavigation
 import io.motohub.android.ui.components.HubTab
 import io.motohub.android.ui.components.MhBanner
+import io.motohub.android.ui.components.MhButtonSize
 import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhIconCircle
 import io.motohub.android.ui.components.MhListGroup
@@ -809,10 +810,11 @@ private fun RideErrorBanner(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    // Compact like the banner's own action: a fold's hint never outweighs the fix.
                     MhSecondaryButton(
                         motoHubText("Open %1\$s app settings", companion),
                         onOpenCompanionAppSettings,
-                        fillWidth = false
+                        size = MhButtonSize.COMPACT
                     )
                 }
             }

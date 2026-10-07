@@ -184,7 +184,7 @@ internal fun GarageSection(header: String, content: @Composable ColumnScope.() -
 
 // Which motorcycle is current is said by its place and its header, not by a colour. With a photo
 // the picture runs edge to edge across the top, rounded only by the card's own clip; without one
-// the card is a single 72 dp row led by the "add a photo" circle.
+// the card is a single 72 dp row led by the motorcycle-glyph circle.
 @Composable
 private fun CurrentBikeCard(profile: MotorcycleProfile, onOpenDetails: () -> Unit) {
     val hasPhoto = profile.photoPath != null

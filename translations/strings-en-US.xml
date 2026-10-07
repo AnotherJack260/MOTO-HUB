@@ -9,7 +9,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -2963,4 +2963,6 @@
     <string name="legacy_open_app_settings_b20ae938">Open app settings</string>
     <!-- SystemKillNotice.kt -->
     <string name="legacy_open_battery_settings_67b273cc">Open battery settings</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Lighter</string>
 </resources>

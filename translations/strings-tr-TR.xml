@@ -9,7 +9,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -2688,7 +2688,7 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_couldn_t_open_hotspot_settings_bde173a4">Hotspot ayarları açılamadı</string>
     <!-- HubHomeScreen.kt -->
-    <string name="legacy_use_phone_hotspot_891dab24">Telefonun hotspot\'unu kullan</string>
+    <string name="legacy_use_phone_hotspot_891dab24">Telefon hotspot\'unu kullan</string>
     <!-- HubHomeScreen.kt -->
     <string name="legacy_open_vpn_settings_4f116fe5">VPN ayarlarını aç</string>
     <!-- HubHomeScreen.kt -->
@@ -2900,7 +2900,7 @@
     <!-- SettingsScreen.kt -->
     <string name="legacy_keyboard_remote_presses_aren_t_seen_until_you_tu_141a3f7e">Siz açana kadar klavye kumandası basışları algılanmaz.</string>
     <!-- SettingsScreen.kt -->
-    <string name="legacy_open_accessibility_settings_70d3e92b">Erişilebilirlik ayarlarını aç</string>
+    <string name="legacy_open_accessibility_settings_70d3e92b">Erişilebilirlik ayarları</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_switch_greyed_out_7f4e6707">Anahtar gri mi?</string>
     <!-- SettingsScreen.kt -->
@@ -2963,4 +2963,6 @@
     <string name="legacy_open_app_settings_b20ae938">Uygulama ayarlarını aç</string>
     <!-- SystemKillNotice.kt -->
     <string name="legacy_open_battery_settings_67b273cc">Pil ayarlarını aç</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Daha hafif</string>
 </resources>
