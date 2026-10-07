@@ -90,17 +90,15 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.motohub.android"
+        applicationId = "dev.anotherjack.ridelink"
         // 31 = Android 12: everything Android-12-specific is behind SDK_INT gates, so on 14+
         // the executed code paths are identical to the old minSdk-34 builds.
         minSdk = 31
         targetSdk = 36
-        // CORE and ADVANCED ship as a pair, under one tag, and talk to each other over AIDL:
-        // keep this identical to the PRO worktree's build.gradle.kts. They drifted after v1.1.4
-        // (CORE reached 1.1.14/108 while ADVANCED sat at 1.1.6/100), which left a rider's
-        // "MOTO-HUB 1.1.x" unable to identify which pair they actually had installed.
-        versionCode = 214
-        versionName = "1.1.120"
+        // RideLink's own version line, independent of upstream MOTO-HUB's: the two install side
+        // by side under different application ids, so neither ever upgrades the other.
+        versionCode = 1
+        versionName = "1.0.0"
         buildConfigField("boolean", "IS_PRO", "false")
         buildConfigField("String", "SENTRY_DSN", asBuildConfigString(coreSentryDsn))
         buildConfigField("String", "DIAGNOSTICS_ENDPOINT", asBuildConfigString(diagnosticsEndpoint))
@@ -109,7 +107,7 @@ android {
         // silently does not arrive is worse than none, and there is no other way to see whether
         // a session was started, dropped or rejected: the SDK says nothing at all by default.
         buildConfigField("boolean", "SENTRY_DEBUG", sentryDebug.toString())
-        manifestPlaceholders["appLabel"] = "MOTO-HUB"
+        manifestPlaceholders["appLabel"] = "RideLink"
     }
 
     signingConfigs {
@@ -291,7 +289,7 @@ val exportPublicApk by tasks.registering(Copy::class) {
     dependsOn("assembleRelease")
     from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
     into(rootProject.projectDir.resolve("../../artifacts"))
-    rename { "MOTO-HUB-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-public.apk" }
+    rename { "RideLink-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-public.apk" }
     doFirst {
         check(hasLocalReleaseSigning) {
             "The persistent MOTO-HUB release keystore and release-signing.properties are required."
@@ -310,7 +308,7 @@ val exportPublicApk by tasks.registering(Copy::class) {
     }
     doLast {
         val exported = destinationDir.resolve(
-            "MOTO-HUB-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-public.apk"
+            "RideLink-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-public.apk"
         )
         // Belt and braces: verify the bytes that were actually copied, so a stale or
         // hand-placed APK can never be published with the identity inside it.
@@ -326,7 +324,7 @@ val exportPrivateAndroidAutoApk by tasks.registering(Copy::class) {
     dependsOn("assembleRelease")
     from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
     into(rootProject.projectDir.resolve("../../artifacts"))
-    rename { "MOTO-HUB-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-android-auto-private.apk" }
+    rename { "RideLink-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-android-auto-private.apk" }
     doFirst {
         check(hasLocalReleaseSigning) {
             "The persistent MOTO-HUB release keystore and release-signing.properties are required."

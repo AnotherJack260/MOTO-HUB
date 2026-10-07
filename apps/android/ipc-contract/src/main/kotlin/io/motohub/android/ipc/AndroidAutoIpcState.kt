@@ -25,7 +25,7 @@ object IpcBridgeContract {
     const val BIND_ACTION_ANDROID_AUTO_RECEIVER = "io.motohub.android.ipc.BIND_ANDROID_AUTO_RECEIVER"
 
     /** Signature-level permission a caller must hold to bind IpcBridgeService. */
-    const val BIND_PERMISSION = "io.motohub.android.permission.BIND_CORE_SERVICE"
+    const val BIND_PERMISSION = "dev.anotherjack.ridelink.permission.BIND_CORE_SERVICE"
 
     /**
      * Revision of ITBoxTransportService this build implements, answered by getContractVersion().

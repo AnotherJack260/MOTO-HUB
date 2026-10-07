@@ -62,7 +62,7 @@ class DiagnosticReport(
  */
 object DiagnosticReportBuilder {
     private const val GEARHEAD_PACKAGE = "com.google.android.projection.gearhead"
-    private const val CORE_PACKAGE = "io.motohub.android"
+    private const val CORE_PACKAGE = BuildConfig.APPLICATION_ID
     /** Generous: BluetoothStatus.query gives up on its own well inside this. */
     private const val RADIO_QUERY_TIMEOUT_MS = 3_000L
 
@@ -152,7 +152,7 @@ object DiagnosticReportBuilder {
         // asked" for a package that is actually there.
         put("wifiScan", JSONObject().apply {
             put("advanced", wifiScanGrant(context, IpcBridgeContract.ADVANCED_PACKAGE_NAME))
-            put("core", wifiScanGrant(context, IpcBridgeContract.CORE_PACKAGE_NAME))
+            put("core", wifiScanGrant(context, CORE_PACKAGE))
         })
         // Not a permission and not per package: the phone-wide toggle Android also consults for
         // scan results. It is the second of the two ways a scan comes back empty forever, and
