@@ -2956,4 +2956,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Réglages de la batterie</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Plus léger</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s est déjà exclu de l\'optimisation de la batterie : c\'est donc la gestion des applis du téléphone qui l\'a fermé. Dans les infos de l\'appli, autorisez l\'activité en arrière-plan (parfois appelée Utilisation de la batterie ou Lancement des applis) et verrouillez %1$s dans les applis récentes.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Votre téléphone peut arrêter %1$s en arrière-plan. L\'exclure de l\'optimisation de la batterie rend cela bien moins probable lors d\'un long trajet.</string>
 </resources>

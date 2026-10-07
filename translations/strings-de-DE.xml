@@ -2957,4 +2957,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Akku-Einstellungen öffnen</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Leichter</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s ist bereits von der Akku-Optimierung ausgenommen, also hat die App-Verwaltung deines Handys es beendet. Erlaube in den App-Infos die Hintergrundaktivität (auf manchen Handys heißt das Akkunutzung oder App-Start) und fixiere %1$s in den zuletzt verwendeten Apps.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Dein Handy kann %1$s im Hintergrund beenden. Wenn du es von der Akku-Optimierung ausnimmst, passiert das auf langen Fahrten viel seltener.</string>
 </resources>

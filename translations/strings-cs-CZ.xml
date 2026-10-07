@@ -2965,4 +2965,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Otevřít nastavení baterie</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Lehčí</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s je již vyjmut z optimalizace baterie, takže jej ukončila správa aplikací telefonu. V informacích o aplikaci povolte činnost na pozadí (na některých telefonech se jmenuje Využití baterie nebo Spouštění aplikací) a uzamkněte %1$s v nedávných aplikacích.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Telefon může %1$s na pozadí ukončit. Vyjmutí z optimalizace baterie to na dlouhé jízdě výrazně omezí.</string>
 </resources>

@@ -2965,4 +2965,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Open battery settings</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Lighter</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s is already exempt from battery optimisation, so your phone\'s own app management stopped it. In its app info, allow background activity (some phones call it Battery usage or App launch) and lock %1$s in recent apps.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Your phone may stop %1$s in the background. Excluding it from battery optimisation makes that much less likely on a long ride.</string>
 </resources>

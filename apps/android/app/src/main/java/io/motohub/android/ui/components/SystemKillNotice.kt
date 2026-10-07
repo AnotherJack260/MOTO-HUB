@@ -78,7 +78,7 @@ fun SystemKillNotice(visible: Boolean = true, modifier: Modifier = Modifier) {
             },
             details = {
                 Text(
-                    motoHubText(advice),
+                    advice,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

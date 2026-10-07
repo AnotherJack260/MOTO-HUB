@@ -2957,4 +2957,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Batterij-instellingen</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Lichter</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s is al uitgezonderd van batterijoptimalisatie, dus het appbeheer van je telefoon heeft het gestopt. Sta in de app-info achtergrondactiviteit toe (op sommige telefoons heet dat Batterijgebruik of App starten) en zet %1$s vast in de recente apps.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Je telefoon kan %1$s op de achtergrond stoppen. Als je het uitzondert van batterijoptimalisatie, gebeurt dat op een lange rit veel minder vaak.</string>
 </resources>

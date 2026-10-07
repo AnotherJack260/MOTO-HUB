@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import io.motohub.android.i18n.motoHubText
 
 /**
  * What to tell a rider whose session was ended by the phone, and where to send them.
@@ -34,13 +35,20 @@ internal object BatteryOptimisationGate {
 
     /** The advice for a rider who has just been told their session was stopped by the phone. */
     fun advice(context: Context, appName: String): String = if (isExempt(context)) {
-        "$appName is already exempt from battery optimisation, so this was your phone's own app " +
-            "management. Open its app info and allow background activity - on some phones the " +
-            "setting is called Battery usage or App launch - and lock $appName in the recent-apps " +
-            "screen."
+        // One literal per case with the app name as a placeholder, so the catalogue can carry it;
+        // the old string template could never be translated.
+        motoHubText(
+            "%1\$s is already exempt from battery optimisation, so your phone's own app management " +
+                "stopped it. In its app info, allow background activity (some phones call it Battery " +
+                "usage or App launch) and lock %1\$s in recent apps.",
+            appName
+        )
     } else {
-        "Your phone is allowed to stop $appName in the background. Excluding it from battery " +
-            "optimisation makes that much less likely during a long ride."
+        motoHubText(
+            "Your phone may stop %1\$s in the background. Excluding it from battery optimisation " +
+                "makes that much less likely on a long ride.",
+            appName
+        )
     }
 
     /**

@@ -2380,4 +2380,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Impostazioni batteria</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Più leggero</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s è già escluso dall\'ottimizzazione della batteria, quindi l\'ha chiuso la gestione app del telefono. Nelle info dell\'app consenti l\'attività in background (su alcuni telefoni si chiama Utilizzo batteria o Avvio app) e blocca %1$s nelle app recenti.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Il telefono può chiudere %1$s in background. Escluderlo dall\'ottimizzazione della batteria lo rende molto meno probabile durante un viaggio lungo.</string>
 </resources>

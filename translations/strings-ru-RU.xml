@@ -2965,4 +2965,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Открыть настройки батареи</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Легче</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s уже исключено из оптимизации батареи, поэтому его закрыло управление приложениями телефона. В сведениях о приложении разрешите работу в фоне (на некоторых телефонах это называется «Расход батареи» или «Запуск приложений») и закрепите %1$s в недавних приложениях.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Телефон может закрыть %1$s в фоне. Если исключить его из оптимизации батареи, в долгой поездке это случится гораздо реже.</string>
 </resources>

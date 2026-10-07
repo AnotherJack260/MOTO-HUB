@@ -2965,4 +2965,8 @@
     <string name="legacy_open_battery_settings_67b273cc">Pil ayarlarını aç</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_lighter_6d62ec23">Daha hafif</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s zaten pil optimizasyonundan muaf; bu yüzden onu telefonun kendi uygulama yönetimi durdurdu. Uygulama bilgilerinde arka plan etkinliğine izin verin (bazı telefonlarda adı Pil kullanımı veya Uygulama başlatma) ve %1$s uygulamasını son uygulamalarda kilitleyin.</string>
+    <!-- BatteryOptimisationGate.kt -->
+    <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Telefonunuz %1$s uygulamasını arka planda durdurabilir. Pil optimizasyonundan muaf tutmak, uzun bir sürüşte bunu çok daha az olası kılar.</string>
 </resources>
