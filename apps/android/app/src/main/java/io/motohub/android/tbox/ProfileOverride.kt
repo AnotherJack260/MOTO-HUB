@@ -3,6 +3,8 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.tbox
 
+import io.motohub.android.i18n.motoHubText
+
 /**
  * Manual T-Box profile override that the user can set from the Garage.
  * [AUTO] lets the app detect the profile from QR/modelId/CLIENT_INFO;
@@ -35,14 +37,14 @@ enum class ProfileOverride(
 ) {
     AUTO("auto", "Auto", "Detect from the motorcycle (recommended)"),
     GENERIC("generic", "Generic dashboard", "Neutral defaults for a dashboard that is not recognised"),
-    LEGACY_CFDL16("legacy_cfdl16", "CFDL16 / Legacy", "CFDL16 / 450SR-style non-touch"),
+    LEGACY_CFDL16("legacy_cfdl16", "CFMOTO 450SR", "CFDL16 / 450SR-style non-touch"),
     CFMOTO_800NK("cfmoto_800nk", "CFMOTO 800NK", "CRCP / sdk 0.9.23.x non-touch"),
     CFMOTO_MTX800("cfmoto_mtx800", "CFMOTO MTX800", "Portrait Wi-Fi Direct dashboard, modelId 66660732"),
-    CFDL26_LANDSCAPE("cfdl26_landscape", "800MT (CFDL26)", "CFDL26 MotoPlay landscape touch"),
-    CFDL26_PORTRAIT("cfdl26_portrait", "1000 MT-X (CFDL26)", "CFDL26 MotoPlay portrait handlebar-primary"),
-    CFDL26_NK_TOUCH("cfdl26_nk_touch", "800NK Advanced (CFDL26)", "Near-square touch panel, 720x712"),
-    CFDL16_MOTOPLAY_LANDSCAPE("cfdl16_motoplay_landscape", "MotoPlay Landscape (CFDL16)", "modelId 66660742, Wi-Fi Direct, non-touch"),
-    CL_C450("cl_c450", "CL-C450", "Near-square panel, 544x512"),
+    CFDL26_LANDSCAPE("cfdl26_landscape", "CFMOTO 800MT", "CFDL26 MotoPlay landscape touch"),
+    CFDL26_PORTRAIT("cfdl26_portrait", "CFMOTO 1000 MT-X", "CFDL26 MotoPlay portrait handlebar-primary"),
+    CFDL26_NK_TOUCH("cfdl26_nk_touch", "CFMOTO 800NK Advanced", "Near-square touch panel, 720x712"),
+    CFDL16_MOTOPLAY_LANDSCAPE("cfdl16_motoplay_landscape", "CFMOTO MotoPlay landscape", "modelId 66660742, Wi-Fi Direct, non-touch"),
+    CL_C450("cl_c450", "CFMOTO CL-C 450", "Near-square panel, 544x512"),
     ZONTES_368G_TEST(
         "zontes_368g_test",
         "Zontes 368G (test)",
@@ -75,24 +77,24 @@ enum class ProfileOverride(
     ),
     QJ_SRK921_RR(
         "qj_srk921_rr",
-        "QJ SRK921 RR (test)",
+        "QJ Motor SRK921 RR (test)",
         "Experiment for a dash that takes every frame and shows none: 10 fps on a 2s GOP",
         experimental = true
     ),
-    KOVE_800X("kove_800x", "KOVE 800X (ThinkerRide)", "BLE-paired ThinkerRide dash, 600x1024 portrait"),
+    KOVE_800X("kove_800x", "KOVE 800X", "BLE-paired ThinkerRide dash, 600x1024 portrait"),
     KOVE_450_RALLY(
         "kove_450_rally",
-        "KOVE 450 Rally (ThinkerRide)",
+        "KOVE 450 Rally",
         "Same BLE-paired ThinkerRide dash, 1280x640 landscape panel"
     ),
     MORINI_XCAPE_1200(
         "morini_xcape_1200",
-        "X-Cape 1200 (Yunmo)",
+        "Moto Morini X-Cape 1200",
         "Moto Morini X-Cape 1200 SoftAP dash on Yunmo :8200 (not the 649/700/Seiemmezzo)"
     ),
     MORINI_XCAPE_1200_MIRROR(
         "morini_xcape_1200_mirror",
-        "X-Cape 1200 (mirror)",
+        "Moto Morini X-Cape 1200 (mirror)",
         "Same dash, asked for plain mirroring instead of the navigation display mode",
         experimental = true
     ),
@@ -104,7 +106,7 @@ enum class ProfileOverride(
     ),
     KOVE_625X(
         "kove_625x",
-        "KOVE 625X (JPEG)",
+        "KOVE 625X",
         "Wi-Fi dash speaking the X-Cape 1200 protocol with still images; recognised by its KY_ADV_ network name, so Auto normally finds it by itself"
     ),
     MOTO_HUB_SIMULATOR(
@@ -113,6 +115,24 @@ enum class ProfileOverride(
         "Development simulator profile",
         riderSelectable = false
     );
+
+    /**
+     * The one line a rider can check against their own motorcycle, translated, or null when there
+     * is nothing useful to say. [label] is "<Brand> <model>"; [description] stays the developer's
+     * note, for Developer tools, the logs and the profile trial.
+     */
+    val riderNote: String?
+        get() = when (this) {
+            LEGACY_CFDL16 -> motoHubText("Older dashboards without a touchscreen")
+            CFMOTO_800NK, CFDL16_MOTOPLAY_LANDSCAPE -> motoHubText("No touchscreen")
+            CFMOTO_MTX800, CFDL26_PORTRAIT, KOVE_800X -> motoHubText("Portrait display")
+            CFDL26_LANDSCAPE -> motoHubText("Landscape touchscreen")
+            CFDL26_NK_TOUCH -> motoHubText("Touchscreen")
+            KOVE_450_RALLY -> motoHubText("Landscape display")
+            MORINI_XCAPE_1200 -> motoHubText("Not the X-Cape 650 or 700")
+            KOVE_625X -> motoHubText("Sends still pictures")
+            else -> null
+        }
 
     fun resolve(): TBoxModelProfile? = when (this) {
         AUTO -> null

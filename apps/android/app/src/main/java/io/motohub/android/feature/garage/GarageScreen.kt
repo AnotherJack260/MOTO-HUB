@@ -17,9 +17,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -29,22 +29,29 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.motohub.android.BuildConfig
 import io.motohub.android.session.MotorcycleProfile
+import io.motohub.android.ui.components.MhButtonSize
 import io.motohub.android.ui.components.MhEmptyState
-import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
 import io.motohub.android.ui.components.MhSecondaryButton
 import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.MhSheet
 import io.motohub.android.ui.components.MhTabPage
-import io.motohub.android.ui.components.ScreenSlideTransition
+import io.motohub.android.ui.components.MhTopBarAction
+import io.motohub.android.ui.components.ScreenCrossfade
+import io.motohub.android.ui.components.mhPressable
 import io.motohub.android.ui.theme.MotoHubColors
 
 @Composable
@@ -59,15 +66,26 @@ fun GarageTabContent(
     onOpenDefaultSettings: () -> Unit = {}
 ) {
     val active = profiles.firstOrNull { it.id == activeProfileId }
+    var showAddSheet by rememberSaveable { mutableStateOf(false) }
 
-    MhTabPage(title = motoHubText("Garage")) {
-        // The rider's first pairing is the one moment this whole tab has a single before/after:
-        // the empty state becomes the current-motorcycle card, in a page whose "Garage" title
-        // stays put - so this animates only the piece that actually changed.
-        ScreenSlideTransition(
+    MhTabPage(
+        title = motoHubText("Garage"),
+        // Once a motorcycle exists the three ways to add one move behind "+"; the empty state
+        // still shows them, so it needs no "+".
+        actions = {
+            if (active != null) {
+                MhTopBarAction(Icons.Rounded.Add, motoHubText("Add a motorcycle"), onClick = { showAddSheet = true })
+            }
+        }
+    ) {
+        // The first pairing, or "Use" on another motorcycle, swaps this section in place: the
+        // "Garage" title stays put, the section fades through, and the height follows (P11: state
+        // swaps fade, only navigation slides).
+        ScreenCrossfade(
             screen = active?.id,
-            isBase = { it == null },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            label = "garage-current",
+            animateHeight = true
         ) { activeId ->
             val shownActive = profiles.firstOrNull { it.id == activeId }
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -100,16 +118,6 @@ fun GarageTabContent(
                             }
                         }
                     }
-                    GarageSection(motoHubText("Add a motorcycle")) {
-                        MhListRow(
-                            title = motoHubText("Scan QR code"),
-                            icon = Icons.Rounded.QrCodeScanner,
-                            onClick = onAddMotorcycle
-                        )
-                        OtherPairingRows(onImportQrPhoto, onAddMotorcycleManually)
-                    }
-                    // True for all three paths: each one matches a saved motorcycle by its Wi-Fi name.
-                    MhFootnote(motoHubText("Adding a motorcycle you already saved updates it."))
                 }
             }
         }
@@ -123,6 +131,23 @@ fun GarageTabContent(
                     onClick = onOpenDefaultSettings
                 )
             }
+        }
+    }
+
+    if (showAddSheet) {
+        // P7's three rows; each runs once the sheet has gone (P10).
+        MhSheet(
+            onDismiss = { showAddSheet = false },
+            title = motoHubText("Add a motorcycle"),
+            // True for all three paths: each one matches a saved motorcycle by its Wi-Fi name.
+            body = motoHubText("Adding a motorcycle you already saved updates it.")
+        ) { close ->
+            MhListRow(
+                title = motoHubText("Scan QR code"),
+                icon = Icons.Rounded.QrCodeScanner,
+                onClick = { close(onAddMotorcycle) }
+            )
+            OtherPairingRows({ close(onImportQrPhoto) }, { close(onAddMotorcycleManually) })
         }
     }
 }
@@ -157,29 +182,33 @@ internal fun GarageSection(header: String, content: @Composable ColumnScope.() -
     }
 }
 
-// Which motorcycle is current is said by its place and its header, not by a colour.
+// Which motorcycle is current is said by its place and its header, not by a colour. With a photo
+// the picture runs edge to edge across the top, rounded only by the card's own clip; without one
+// the card is a single 72 dp row led by the "add a photo" circle.
 @Composable
 private fun CurrentBikeCard(profile: MotorcycleProfile, onOpenDetails: () -> Unit) {
+    val hasPhoto = profile.photoPath != null
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
+            .mhPressable(MaterialTheme.shapes.large, onClick = onOpenDetails)
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onOpenDetails)
     ) {
-        MotorcyclePhoto(
-            path = profile.photoPath,
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth()
-                .height(168.dp),
-            shape = RoundedCornerShape(16.dp)
-        )
+        if (hasPhoto) {
+            MotorcyclePhoto(
+                path = profile.photoPath,
+                modifier = Modifier.fillMaxWidth().height(168.dp),
+                shape = RectangleShape
+            )
+        }
         Row(
-            modifier = Modifier.padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .heightIn(min = 72.dp)
+                .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (!hasPhoto) MotorcyclePhoto(path = null, modifier = Modifier.size(56.dp), shape = CircleShape)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     profile.shownName(),
@@ -215,7 +244,8 @@ private fun BikeRow(profile: MotorcycleProfile, onSelect: () -> Unit, onOpenDeta
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MotorcyclePhoto(path = profile.photoPath, modifier = Modifier.size(48.dp), shape = CircleShape)
+        // 40 dp like every row's icon circle, so the text column lines up with MhListRow's.
+        MotorcyclePhoto(path = profile.photoPath, modifier = Modifier.size(40.dp), shape = CircleShape)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(profile.shownName(), style = MaterialTheme.typography.titleMedium)
             Text(
@@ -225,6 +255,6 @@ private fun BikeRow(profile: MotorcycleProfile, onSelect: () -> Unit, onOpenDeta
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        MhSecondaryButton(motoHubText("Use"), onSelect, fillWidth = false)
+        MhSecondaryButton(motoHubText("Use"), onSelect, size = MhButtonSize.COMPACT)
     }
 }
