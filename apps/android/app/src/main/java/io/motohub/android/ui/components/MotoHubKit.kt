@@ -3,25 +3,30 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.components
 
+import android.os.SystemClock
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -45,6 +50,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -61,12 +67,16 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -99,7 +109,8 @@ import io.motohub.android.ui.theme.MotoHubColors
 // Both buttons fill the width unless told otherwise, and that lives in [fillWidth] rather than in
 // the default modifier: a caller passing Modifier.padding(...) would otherwise silently lose it.
 // While loading they stay in their enabled colours - the button is busy, not unavailable, and a
-// grey container would swallow the spinner.
+// grey container would swallow the spinner. Both dip under the finger and ignore a second tap
+// inside 500 ms ([Pill]).
 
 /** The one thing to do on this screen. Lime, full width, glove-sized. */
 @Composable
@@ -112,11 +123,10 @@ fun MhPrimaryButton(
     icon: ImageVector? = null,
     fillWidth: Boolean = true
 ) {
-    Button(
+    Pill(
         onClick = onClick,
         enabled = enabled && !loading,
         modifier = modifier.fillWidthIf(fillWidth).heightIn(min = 56.dp),
-        shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -176,13 +186,12 @@ private fun SecondaryPill(
 ) {
     val content = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     val compact = size == MhButtonSize.COMPACT
-    Button(
+    Pill(
         onClick = onClick,
         enabled = enabled && !loading,
         // 56 like the primary: stacked in a sheet the pair reads as one set, and gloves need it.
         // Compact only draws 40: Material's button already reserves a 48 dp target around it.
         modifier = modifier.fillWidthIf(fillWidth).heightIn(min = if (compact) 40.dp else 56.dp),
-        shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = container,
             contentColor = content,
@@ -201,6 +210,59 @@ private fun SecondaryPill(
 }
 
 private fun Modifier.fillWidthIf(fill: Boolean) = if (fill) fillMaxWidth() else this
+
+/**
+ * Every kit pill: Material's button, plus the 98 % dip under the finger and the glove guard. The
+ * dip is the tap's acknowledgement on the frame it lands; the guard means a glove that lands
+ * twice runs Stop, Save or Connect once. Disabled and loading pills emit no press, so they don't
+ * dip.
+ */
+@Composable
+private fun Pill(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier,
+    colors: ButtonColors,
+    contentPadding: PaddingValues,
+    content: @Composable RowScope.() -> Unit
+) {
+    val source = remember { MutableInteractionSource() }
+    val scale = pressScale(source)
+    Button(
+        onClick = rememberGuardedClick(onClick),
+        enabled = enabled,
+        modifier = modifier.graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+        },
+        shape = CircleShape,
+        colors = colors,
+        contentPadding = contentPadding,
+        interactionSource = source,
+        content = content
+    )
+}
+
+@Composable
+private fun rememberGuardedClick(onClick: () -> Unit): () -> Unit {
+    val current by rememberUpdatedState(onClick)
+    val guard = remember { ClickGuard() }
+    return remember { { if (guard.pass(SystemClock.uptimeMillis())) current() } }
+}
+
+/**
+ * Lets one click through per [windowMs], counted from the last one it let through. A window
+ * rather than a "busy" flag: nothing has to clear it, so a failure can never leave a pill dead.
+ */
+internal class ClickGuard(private val windowMs: Long = 500) {
+    private var last = -windowMs
+
+    fun pass(nowMs: Long): Boolean {
+        if (nowMs - last < windowMs) return false
+        last = nowMs
+        return true
+    }
+}
 
 /**
  * How a sheet's or dialog's main action is drawn. LIME is the one action of that layer; NEUTRAL
@@ -452,8 +514,11 @@ fun MhChoiceRow(
         icon = icon,
         modifier = modifier.selectable(selected, onClick = onClick, role = Role.RadioButton),
         trailing = {
+            // The pop is the only sign an in-place list (Video quality, Language) took the choice.
             Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                if (selected) Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                MhPop(selected) {
+                    Icon(Icons.Rounded.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     )
@@ -471,29 +536,47 @@ private fun MhTone.colors(): Pair<Color, Color> = when (this) {
 
 /**
  * "Live", "Connecting", "Offline": a dot and a word in a pill. Only PROGRESS pulses - something
- * that blinks for a whole ride stops meaning anything. The pulse is read in the draw phase, so it
- * repaints the dot without recomposing the chip sixty times a second.
+ * that blinks for a whole ride stops meaning anything. A change of state sweeps the colours and
+ * crossfades the word while the pill's width follows, all on the shared clock, so the eye is
+ * drawn there once and then nothing moves.
+ *
+ * The pill and the dot are painted in the draw phase, so the pulse and the sweep repaint without
+ * recomposing; only the word's colour recomposes the chip, for 220 ms per change.
  */
 @Composable
 fun MhStatusChip(text: String, tone: MhTone, modifier: Modifier = Modifier) {
-    val (fg, bg) = tone.colors()
+    val (fgTarget, bgTarget) = tone.colors()
+    val sweep = tween<Color>(MhMotion.BASE, easing = MhMotion.Standard)
+    val fg by animateColorAsState(fgTarget, sweep, label = "chip-fg")
+    val bg by animateColorAsState(bgTarget, sweep, label = "chip-bg")
+    // 0.25 to 1, not 1 to 0.25: with animations off an infinite transition jumps to its target
+    // and stays there, and the target has to be the resting look - a fully lit dot, not a dim one.
     val pulse = if (tone == MhTone.PROGRESS) {
         rememberInfiniteTransition(label = "chip").animateFloat(
-            initialValue = 1f,
-            targetValue = 0.25f,
+            initialValue = 0.25f,
+            targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
             label = "dot"
         )
     } else null
     Row(
         modifier = modifier
-            .background(bg, CircleShape)
+            .drawBehind { drawRoundRect(bg, cornerRadius = CornerRadius(size.height / 2)) }
             .padding(horizontal = 10.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(7.dp).graphicsLayer { alpha = pulse?.value ?: 1f }.background(fg, CircleShape))
-        Text(text, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Box(Modifier.size(7.dp).drawBehind { drawCircle(fg, alpha = pulse?.value ?: 1f) })
+        AnimatedContent(
+            targetState = text,
+            transitionSpec = {
+                fadeIn(tween(MhMotion.FAST)) togetherWith fadeOut(tween(MhMotion.FAST)) using
+                    SizeTransform(clip = false) { _, _ -> tween(MhMotion.BASE, easing = MhMotion.Standard) }
+            },
+            label = "chip-text"
+        ) { word ->
+            Text(word, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -585,11 +668,7 @@ fun MhBanner(
             }
         }
         if (details != null) {
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn(tween(MOTION_MILLIS)) + expandVertically(tween(MOTION_MILLIS)),
-                exit = fadeOut(tween(MOTION_MILLIS)) + shrinkVertically(tween(MOTION_MILLIS))
-            ) {
+            AnimatedVisibility(visible = expanded, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
                 Column(
                     modifier = Modifier.padding(start = 34.dp, bottom = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),

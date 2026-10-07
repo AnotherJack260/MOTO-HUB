@@ -5,6 +5,8 @@ package io.motohub.android.ui.components
 
 import io.motohub.android.i18n.motoHubText
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Route
@@ -37,9 +38,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -121,17 +124,18 @@ private fun NavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)
     ) {
+        // The icon swap snaps, as Revolut's does; only the live dot fades, because it reports a
+        // change the rider didn't make.
+        val dotAlpha by animateFloatAsState(if (dot) 1f else 0f, tween(MhMotion.FAST), label = "live-dot")
         Box {
             Icon(if (active) activeIcon else idleIcon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-            if (dot) {
-                Box(
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 2.dp, y = (-1).dp)
-                        .size(6.dp)
-                        .background(MotoHubColors.Lime, CircleShape)
-                )
-            }
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 2.dp, y = (-1).dp)
+                    .size(6.dp)
+                    .drawBehind { drawCircle(MotoHubColors.Lime, alpha = dotAlpha) }
+            )
         }
         Text(
             text = label,

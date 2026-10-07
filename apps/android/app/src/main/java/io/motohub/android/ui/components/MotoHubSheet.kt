@@ -287,20 +287,22 @@ object MotoHubSnackbar {
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                when (tone) {
-                    MhSnackTone.SUCCESS -> Icons.Rounded.CheckCircle
-                    MhSnackTone.ERROR -> Icons.Rounded.ErrorOutline
-                    MhSnackTone.INFO -> Icons.Rounded.Info
-                },
-                contentDescription = null,
-                tint = when (tone) {
-                    MhSnackTone.SUCCESS -> MotoHubColors.Lime
-                    MhSnackTone.ERROR -> MotoHubColors.Error
-                    MhSnackTone.INFO -> MotoHubColors.TextSecondary
-                },
-                modifier = Modifier.size(22.dp)
-            )
+            if (tone == MhSnackTone.SUCCESS) {
+                // "Done" lands on the glyph: it pops in just after the message arrives. The box
+                // holds its place, so the text doesn't shift when it does.
+                var arrived by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { arrived = true }
+                Box(Modifier.size(22.dp)) {
+                    MhPop(arrived) { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MotoHubColors.Lime) }
+                }
+            } else {
+                Icon(
+                    if (tone == MhSnackTone.ERROR) Icons.Rounded.ErrorOutline else Icons.Rounded.Info,
+                    contentDescription = null,
+                    tint = if (tone == MhSnackTone.ERROR) MotoHubColors.Error else MotoHubColors.TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
             Text(
                 data.visuals.message,
                 modifier = Modifier.weight(1f).padding(end = 8.dp),

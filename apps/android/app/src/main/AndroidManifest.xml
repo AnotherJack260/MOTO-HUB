@@ -56,6 +56,10 @@
         <package android:name="com.carbit.easyconnect" />
     </queries>
 
+    <!-- enableOnBackInvokedCallback: predictive back - the back-to-home preview on the tab roots
+         and Material's own back gesture on every sheet (Android 14 and 15; 16 defaults it). Safe
+         because back only ever goes through the OnBackPressedDispatcher (Compose's BackHandler):
+         nothing overrides onBackPressed or listens for KEYCODE_BACK. -->
     <application
         android:name=".MotoHubApplication"
         android:allowBackup="false"
@@ -64,6 +68,7 @@
         android:label="${appLabel}"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.MotoHub">
         <!-- Sentry is initialized explicitly by MotoHubApplication after the DSN has been
              loaded from BuildConfig. Prevent the SDK provider from initializing first. -->

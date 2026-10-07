@@ -4,7 +4,6 @@
 package io.motohub.android.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -132,11 +131,18 @@ fun <T> ScreenSlideTransition(
 }
 
 /**
- * A crossfade between screens that keeps each one's place.
+ * A fade-through between screens that keeps each one's place.
  *
  * The same saved-state contract as [ScreenSlideTransition], for the dispatchers where sliding
- * would be wrong - the bottom tabs, which are siblings rather than a stack, and where a card
- * covering another would say something untrue about how they relate.
+ * would be wrong - the bottom tabs, which are siblings rather than a stack, and a screen's own
+ * state swaps (Ride's connect, connecting, connected), where a card covering another would say
+ * something untrue about how they relate.
+ *
+ * Not a crossfade any more: blending both for 220 ms ghosted one block's text through the other's
+ * (the lime Connect through the step list). [MhMotion.fadeThrough] lets the old one go first.
+ * [animateHeight] is for a swap inside a page whose blocks differ in height: the height follows on
+ * the same clock instead of snapping, and the content below glides. Leave it off for anything
+ * that fills the screen (the tabs) - there is nothing to size, and measuring only costs.
  *
  * Without the holder each tab was rebuilt from scratch on every switch: a rider who scrolled half
  * way down one tab, glanced at another and came back landed at the top again.
@@ -147,10 +153,16 @@ fun <T> ScreenCrossfade(
     modifier: Modifier = Modifier,
     label: String = "screen-crossfade",
     stateKey: (T) -> Any = { "$it" },
+    animateHeight: Boolean = false,
     content: @Composable (T) -> Unit
 ) {
     val savedScreenState = rememberSaveableStateHolder()
-    Crossfade(targetState = screen, modifier = modifier, animationSpec = tween(MOTION_MILLIS), label = label) { shown ->
+    AnimatedContent(
+        targetState = screen,
+        modifier = modifier,
+        transitionSpec = { MhMotion.fadeThrough(animateHeight) },
+        label = label
+    ) { shown ->
         savedScreenState.SaveableStateProvider(stateKey(shown)) {
             content(shown)
         }
@@ -172,8 +184,8 @@ private fun <T> AnimatedContentTransitionScope<T>.screenSlideTransform(
     }
 }
 
-/** The app's one motion duration: screens, crossfades, banners folding open. */
-internal const val MOTION_MILLIS = 220
+/** The app's one motion duration, kept for the call sites that predate [MhMotion]. */
+internal const val MOTION_MILLIS = MhMotion.BASE
 
 /** How far the floor dims while a card covers it. */
 private const val DIMMED = 0.6f
