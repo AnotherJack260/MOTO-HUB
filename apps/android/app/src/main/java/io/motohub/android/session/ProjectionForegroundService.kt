@@ -93,7 +93,7 @@ class ProjectionForegroundService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                "MOTO-HUB projection service",
+                "RideLink projection service",
                 NotificationManager.IMPORTANCE_LOW
             )
         )

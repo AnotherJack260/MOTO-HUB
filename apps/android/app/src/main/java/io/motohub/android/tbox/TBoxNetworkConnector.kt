@@ -1171,7 +1171,7 @@ class TBoxNetworkConnector(context: Context) {
                             "Android dropped the ${profile.ssid} network before it became usable."
                         refusedAsBackground ->
                             "Android refused the request for ${profile.ssid} without trying it: " +
-                                "MOTO-HUB was in the background when it was made. Open MOTO-HUB " +
+                                "RideLink was in the background when it was made. Open RideLink " +
                                 "and tap Connect again."
                         else ->
                             "Android gave up connecting to ${profile.ssid}: either the dash was " +

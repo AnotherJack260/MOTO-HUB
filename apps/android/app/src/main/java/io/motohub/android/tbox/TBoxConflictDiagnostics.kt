@@ -23,7 +23,7 @@ internal object TBoxConflictDiagnostics {
             PORT_CONFLICT_MESSAGE
         } else {
             "Another EasyConn session is already using the local connection ports " +
-                "(10920-10922). Stop any active MOTO-HUB session, or force-stop $companionAppName " +
+                "(10920-10922). Stop any active RideLink session, or force-stop $companionAppName " +
                 "from its App info page, then retry the connection."
         }
 

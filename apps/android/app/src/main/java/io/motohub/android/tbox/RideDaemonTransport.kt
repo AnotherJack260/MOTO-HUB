@@ -2396,7 +2396,7 @@ class RideDaemonTransport(
         )
         mutableEvents.tryEmit(
             TBoxEvent.FatalError(
-                "The dash stopped responding while MOTO-HUB was still sending video. Put the bike " +
+                "The dash stopped responding while RideLink was still sending video. Put the bike " +
                     "on its phone-connection screen, make sure no other app is connected to the " +
                     "T-Box, and connect again."
             )

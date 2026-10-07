@@ -2,7 +2,7 @@
 <resources>
     <!-- Locale: de-DE. Translated from the en-US catalogue, which stays the source of truth. -->
     <!-- Application identity -->
-    <string name="app_name">MOTO-HUB</string>
+    <string name="app_name">RideLink</string>
 
     <!-- Settings > General > Language. Names are kept in their native form. -->
     <string name="language_system_default">Systemstandard</string>
@@ -18,13 +18,13 @@
     <string name="language_turkish">Türkçe</string>
     <string name="language_russian">Русский</string>
     <string name="language_title">Sprache</string>
-    <string name="language_description">Wähle die Sprache, die MOTO-HUB verwendet</string>
-    <string name="language_detail_description">MOTO-HUB folgt standardmäßig der Telefonsprache. Wähle unten eine Sprache, um sie nur für diese App zu überschreiben.</string>
+    <string name="language_description">Wähle die Sprache, die RideLink verwendet</string>
+    <string name="language_detail_description">RideLink folgt standardmäßig der Telefonsprache. Wähle unten eine Sprache, um sie nur für diese App zu überschreiben.</string>
 
     <!-- Settings main page -->
     <string name="legacy_download_anyway_c17b27fb">Trotzdem herunterladen</string>
     <string name="legacy_download_over_1_s_23fdd550">Über %1$s herunterladen?</string>
-    <string name="legacy_moto_hub_1_s_is_2_s_and_right_now_the_only_conne_8ebbc51c">MOTO-HUB %1$s ist %2$s groß, und die einzige Verbindung mit Internet ist gerade %3$s, die dein Anbieter berechnet. Auf dem Motorrad ist das normal: Das WLAN des Displays hat gar kein Internet.</string>
+    <string name="legacy_moto_hub_1_s_is_2_s_and_right_now_the_only_conne_8ebbc51c">RideLink %1$s ist %2$s groß, und die einzige Verbindung mit Internet ist gerade %3$s, die dein Anbieter berechnet. Auf dem Motorrad ist das normal: Das WLAN des Displays hat gar kein Internet.</string>
     <string name="legacy_waiting_for_wi_fi_costs_nothing_the_update_stays_3f38fec8">Auf WLAN zu warten kostet nichts: Das Update bleibt in dieser Liste.</string>
     <string name="settings_configuration">KONFIGURATION</string>
     <string name="settings_title">Einstellungen</string>
@@ -43,7 +43,7 @@
     <string name="video_quality_smoother">Flüssiger</string>
     <string name="video_quality_smoother_description">Niedrigere Bitrate, weniger Wärme und Netzlast.</string>
     <string name="video_quality_balanced">Ausgewogen</string>
-    <string name="video_quality_balanced_description">Aktuelle MOTO-HUB-Qualität und empfohlene Voreinstellung.</string>
+    <string name="video_quality_balanced_description">Aktuelle RideLink-Qualität und empfohlene Voreinstellung.</string>
     <string name="video_quality_sharper">Schärfer</string>
     <string name="video_quality_sharper_description">Höhere Bitrate für klarere Karten und Schrift.</string>
     <string name="video_power_auto">Auto</string>
@@ -55,7 +55,7 @@
     <string name="video_power_saver">Sparsam</string>
     <string name="video_power_saver_description">20 FPS für weniger Wärme und Akkuverbrauch.</string>
     <string name="android_auto_resolution_auto">Auto</string>
-    <string name="android_auto_resolution_auto_description">MOTO-HUB die Ausrichtung automatisch aus der gelernten T-Box-Geometrie bestimmen lassen.</string>
+    <string name="android_auto_resolution_auto_description">RideLink die Ausrichtung automatisch aus der gelernten T-Box-Geometrie bestimmen lassen.</string>
     <string name="android_auto_resolution_landscape_sd">Querformat 800 x 480</string>
     <string name="android_auto_resolution_landscape_sd_description">Standard-Querformatquelle für Android Auto.</string>
     <string name="android_auto_resolution_landscape_hd">Querformat 1280 x 720</string>
@@ -102,15 +102,15 @@
     <string name="route_preference_scenic_description">Bevorzugt Nebenstraßen und meidet Autobahnen.</string>
 
     <!-- Core/Pro bridge notification -->
-    <string name="core_bridge_channel_name">MOTO-HUB Core-Brücke</string>
-    <string name="core_bridge_channel_description">Hält die T-Box-Verbindung offen, während MOTO-HUB Pro sie nutzt</string>
-    <string name="core_bridge_notification_title">MOTO-HUB Core ist aktiv</string>
-    <string name="core_bridge_notification_text">Bedient MOTO-HUB Pro.</string>
+    <string name="core_bridge_channel_name">RideLink Core-Brücke</string>
+    <string name="core_bridge_channel_description">Hält die T-Box-Verbindung offen, während RideLink Pro sie nutzt</string>
+    <string name="core_bridge_notification_title">RideLink Core ist aktiv</string>
+    <string name="core_bridge_notification_text">Bedient RideLink Pro.</string>
 
     <!-- Projection notifications -->
-    <string name="projection_channel_name">MOTO-HUB-Projektion</string>
+    <string name="projection_channel_name">RideLink-Projektion</string>
     <string name="projection_channel_description">Streaming-Status für das Motorraddisplay</string>
-    <string name="projection_notification_title">MOTO-HUB ist aktiv</string>
+    <string name="projection_notification_title">RideLink ist aktiv</string>
     <string name="projection_notification_text">Die Bildschirmprojektion ist aktiv.</string>
     <string name="projection_notification_dimmed_text">Projektion aktiv, Telefondisplay gedimmt.</string>
     <string name="stop_projection">Stoppen</string>
@@ -118,19 +118,19 @@
     <string name="restore_phone_display">Display wiederherstellen</string>
 
     <!-- Android Auto notifications -->
-    <string name="android_auto_channel_name">MOTO-HUB Android Auto</string>
-    <string name="android_auto_notification_title">MOTO-HUB Android-Auto-Sitzung</string>
-    <string name="android_auto_notification_text">Sitzung aktiv. Öffne MOTO-HUB für den Live-Projektionsstatus.</string>
+    <string name="android_auto_channel_name">RideLink Android Auto</string>
+    <string name="android_auto_notification_title">RideLink Android-Auto-Sitzung</string>
+    <string name="android_auto_notification_text">Sitzung aktiv. Öffne RideLink für den Live-Projektionsstatus.</string>
     <string name="stop_android_auto">Android Auto stoppen</string>
 
     <!-- Ride Dashboard notifications -->
-    <string name="ride_dashboard_channel_name">MOTO-HUB Ride Dashboard</string>
+    <string name="ride_dashboard_channel_name">RideLink Ride Dashboard</string>
     <string name="ride_dashboard_channel_description">Streaming-Status der Live-Fahrdaten</string>
-    <string name="ride_dashboard_notification_title">MOTO-HUB Ride Dashboard</string>
+    <string name="ride_dashboard_notification_title">RideLink Ride Dashboard</string>
     <string name="ride_dashboard_notification_text">GPS-Telemetrie und Dashboard-Streaming sind aktiv.</string>
     <string name="stop_ride_dashboard">Dashboard stoppen</string>
     <!-- Source: MainActivity.kt -->
-    <string name="legacy_moto_hub_diagnostics_ba6420b1">MOTO-HUB-Diagnose</string>
+    <string name="legacy_moto_hub_diagnostics_ba6420b1">RideLink-Diagnose</string>
     <!-- Source: feature/about/AboutScreen.kt -->
     <string name="legacy_about_the_project_2feef1f7">ÜBER DAS PROJEKT</string>
     <!-- Source: feature/about/AboutScreen.kt -->
@@ -282,9 +282,9 @@
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
     <string name="legacy_the_wi_fi_password_is_stored_securely_on_this_ph_b6fb6382">Das WLAN-Passwort wird sicher auf diesem Telefon gespeichert.</string>
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
-    <string name="legacy_the_name_is_only_used_inside_moto_hub_10a5f3a4">Der Name wird nur innerhalb von MOTO-HUB verwendet.</string>
+    <string name="legacy_the_name_is_only_used_inside_moto_hub_10a5f3a4">Der Name wird nur innerhalb von RideLink verwendet.</string>
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
-    <string name="legacy_the_saved_connection_profile_and_its_photo_will__c6d581e2">Das gespeicherte Verbindungsprofil und sein Foto werden aus MOTO-HUB entfernt.</string>
+    <string name="legacy_the_saved_connection_profile_and_its_photo_will__c6d581e2">Das gespeicherte Verbindungsprofil und sein Foto werden aus RideLink entfernt.</string>
     <!-- Source: feature/garage/TBoxCapabilityScreen.kt -->
     <string name="legacy_could_not_derive_a_peer_ip_this_network_may_not__3fa3f2d0">Es konnte keine Peer-IP ermittelt werden - dieses Netzwerk hat vielleicht noch keine nutzbare Route.</string>
     <!-- Source: feature/garage/TBoxCapabilityScreen.kt -->
@@ -528,7 +528,7 @@
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_android_auto_content_insets_7046c7dd">ANDROID-AUTO-INHALTSRÄNDER</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
-    <string name="legacy_choose_image_detail_and_how_moto_hub_balances_sm_577123e1">Wähle Bilddetail und wie MOTO-HUB Flüssigkeit, Wärme, Akku und WLAN-Last ausbalanciert.</string>
+    <string name="legacy_choose_image_detail_and_how_moto_hub_balances_sm_577123e1">Wähle Bilddetail und wie RideLink Flüssigkeit, Wärme, Akku und WLAN-Last ausbalanciert.</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_default_route_type_b528b630">STANDARD-ROUTENTYP</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
@@ -602,7 +602,7 @@
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
     <string name="legacy_checking_github_releases_7e509ccb">GitHub-Releases werden geprüft...</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
-    <string name="legacy_moto_hub_updates_c98ab24f">MOTO-HUB-Updates</string>
+    <string name="legacy_moto_hub_updates_c98ab24f">RideLink-Updates</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
     <string name="legacy_no_apk_asset_attached_to_this_release_7a89904d">Diesem Release ist keine APK-Datei angehängt.</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
@@ -696,7 +696,7 @@
     <!-- Source: feature/navigation/NavigationScreen.kt -->
     <string name="legacy_take_me_home_bb1e43ee">Bring mich nach Hause</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
-    <string name="legacy_about_moto_hub_6966e1f8">Über MOTO-HUB</string>
+    <string name="legacy_about_moto_hub_6966e1f8">Über RideLink</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_android_auto_cb210d00">Android Auto</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
@@ -780,7 +780,7 @@
     <!-- Source: feature/trips/TripRecordingService.kt -->
     <string name="legacy_gps_ride_recording_and_trip_statistics_28992d34">GPS-Fahrtaufzeichnung und Tourstatistiken</string>
     <!-- Source: session/PhoneDisplayDimmer.kt -->
-    <string name="legacy_moto_hub_display_dimmer_57b6244b">MOTO-HUB-Displaydimmer</string>
+    <string name="legacy_moto_hub_display_dimmer_57b6244b">RideLink-Displaydimmer</string>
     <!-- Dynamic UI templates. Keep positional placeholders unchanged. -->
     <string name="legacy_filter_1_d_497daa14">FILTER %1$d</string>
     <string name="legacy_recording_1_s_b01f3573">AUFZEICHNUNG · %1$s</string>
@@ -795,9 +795,9 @@
     <string name="legacy_1_d_km_h_6ce8c40f">%1$d KM/H</string>
     <!-- Weather forecast wind speed when the rider selects miles. -->
     <string name="legacy_1_d_mph_669c2f51">%1$d MPH</string>
-    <string name="legacy_moto_hub_258caaa5">MOTO-HUB</string>
+    <string name="legacy_moto_hub_258caaa5">RideLink</string>
     <string name="legacy_recording_this_ride_1aceedab">Diese Fahrt wird aufgezeichnet</string>
-    <string name="legacy_moto_hub_controls_f72ba5d1">MOTO-HUB-Bedienung</string>
+    <string name="legacy_moto_hub_controls_f72ba5d1">RideLink-Bedienung</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_1_d_available_e7e32615">%1$d verfügbar</string>
     <!-- Source: localized UI literal / enum label -->
@@ -997,7 +997,7 @@
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_mode_2431a3">MODUS</string>
     <!-- Source: localized UI literal / enum label -->
-    <string name="legacy_moto_hub_simulator_72ee829">MOTO-HUB Simulator</string>
+    <string name="legacy_moto_hub_simulator_72ee829">RideLink Simulator</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_moving_87e69c4e">IN BEWEGUNG</string>
     <!-- Source: localized UI literal / enum label -->
@@ -1199,7 +1199,7 @@
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_1_s_is_ready_to_connect_6b95609b">%1$s ist bereit zum Verbinden.</string>
     <!-- Source: localized UI literal / enum label -->
-    <string name="legacy_allow_moto_hub_notifications_to_keep_streaming_v_4700fc1e">Erlaube MOTO-HUB-Benachrichtigungen, damit das Streaming sichtbar und steuerbar bleibt.</string>
+    <string name="legacy_allow_moto_hub_notifications_to_keep_streaming_v_4700fc1e">Erlaube RideLink-Benachrichtigungen, damit das Streaming sichtbar und steuerbar bleibt.</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_allow_nearby_devices_and_location_to_detect_the__a4c1fa2c">Erlaube „Geräte in der Nähe“ und Standort, um das T-Box-WLAN zu erkennen.</string>
     <!-- Source: localized UI literal / enum label -->
@@ -1295,7 +1295,7 @@
     <!-- Android Auto pre-flight: an OEM companion app is installed, but may not be active. %1$s is
          its name as shown on the phone (CFMOTO, Zontes Smart, Carbit Ride, ...). -->
     <string name="legacy_1_s_detected_66208287">%1$s erkannt</string>
-    <string name="legacy_moto_hub_starts_google_android_auto_not_1_s_3a77813f">MOTO-HUB startet Google Android Auto, nicht %1$s.</string>
+    <string name="legacy_moto_hub_starts_google_android_auto_not_1_s_3a77813f">RideLink startet Google Android Auto, nicht %1$s.</string>
     <string name="legacy_1_s_can_still_take_over_the_dashboard_connection_5bc85002">%1$s kann die Dashboard-Verbindung auch im Hintergrund übernehmen. Für eine zuverlässige Projektion beende die App vorher in den Android-Einstellungen zwangsweise.</string>
     <string name="legacy_continue_with_android_auto_f6c7ef01">Mit Android Auto fortfahren</string>
     <string name="legacy_open_1_s_settings_470b74f2">Einstellungen von %1$s öffnen</string>
@@ -1307,7 +1307,7 @@
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
     <string name="legacy_unfamiliar_pairing_code_714f8ce7">Unbekannter Kopplungscode</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
-    <string name="legacy_this_code_carries_wi_fi_details_for_1_s_but_it_w_422a5994">Dieser Code enthält WLAN-Daten für %1$s, wurde aber nicht von einer Carbit-Adresse ausgegeben wie die Displays, die MOTO-HUB kennt.</string>
+    <string name="legacy_this_code_carries_wi_fi_details_for_1_s_but_it_w_422a5994">Dieser Code enthält WLAN-Daten für %1$s, wurde aber nicht von einer Carbit-Adresse ausgegeben wie die Displays, die RideLink kennt.</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
     <string name="legacy_several_manufacturers_ship_the_same_dashboard_so_49305d38">Mehrere Hersteller liefern dieselbe Display-Software unter eigener Marke aus, es kann also durchaus dein Motorrad sein. Fahre nur fort, wenn du ihn von deinem eigenen Display gescannt hast.</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
@@ -1333,14 +1333,14 @@
 
     <!-- Source: feature/androidauto/AndroidAutoHelpScreen.kt -->
     <string name="legacy_a_notification_confirms_the_server_is_running_le_eacf82e">Eine Benachrichtigung bestätigt, dass der Server läuft. Lass ihn laufen: Er bleibt aktiv, bis du ihn stoppst oder das Telefon neu startest.</string>
-    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_890c8f24">Android Auto 17.4 hat die Möglichkeit entfernt, dass eine App um Projektion bitten kann. MOTO-HUB versucht es weiterhin, und auf älteren Versionen klappt es — wenn nicht, lässt sich Android Auto stattdessen über sein eigenes Entwicklermenü starten. Du musst nichts installieren.</string>
+    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_890c8f24">Android Auto 17.4 hat die Möglichkeit entfernt, dass eine App um Projektion bitten kann. RideLink versucht es weiterhin, und auf älteren Versionen klappt es — wenn nicht, lässt sich Android Auto stattdessen über sein eigenes Entwicklermenü starten. Du musst nichts installieren.</string>
     <string name="legacy_android_auto_does_not_start_2266b70e">Android Auto startet nicht</string>
     <string name="legacy_every_time_android_auto_will_not_start_18ff3ab9">JEDES MAL, WENN ANDROID AUTO NICHT STARTET</string>
-    <string name="legacy_go_back_to_moto_hub_and_start_android_auto_it_co_ff8cc50d">Geh zurück zu MOTO-HUB und starte Android Auto. Es verbindet sich innerhalb von ein paar Sekunden von selbst — sonst musst du nichts drücken.</string>
+    <string name="legacy_go_back_to_moto_hub_and_start_android_auto_it_co_ff8cc50d">Geh zurück zu RideLink und starte Android Auto. Es verbindet sich innerhalb von ein paar Sekunden von selbst — sonst musst du nichts drücken.</string>
     <string name="legacy_in_android_auto_s_developer_settings_open_the_me_1ea3a8cf">Öffne in den Entwicklereinstellungen von Android Auto oben rechts das Menü ⋮ und wähle \"Head-Unit-Server starten\". Es steht in diesem Menü, nicht in der Einstellungsliste darunter.</string>
     <string name="legacy_in_developer_settings_turn_on_add_new_cars_to_an_19f79566">Schalte in den Entwicklereinstellungen \"Neue Autos zu Android Auto hinzufügen\" ein (ältere Versionen nennen es \"Unbekannte Quellen\").</string>
     <string name="legacy_jumps_straight_to_the_app_where_the_menu_above_l_7c8b2093">Springt direkt zur App, in der das Menü oben zu finden ist</string>
-    <string name="legacy_normally_moto_hub_waits_and_asks_android_auto_to_6c183bab">Normalerweise wartet MOTO-HUB und bittet Android Auto, sich zu verbinden. Version 17.4 hat diese Tür für jede App dieser Art geschlossen, nicht nur für diese. Der Head-Unit-Server dreht die Richtung um — Android Auto wartet und MOTO-HUB verbindet sich zu ihm — eine Tür, die Google für die eigenen Testwerkzeuge offengelassen hat.</string>
+    <string name="legacy_normally_moto_hub_waits_and_asks_android_auto_to_6c183bab">Normalerweise wartet RideLink und bittet Android Auto, sich zu verbinden. Version 17.4 hat diese Tür für jede App dieser Art geschlossen, nicht nur für diese. Der Head-Unit-Server dreht die Richtung um — Android Auto wartet und RideLink verbindet sich zu ihm — eine Tür, die Google für die eigenen Testwerkzeuge offengelassen hat.</string>
     <string name="legacy_one_time_setup_ca24c531">EINMALIGE EINRICHTUNG</string>
     <string name="legacy_open_android_auto_settings_48a5120d">Android-Auto-Einstellungen öffnen</string>
     <string name="legacy_open_the_android_auto_app_scroll_to_the_bottom_a_69ae9e53">Öffne die Android-Auto-App, scrolle nach ganz unten und tippe zehnmal auf \"Version\". Die Entwicklereinstellungen erscheinen.</string>
@@ -1391,10 +1391,10 @@
     <string name="legacy_no_motorcycle_no_problem_4346def1">KEIN MOTORRAD? KEIN PROBLEM</string>
 
     <!-- Source: feature/home/CoreAvailability.kt -->
-    <string name="legacy_advanced_needs_moto_hub_core_installed_and_paire_722fef7d">Advanced braucht MOTO-HUB (Core) installiert und mit deiner T-Box gekoppelt, um zu verbinden, zu spiegeln oder Android Auto zu starten.</string>
+    <string name="legacy_advanced_needs_moto_hub_core_installed_and_paire_722fef7d">Advanced braucht RideLink (Core) installiert und mit deiner T-Box gekoppelt, um zu verbinden, zu spiegeln oder Android Auto zu starten.</string>
     <string name="legacy_couldn_t_open_the_browser_3e0fae25">Der Browser konnte nicht geöffnet werden.</string>
-    <string name="legacy_download_moto_hub_core_976f62e2">MOTO-HUB Core herunterladen</string>
-    <string name="legacy_moto_hub_core_not_found_b76c3f4f">MOTO-HUB CORE NICHT GEFUNDEN</string>
+    <string name="legacy_download_moto_hub_core_976f62e2">RideLink Core herunterladen</string>
+    <string name="legacy_moto_hub_core_not_found_b76c3f4f">RideLink CORE NICHT GEFUNDEN</string>
 
     <!-- Source: feature/home/HubHomeScreen.kt -->
     <string name="legacy_android_auto_17_4_removed_the_way_apps_ask_it_to_b5455068">Android Auto 17.4 hat die Möglichkeit entfernt, dass Apps um Projektion bitten. Es lässt sich weiterhin über das eigene Entwicklermenü von Android Auto starten.</string>
@@ -1433,20 +1433,20 @@
     <string name="legacy_requires_the_phone_paired_to_the_motorcycle_s_bl_dda6960a">Erfordert, dass das Telefon mit dem Bluetooth des Motorrads gekoppelt ist. Die Musik läuft weiter, aber ihre Tasten werden während einer Sitzung erfasst.</string>
     <string name="legacy_set_the_dash_clock_over_bluetooth_experimental_3431b284">Die Uhr des Displays über Bluetooth stellen (experimentell)</string>
     <string name="legacy_set_the_dash_clock_over_wi_fi_292a2ca5">Die Uhr des Displays über WLAN stellen</string>
-    <string name="legacy_on_by_default_and_what_sets_the_time_on_most_das_6234cd82">Standardmäßig ein, und das ist es, was auf den meisten Displays die Uhrzeit setzt. Schalte es nur aus, wenn dein Display MOTO-HUB nach der Uhrzeit fragt, die Antwort ignoriert und trotzdem 01.01.1970 anzeigt: Auf diesen Geräten ändert das Schreiben der Uhr nichts und kann eine Uhrzeit überschreiben, die du am Display selbst von Hand eingestellt hast. Ist das aus, verbindet sich das Motorrad ganz normal, es erfährt nur nie, wie spät es ist.</string>
+    <string name="legacy_on_by_default_and_what_sets_the_time_on_most_das_6234cd82">Standardmäßig ein, und das ist es, was auf den meisten Displays die Uhrzeit setzt. Schalte es nur aus, wenn dein Display RideLink nach der Uhrzeit fragt, die Antwort ignoriert und trotzdem 01.01.1970 anzeigt: Auf diesen Geräten ändert das Schreiben der Uhr nichts und kann eine Uhrzeit überschreiben, die du am Display selbst von Hand eingestellt hast. Ist das aus, verbindet sich das Motorrad ganz normal, es erfährt nur nie, wie spät es ist.</string>
     <string name="legacy_your_dashboard_has_been_seen_asking_for_the_time_c02f4d97">Bei deinem Display wurde beobachtet, dass es nach der Uhrzeit fragt, eine Antwort bekommt und trotzdem weiter ab dem eigenen Einschalten zählt. Dieser Schalter ändert daran in keiner Stellung etwas: Diese Uhr führt das Display, nicht das Telefon.</string>
     <string name="legacy_settings_595d2043">Einstellungen</string>
-    <string name="legacy_some_dashboards_ask_for_the_time_over_bluetooth__b44ce43b">Manche Displays fragen die Uhrzeit über Bluetooth statt über WLAN ab und bleiben ohne sie auf 00:00 stehen. Setzt voraus, dass das Motorrad in den Bluetooth-Einstellungen von Android bereits mit diesem Telefon gekoppelt ist. Standardmäßig aus; MOTO-HUB antwortet immer nur einem Gerät, das im eigenen Protokoll des Displays fragt.</string>
+    <string name="legacy_some_dashboards_ask_for_the_time_over_bluetooth__b44ce43b">Manche Displays fragen die Uhrzeit über Bluetooth statt über WLAN ab und bleiben ohne sie auf 00:00 stehen. Setzt voraus, dass das Motorrad in den Bluetooth-Einstellungen von Android bereits mit diesem Telefon gekoppelt ist. Standardmäßig aus; RideLink antwortet immer nur einem Gerät, das im eigenen Protokoll des Displays fragt.</string>
     <string name="legacy_some_dashboards_forget_settings_like_the_clock_w_76d95842">Manche Displays vergessen Einstellungen wie die Uhrzeit, wenn die Wi-Fi-Direct-Verbindung ganz abbricht. Hält das Telefon mit dem Netzwerk des Motorrads verbunden, bis du die App verlässt oder das WLAN ausschaltest. Standardmäßig aus; nur einschalten, wenn dein Display nach dem Trennen die Uhrzeit verliert.</string>
     <string name="legacy_start_automatically_2cb44c45">Automatisch starten</string>
     <string name="legacy_start_on_connect_94487a47">Beim Verbinden starten</string>
     <string name="legacy_stay_linked_to_the_bike_s_wi_fi_after_disconnect_81b0e941">Nach dem Trennen mit dem WLAN des Motorrads verbunden bleiben</string>
-    <string name="legacy_the_motorcycle_s_buttons_reach_the_phone_over_bl_356cbf0d">Die Tasten des Motorrads erreichen das Telefon über Bluetooth als Medientasten. Während eine Sitzung streamt, kann MOTO-HUB sie erfassen und damit die Android-Auto-Navigation statt des Musikplayers steuern.</string>
+    <string name="legacy_the_motorcycle_s_buttons_reach_the_phone_over_bl_356cbf0d">Die Tasten des Motorrads erreichen das Telefon über Bluetooth als Medientasten. Während eine Sitzung streamt, kann RideLink sie erfassen und damit die Android-Auto-Navigation statt des Musikplayers steuern.</string>
     <string name="legacy_what_each_press_double_press_and_hold_does_97201ad9">Was jeder Druck, Doppeldruck und jedes Halten bewirkt</string>
     <string name="legacy_what_to_do_when_android_auto_refuses_to_project_fa692d1b">Was zu tun ist, wenn Android Auto die Projektion verweigert</string>
     <string name="legacy_what_to_start_5b78fc39">WAS GESTARTET WIRD</string>
     <string name="legacy_while_capture_is_on_the_volume_buttons_navigate__9e410bf">Solange die Erfassung an ist, navigieren die Lautstärketasten, statt die Lautstärke zu ändern — stelle deinen Hörpegel hier ein.</string>
-    <string name="legacy_with_this_on_moto_hub_skips_the_what_should_i_sh_498b0614">Ist das an, überspringt MOTO-HUB den Bildschirm \"Was soll ich zeigen?\" und legt den gewählten Bildschirm auf das TFT, sobald die Verbindung zum Motorrad steht. Es läuft einmal pro App-Start - stoppe einen Bildschirm und du hast wieder die Kontrolle.</string>
+    <string name="legacy_with_this_on_moto_hub_skips_the_what_should_i_sh_498b0614">Ist das an, überspringt RideLink den Bildschirm \"Was soll ich zeigen?\" und legt den gewählten Bildschirm auf das TFT, sobald die Verbindung zum Motorrad steht. Es läuft einmal pro App-Start - stoppe einen Bildschirm und du hast wieder die Kontrolle.</string>
 
     <!-- Source: ui/components/SystemKillNotice.kt -->
     <string name="legacy_dismiss_c6dc4a6a">Ausblenden</string>
@@ -1481,7 +1481,7 @@
     <string name="legacy_bluetooth_is_turned_off_so_the_obd_adapter_canno_5a8640c">Bluetooth ist ausgeschaltet, der OBD-Adapter ist daher nicht erreichbar.</string>
     <string name="legacy_customizable_vector_map_rendered_on_the_tft_bfa6e220">Anpassbare Vektorkarte, auf dem TFT gerendert</string>
     <string name="legacy_gps_following_8ad5867b">GPS-Verfolgung</string>
-    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_obd_af681be3">MOTO-HUB braucht Bluetooth-Zugriff, um den OBD-Adapter zu erreichen.</string>
+    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_obd_af681be3">RideLink braucht Bluetooth-Zugriff, um den OBD-Adapter zu erreichen.</string>
     <string name="legacy_no_map_live_engine_data_from_a_paired_elm327_ada_8ecf531c">Keine Karte: Live-Motordaten von einem gekoppelten ELM327-Adapter</string>
     <string name="legacy_no_paired_obd_adapter_found_pair_the_elm327_dong_90029f7c">Kein gekoppelter OBD-Adapter gefunden. Koppele zuerst den ELM327-Dongle.</string>
     <string name="legacy_restore_gps_76fc23d8">GPS wiederherstellen</string>
@@ -1504,7 +1504,7 @@
     <string name="legacy_bluetooth_is_turned_off_92ceda3f">Bluetooth ist ausgeschaltet.</string>
     <string name="legacy_connected_and_reading_1e53c68c">Verbunden und lesend</string>
     <string name="legacy_connecting_ca35204e">Wird verbunden…</string>
-    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_ada_8763b3f4">MOTO-HUB braucht Bluetooth-Zugriff, um den Adapter zu erreichen.</string>
+    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_ada_8763b3f4">RideLink braucht Bluetooth-Zugriff, um den Adapter zu erreichen.</string>
     <string name="legacy_no_paired_obd_adapter_found_72c35314">Kein gekoppelter OBD-Adapter gefunden.</string>
     <string name="legacy_not_connected_273cf5d2">Nicht verbunden.</string>
 
@@ -1573,7 +1573,7 @@
     <string name="legacy_gps_only_e6f03982">NUR GPS</string>
          description; rendered outside the app's own Compose runtime, so it is a plain string
          resource rather than a motoHubText() call). -->
-    <string name="handlebar_hid_capture_description">Lässt MOTO-HUB Steuerkreuz-Drücke von einer Bluetooth-HID-Lenkerfernbedienung lesen, solange in den Einstellungen für Lenkertasten der HID-Modus gewählt ist.</string>
+    <string name="handlebar_hid_capture_description">Lässt RideLink Steuerkreuz-Drücke von einer Bluetooth-HID-Lenkerfernbedienung lesen, solange in den Einstellungen für Lenkertasten der HID-Modus gewählt ist.</string>
 
     <!-- ==================================================================
          Handlebar HID mode, phone-only Android Auto and the teach
@@ -1590,19 +1590,19 @@
     <string name="legacy_android_auto_straight_to_your_phone_f0cc540c">Android Auto — direkt auf dein Telefon</string>
     <string name="legacy_input_protocol_8ff4fe4e">EINGABEPROTOKOLL</string>
     <string name="legacy_most_dashboards_send_buttons_as_avrcp_media_keys_6e1dd82c">Die meisten Displays senden Tasten als AVRCP-Medientasten — lass das auf AVRCP. Wähle HID nur, wenn sich die Fernbedienung als Bluetooth-Tastatur koppelt und ihre Drücke unten nie ankommen.</string>
-    <string name="legacy_hid_mode_also_needs_moto_hub_s_accessibility_ser_c0cdf4cc">Für den HID-Modus muss außerdem die Bedienungshilfe von MOTO-HUB eingeschaltet sein, sonst werden die Drücke nicht gesehen.</string>
+    <string name="legacy_hid_mode_also_needs_moto_hub_s_accessibility_ser_c0cdf4cc">Für den HID-Modus muss außerdem die Bedienungshilfe von RideLink eingeschaltet sein, sonst werden die Drücke nicht gesehen.</string>
     <string name="legacy_open_accessibility_settings_a01c954b">Einstellungen für Bedienungshilfen öffnen</string>
-    <string name="legacy_turn_on_moto_hub_so_handlebar_presses_reach_the__b41c5310">Schalte MOTO-HUB ein, damit Lenkerdrücke die App aus jedem Bildschirm erreichen</string>
-    <string name="legacy_was_moto_hub_s_switch_greyed_out_android_blocks__b5233420">War der Schalter von MOTO-HUB ausgegraut? Android blockiert ihn für Apps, die nicht aus einem Store installiert wurden, und MOTO-HUB wird von GitHub geladen. Öffne die App-Info, tippe oben rechts auf ⋮, wähle \"Eingeschränkte Einstellungen zulassen\", komm zurück und schalte ihn ein.</string>
+    <string name="legacy_turn_on_moto_hub_so_handlebar_presses_reach_the__b41c5310">Schalte RideLink ein, damit Lenkerdrücke die App aus jedem Bildschirm erreichen</string>
+    <string name="legacy_was_moto_hub_s_switch_greyed_out_android_blocks__b5233420">War der Schalter von RideLink ausgegraut? Android blockiert ihn für Apps, die nicht aus einem Store installiert wurden, und RideLink wird von GitHub geladen. Öffne die App-Info, tippe oben rechts auf ⋮, wähle \"Eingeschränkte Einstellungen zulassen\", komm zurück und schalte ihn ein.</string>
     <string name="legacy_open_app_info_7c77c863">App-Info öffnen</string>
     <string name="legacy_where_allow_restricted_settings_lives_8f29fea1">Wo \"Eingeschränkte Einstellungen zulassen\" zu finden ist</string>
     <string name="legacy_avrcp_media_keys_f50e20c7">AVRCP (Medientasten)</string>
     <string name="legacy_hid_d_pad_a247f04a">HID (Steuerkreuz)</string>
     <string name="legacy_default_the_dashboard_sends_bluetooth_media_key__ccbdfbf7">Standard. Das Display sendet Bluetooth-Medientastenbefehle für Wiedergabe/Pause, Titel und Lautstärke.</string>
-    <string name="legacy_for_remotes_that_pair_as_a_bluetooth_keyboard_an_25055a66">Für Fernbedienungen, die sich als Bluetooth-Tastatur koppeln und Steuerkreuz-Drücke senden. Erfordert, dass die Bedienungshilfe von MOTO-HUB unten eingeschaltet wird.</string>
+    <string name="legacy_for_remotes_that_pair_as_a_bluetooth_keyboard_an_25055a66">Für Fernbedienungen, die sich als Bluetooth-Tastatur koppeln und Steuerkreuz-Drücke senden. Erfordert, dass die Bedienungshilfe von RideLink unten eingeschaltet wird.</string>
 
     <!-- External display service (USB AOA) - notification channel and ongoing notification -->
-    <string name="legacy_moto_hub_external_display_streaming_1be823ca">MOTO-HUB-Streaming auf externes Display</string>
+    <string name="legacy_moto_hub_external_display_streaming_1be823ca">RideLink-Streaming auf externes Display</string>
     <string name="legacy_streaming_to_external_display_via_usb_ab5c31c6">Streaming über USB auf ein externes Display</string>
     <string name="legacy_stop_external_display_c050e9ab">Externes Display stoppen</string>
     <string name="legacy_aap_accessory_probe_running_bcf6ccd1">AAP-Zubehörprüfung läuft</string>
@@ -1610,8 +1610,8 @@
     <!-- About screen -->
     <string name="legacy_your_phone_your_motorcycle_display_c5956fcb">Dein Telefon.\nDein Motorraddisplay.</string>
     <string name="legacy_follow_development_join_our_community_report_iss_b8b8fffa">Verfolge die Entwicklung, tritt unserer Community bei, melde Probleme und lade Releases herunter.</string>
-    <string name="legacy_moto_hub_is_an_independent_project_it_is_not_aff_9e4c2633">MOTO-HUB ist ein unabhängiges Projekt. Es steht in keiner Verbindung zu Carbit, CFMOTO, einem anderen Hersteller, dessen Display EasyConn nutzt, Google oder Android Auto, und wird von ihnen weder unterstützt noch gesponsert. Alle Produktnamen und Marken gehören ihren jeweiligen Eigentümern.</string>
-    <string name="legacy_moto_hub_is_an_experimental_proof_of_concept_not_34b4b321">MOTO-HUB ist ein experimenteller Machbarkeitsnachweis, kein Produkt in Produktionsqualität.</string>
+    <string name="legacy_moto_hub_is_an_independent_project_it_is_not_aff_9e4c2633">RideLink ist ein unabhängiges Projekt. Es steht in keiner Verbindung zu Carbit, CFMOTO, einem anderen Hersteller, dessen Display EasyConn nutzt, Google oder Android Auto, und wird von ihnen weder unterstützt noch gesponsert. Alle Produktnamen und Marken gehören ihren jeweiligen Eigentümern.</string>
+    <string name="legacy_moto_hub_is_an_experimental_proof_of_concept_not_34b4b321">RideLink ist ein experimenteller Machbarkeitsnachweis, kein Produkt in Produktionsqualität.</string>
     <string name="legacy_development_and_testing_happen_on_a_cfmoto_700mt_ac58afbf">Entwicklung und Tests finden an einem CFMOTO 700MT-ADV-Display mit OnePlus 13 / Galaxy Z Fold4 statt. Andere Motorräder, Marken, T-Box-Firmwareversionen und Telefone sind hier ungetestet: rechne mit abweichendem Verhalten, Wiederholungen oder gar keiner Verbindung. Zeigt das Display einen Kopplungs-QR-Code, ist ein Versuch es wert.</string>
     <string name="legacy_do_not_rely_on_it_as_your_only_source_of_critica_39775433">Verlass dich nicht darauf als einzige Quelle kritischer Navigation. Richte die Navigation im Stand ein und nutze die Software auf eigene Gefahr.</string>
 
@@ -1654,7 +1654,7 @@
     <string name="legacy_head_unit_name_1d44c987">Name der Head Unit</string>
     <string name="legacy_vehicle_brand_1ca30d73">Fahrzeugmarke</string>
     <string name="legacy_vehicle_model_1d3cbd15">Fahrzeugmodell</string>
-    <string name="legacy_these_values_are_shown_exactly_as_reported_by_th_16427b8c">Diese Werte werden genau so angezeigt, wie die T-Box sie meldet. MOTO-HUB leitet aus dem QR-Code oder dem Netzwerknamen kein Motorradmodell ab.</string>
+    <string name="legacy_these_values_are_shown_exactly_as_reported_by_th_16427b8c">Diese Werte werden genau so angezeigt, wie die T-Box sie meldet. RideLink leitet aus dem QR-Code oder dem Netzwerknamen kein Motorradmodell ab.</string>
     <string name="legacy_software_protocol_2108716b">SOFTWARE &amp; PROTOKOLL</string>
     <string name="legacy_pxc_version_5fba84f3">PXC-Version</string>
     <string name="legacy_sdk_version_aacf3ed2">SDK-Version</string>
@@ -1704,9 +1704,9 @@
 
     <!-- Safety disclaimer shown on first launch -->
     <string name="legacy_safety_warning_243ef82e">SICHERHEITSHINWEIS</string>
-    <string name="legacy_riding_requires_your_full_attention_never_intera_96038a24">Fahren verlangt deine volle Aufmerksamkeit. Bediene MOTO-HUB, Android Auto, Navigation, Mirroring, Tourenaufzeichnung oder irgendein Bedienelement auf dem Bildschirm nie, während das Motorrad fährt.</string>
+    <string name="legacy_riding_requires_your_full_attention_never_intera_96038a24">Fahren verlangt deine volle Aufmerksamkeit. Bediene RideLink, Android Auto, Navigation, Mirroring, Tourenaufzeichnung oder irgendein Bedienelement auf dem Bildschirm nie, während das Motorrad fährt.</string>
     <string name="legacy_configure_and_verify_everything_only_while_parke_57e1b31b">Richte alles nur im Stand ein und prüfe es dort. Nutze diese Anwendung nur in einer völlig sicheren und kontrollierten Situation. Sind die Bedingungen nicht völlig sicher, nutze sie nicht.</string>
-    <string name="legacy_moto_hub_is_not_a_safety_device_and_cannot_preve_a3d43f2f">MOTO-HUB ist kein Sicherheitsgerät und kann Ablenkung, Unfälle, Verletzungen oder Schäden nicht verhindern. Für sicheres Fahren und die Einhaltung aller geltenden Gesetze bist allein du verantwortlich.</string>
+    <string name="legacy_moto_hub_is_not_a_safety_device_and_cannot_preve_a3d43f2f">RideLink ist kein Sicherheitsgerät und kann Ablenkung, Unfälle, Verletzungen oder Schäden nicht verhindern. Für sicheres Fahren und die Einhaltung aller geltenden Gesetze bist allein du verantwortlich.</string>
     <string name="legacy_i_understand_do_not_show_this_warning_again_e4526192">Ich verstehe — diese Warnung nicht mehr anzeigen</string>
 
     <!-- GitHub update dialog -->
@@ -1737,23 +1737,23 @@
     <!-- The "MOTO-HUB is still looking" notification shown while a connection attempt runs,
          and the hosted-network wording that tells the rider not to close the app. %1$s is
          the motorcycle network name. -->
-    <string name="legacy_moto_hub_connection_progress_c260af34">MOTO-HUB-Verbindungsfortschritt</string>
+    <string name="legacy_moto_hub_connection_progress_c260af34">RideLink-Verbindungsfortschritt</string>
     <string name="legacy_looking_for_1_s_9983a22f">Suche nach %1$s</string>
     <string name="legacy_connecting_to_1_s_2f10e3b8">Verbinde mit %1$s</string>
-    <string name="legacy_keep_moto_hub_open_closing_it_stops_the_search_54ec507">Lass MOTO-HUB offen - schließen beendet die Suche.</string>
-    <string name="legacy_hotspot_is_up_searching_it_for_the_dashboard_thi_caab4cd3">Der Hotspot läuft. Er wird nach dem Display durchsucht - das kann bis zu 90 Sekunden dauern, lass MOTO-HUB also offen.</string>
+    <string name="legacy_keep_moto_hub_open_closing_it_stops_the_search_54ec507">Lass RideLink offen - schließen beendet die Suche.</string>
+    <string name="legacy_hotspot_is_up_searching_it_for_the_dashboard_thi_caab4cd3">Der Hotspot läuft. Er wird nach dem Display durchsucht - das kann bis zu 90 Sekunden dauern, lass RideLink also offen.</string>
     <!-- Asked once per video format tried, after a session that looked healthy from the phone:
          only the rider can see whether the dashboard actually displayed it. %1$s is the
          motorcycle name. -->
     <string name="legacy_did_it_show_up_on_the_dashboard_f341c05">Ist es auf dem Display erschienen?</string>
-    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_46fc9a09">Als du dich zuletzt mit %1$s verbunden hast, sah von diesem Telefon aus alles richtig aus. MOTO-HUB kann den Bildschirm des Displays nicht sehen, deshalb muss es dich genau das fragen.</string>
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_will_40398b69">Blieb es auf dem Kopplungsbildschirm, probiert MOTO-HUB bei der nächsten Fahrt ein anderes Videoformat und macht weiter, bis eines funktioniert.</string>
+    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_46fc9a09">Als du dich zuletzt mit %1$s verbunden hast, sah von diesem Telefon aus alles richtig aus. RideLink kann den Bildschirm des Displays nicht sehen, deshalb muss es dich genau das fragen.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_will_40398b69">Blieb es auf dem Kopplungsbildschirm, probiert RideLink bei der nächsten Fahrt ein anderes Videoformat und macht weiter, bis eines funktioniert.</string>
     <string name="legacy_yes_i_saw_it_625527f4">Ja, ich habe es gesehen</string>
     <string name="legacy_no_nothing_appeared_f92c88fc">Nein, es erschien nichts</string>
     <!-- Shown when the video-format search cannot progress because every session so far ran the
          Ride Dashboard, which sends its own format. -->
     <string name="legacy_the_video_format_search_is_waiting_ac28c9a">Die Videoformatsuche wartet</string>
-    <string name="legacy_moto_hub_is_still_looking_for_a_video_format_you_44b4c53c">MOTO-HUB sucht noch nach einem Videoformat, das dein Display anzeigen kann, kann aber nur eines testen, während Android Auto läuft - das Ride Dashboard sendet immer sein eigenes Format.</string>
+    <string name="legacy_moto_hub_is_still_looking_for_a_video_format_you_44b4c53c">RideLink sucht noch nach einem Videoformat, das dein Display anzeigen kann, kann aber nur eines testen, während Android Auto läuft - das Ride Dashboard sendet immer sein eigenes Format.</string>
     <string name="legacy_connect_once_with_android_auto_and_the_search_mo_71871380">Verbinde dich einmal mit Android Auto, dann geht die Suche von selbst weiter.</string>
     <string name="legacy_got_it_7f79855f">Verstanden</string>
 
@@ -1777,7 +1777,7 @@
     <string name="legacy_take_a_photo_cefc733a">Foto aufnehmen</string>
 
     <!-- Source: feature/about/AboutScreen.kt -->
-    <string name="legacy_moto_hub_connects_an_android_12_phone_to_a_motor_b791c32e">MOTO-HUB verbindet ein Telefon mit Android 12+ mit einem Motorraddisplay, das sich über EasyConn koppelt — die Carbit-Software, die mehrere Hersteller ausliefern, CFMOTO darunter. Es unterstützt Bildschirm- und App-Mirroring, Android-Auto-Projektion, gespeicherte Motorradprofile und Diagnose auf dem Gerät.</string>
+    <string name="legacy_moto_hub_connects_an_android_12_phone_to_a_motor_b791c32e">RideLink verbindet ein Telefon mit Android 12+ mit einem Motorraddisplay, das sich über EasyConn koppelt — die Carbit-Software, die mehrere Hersteller ausliefern, CFMOTO darunter. Es unterstützt Bildschirm- und App-Mirroring, Android-Auto-Projektion, gespeicherte Motorradprofile und Diagnose auf dem Gerät.</string>
 
     <!-- Source: feature/controls — a controller button stands in for a handlebar press -->
     <string name="legacy_handlebar_presses_32db65bc">LENKER-TASTENDRÜCKE</string>
@@ -1849,7 +1849,7 @@
 
     <!-- Source: feature/controls — the three input sources, and which one is live -->
     <string name="legacy_motorcycle_handlebar_dc90fcfc">MOTORRADLENKER</string>
-    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_217ec1b2">Android Auto 17.4 hat die Möglichkeit entfernt, dass eine App um Projektion bitten kann. MOTO-HUB versucht es weiterhin, und auf älteren Versionen klappt es — wenn nicht, starten die vier Schritte unten Android Auto über sein eigenes Entwicklermenü. Das ist der Teil, der funktioniert, wenn sonst nichts geht, und du musst nichts installieren.</string>
+    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_217ec1b2">Android Auto 17.4 hat die Möglichkeit entfernt, dass eine App um Projektion bitten kann. RideLink versucht es weiterhin, und auf älteren Versionen klappt es — wenn nicht, starten die vier Schritte unten Android Auto über sein eigenes Entwicklermenü. Das ist der Teil, der funktioniert, wenn sonst nichts geht, und du musst nichts installieren.</string>
     <string name="legacy_start_android_auto_yourself_3b0dffe1">ANDROID AUTO SELBST STARTEN</string>
     <string name="legacy_open_the_android_auto_app_s_settings_scroll_to_t_4ef36207">Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\". Das schaltet die Entwickleroptionen frei — du musst es nur einmal machen.</string>
     <string name="legacy_stay_on_that_same_android_auto_settings_screen_o_2c08cebc">Bleib auf demselben Einstellungsbildschirm von Android Auto, öffne oben rechts das Drei-Punkte-Menü und wähle \"Head-Unit-Server starten\". Es steht in diesem Menü, nicht in den Entwicklereinstellungen. Dieser Schritt ist der entscheidende.</string>
@@ -1864,10 +1864,10 @@
     <string name="legacy_preparing_android_auto_db146bea">Android Auto wird vorbereitet…</string>
     <string name="legacy_waiting_for_android_auto_to_start_projecting_b7646bd0">Warten, bis Android Auto mit der Projektion beginnt…</string>
     <string name="legacy_live_preview_touch_enabled_73752c4b">Live-Vorschau · Touch aktiv</string>
-    <string name="legacy_google_android_auto_never_connected_to_moto_hub__bd46b5a3">Google Android Auto hat sich nie mit MOTO-HUB verbunden. Neuere Android-Auto-Versionen haben die Möglichkeit entfernt, dass Apps um Projektion bitten - starte es also aus Android Auto selbst. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten. Öffne dann auf demselben Einstellungsbildschirm oben rechts das Drei-Punkte-Menü und wähle \"Head-Unit-Server starten\" - das Menü ist im normalen Einstellungsbildschirm von Android Auto, nicht in den Entwicklereinstellungen. Lass MOTO-HUB laufen: es verbindet sich innerhalb weniger Sekunden von selbst, und du kannst den Server für das nächste Mal laufen lassen.</string>
-    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__ae0978d0">Google Android Auto hat die Anfrage von MOTO-HUB angenommen und dann ignoriert. Genau das macht es mit einer Head-Unit, der es nicht vertrauen soll. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten, öffne die Entwicklereinstellungen und schalte \"Neue Autos zu Android Auto hinzufügen\" ein (ältere Versionen nennen es \"Unbekannte Quellen\"), und starte Android Auto dann erneut aus MOTO-HUB. Wenn immer noch nichts passiert, geh zurück zum Einstellungsbildschirm von Android Auto und nimm das Drei-Punkte-Menü oben rechts: \"Head-Unit-Server starten\".</string>
-    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__3e12afc0">Google Android Auto hat die Anfrage von MOTO-HUB angenommen und dann ignoriert - mehr macht diese Version damit nicht: Android Auto 17.3 und neuer haben die Möglichkeit entfernt, dass eine App um Projektion bitten kann. Starte es stattdessen aus Android Auto. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten, und öffne dann oben rechts auf demselben Einstellungsbildschirm das Drei-Punkte-Menü und wähle \"Head-Unit-Server starten\". Lass MOTO-HUB laufen: es verbindet sich innerhalb weniger Sekunden von selbst. Wenn du schon dort bist: \"Neue Autos zu Android Auto hinzufügen\" in den Entwicklereinstellungen sollte auch an sein.</string>
-    <string name="legacy_another_easyconn_session_is_already_using_the_lo_fa50b26f">Eine andere EasyConn-Sitzung belegt bereits die lokalen Verbindungsports (10920-10922). Beende alle laufenden MOTO-HUB-Sitzungen oder erzwinge das Beenden der Companion-App deines Motorrads (CFMOTO, Zontes Smart, Carbit Ride und die Entsprechungen anderer Marken), und versuche die Verbindung dann erneut.</string>
+    <string name="legacy_google_android_auto_never_connected_to_moto_hub__bd46b5a3">Google Android Auto hat sich nie mit RideLink verbunden. Neuere Android-Auto-Versionen haben die Möglichkeit entfernt, dass Apps um Projektion bitten - starte es also aus Android Auto selbst. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten. Öffne dann auf demselben Einstellungsbildschirm oben rechts das Drei-Punkte-Menü und wähle \"Head-Unit-Server starten\" - das Menü ist im normalen Einstellungsbildschirm von Android Auto, nicht in den Entwicklereinstellungen. Lass RideLink laufen: es verbindet sich innerhalb weniger Sekunden von selbst, und du kannst den Server für das nächste Mal laufen lassen.</string>
+    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__ae0978d0">Google Android Auto hat die Anfrage von RideLink angenommen und dann ignoriert. Genau das macht es mit einer Head-Unit, der es nicht vertrauen soll. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten, öffne die Entwicklereinstellungen und schalte \"Neue Autos zu Android Auto hinzufügen\" ein (ältere Versionen nennen es \"Unbekannte Quellen\"), und starte Android Auto dann erneut aus RideLink. Wenn immer noch nichts passiert, geh zurück zum Einstellungsbildschirm von Android Auto und nimm das Drei-Punkte-Menü oben rechts: \"Head-Unit-Server starten\".</string>
+    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__3e12afc0">Google Android Auto hat die Anfrage von RideLink angenommen und dann ignoriert - mehr macht diese Version damit nicht: Android Auto 17.3 und neuer haben die Möglichkeit entfernt, dass eine App um Projektion bitten kann. Starte es stattdessen aus Android Auto. Öffne die Einstellungen der Android-Auto-App, scrolle ganz nach unten und tippe zehnmal auf \"Version\", um die Entwickleroptionen freizuschalten, und öffne dann oben rechts auf demselben Einstellungsbildschirm das Drei-Punkte-Menü und wähle \"Head-Unit-Server starten\". Lass RideLink laufen: es verbindet sich innerhalb weniger Sekunden von selbst. Wenn du schon dort bist: \"Neue Autos zu Android Auto hinzufügen\" in den Entwicklereinstellungen sollte auch an sein.</string>
+    <string name="legacy_another_easyconn_session_is_already_using_the_lo_fa50b26f">Eine andere EasyConn-Sitzung belegt bereits die lokalen Verbindungsports (10920-10922). Beende alle laufenden RideLink-Sitzungen oder erzwinge das Beenden der Companion-App deines Motorrads (CFMOTO, Zontes Smart, Carbit Ride und die Entsprechungen anderer Marken), und versuche die Verbindung dann erneut.</string>
     <string name="legacy_phone_wi_fi_is_off_turn_it_on_then_tap_connect_a_5fd21cc0">Das WLAN des Telefons ist aus. Schalte es ein und tippe dann erneut auf Verbinden.</string>
     <string name="legacy_phone_hotspot_is_off_turn_it_on_then_tap_connect_683a58f1">Der Hotspot des Telefons ist aus. Schalte ihn ein und tippe dann erneut auf Verbinden.</string>
     <string name="legacy_action_needed_a446e8df">AKTION ERFORDERLICH</string>
@@ -1877,20 +1877,20 @@
     <string name="legacy_run_clock_experiments_8ad4688f">Uhr-Experimente ausführen</string>
     <string name="legacy_live_log_831d05f0">LIVE-PROTOKOLL</string>
     <string name="legacy_nothing_yet_power_the_dash_on_then_run_the_exper_b1ec5c8f">Noch nichts. Schalte das Display ein und führe dann die Experimente aus.</string>
-    <string name="legacy_moto_hub_closed_unexpectedly_30f439d7">MOTO-HUB wurde unerwartet beendet</string>
-    <string name="legacy_the_last_time_you_used_moto_hub_it_stopped_becau_8448d27c">Beim letzten Mal hat MOTO-HUB wegen eines Fehlers aufgehört. Nur das Senden des Diagnoseberichts lässt den Entwickler herausfinden, warum.</string>
-    <string name="legacy_the_report_contains_your_motorcycle_s_dashboard__f4208b9f">Der Bericht enthält das Displaymodell deines Motorrads, dein Telefonmodell, die Android- und Android-Auto-Versionen, die installierten MOTO-HUB-Versionen und das Anwendungsprotokoll einschließlich des Fehlers. Passwörter, Positionen und Hardware-Adressen sind nie enthalten.</string>
+    <string name="legacy_moto_hub_closed_unexpectedly_30f439d7">RideLink wurde unerwartet beendet</string>
+    <string name="legacy_the_last_time_you_used_moto_hub_it_stopped_becau_8448d27c">Beim letzten Mal hat RideLink wegen eines Fehlers aufgehört. Nur das Senden des Diagnoseberichts lässt den Entwickler herausfinden, warum.</string>
+    <string name="legacy_the_report_contains_your_motorcycle_s_dashboard__f4208b9f">Der Bericht enthält das Displaymodell deines Motorrads, dein Telefonmodell, die Android- und Android-Auto-Versionen, die installierten RideLink-Versionen und das Anwendungsprotokoll einschließlich des Fehlers. Passwörter, Positionen und Hardware-Adressen sind nie enthalten.</string>
     <string name="legacy_send_reports_automatically_from_now_on_7cdd2209">Berichte ab jetzt automatisch senden</string>
     <string name="legacy_send_report_55908cac">Bericht senden</string>
     <string name="legacy_how_your_data_is_handled_ff77c87f">Wie mit deinen Daten umgegangen wird</string>
     <string name="legacy_not_now_e202d7e9">Jetzt nicht</string>
-    <string name="legacy_help_improve_moto_hub_9bf5292c">Hilf mit, MOTO-HUB zu verbessern</string>
-    <string name="legacy_moto_hub_can_send_a_diagnostics_report_to_the_de_36cc6ba6">MOTO-HUB kann einen Diagnosebericht an den Entwickler senden: das Displaymodell deines Motorrads, dein Telefonmodell, die installierten Android-, Android-Auto- und MOTO-HUB-Versionen sowie das Anwendungsprotokoll. Passwörter, Positionen und Hardware-Adressen sind nie enthalten.</string>
+    <string name="legacy_help_improve_moto_hub_9bf5292c">Hilf mit, RideLink zu verbessern</string>
+    <string name="legacy_moto_hub_can_send_a_diagnostics_report_to_the_de_36cc6ba6">RideLink kann einen Diagnosebericht an den Entwickler senden: das Displaymodell deines Motorrads, dein Telefonmodell, die installierten Android-, Android-Auto- und RideLink-Versionen sowie das Anwendungsprotokoll. Passwörter, Positionen und Hardware-Adressen sind nie enthalten.</string>
     <string name="legacy_reports_go_out_at_most_once_a_day_after_an_updat_6fc12b8d">Berichte gehen höchstens einmal täglich, nach einem Update oder nach einem Absturz hinaus, und nur über eine Verbindung mit Internetzugang. Deine Support-ID steht unter Einstellungen ▸ Diagnose, wo sich das jederzeit ein- oder ausschalten lässt.</string>
     <string name="legacy_send_reports_5c810947">Berichte senden</string>
     <string name="legacy_diagnostics_privacy_notice_1f708f84">Datenschutzhinweis zur Diagnose</string>
     <string name="legacy_support_id_5239972c">Support-ID</string>
-    <string name="legacy_moto_hub_support_id_7149b87">MOTO-HUB Support-ID</string>
+    <string name="legacy_moto_hub_support_id_7149b87">RideLink Support-ID</string>
     <string name="legacy_tap_to_copy_quote_it_when_asking_for_help_it_ide_edc7231">Zum Kopieren tippen. Nenne sie, wenn du um Hilfe bittest; sie identifiziert dieses Telefon und Motorrad.</string>
     <string name="legacy_support_id_copied_63da1e38">Support-ID kopiert</string>
     <string name="legacy_what_gets_sent_f4a13bbf">Was gesendet wird</string>
@@ -1908,13 +1908,13 @@
     <string name="legacy_a_report_sent_now_carries_that_log_so_it_says_no_cb65d9dc">Ein jetzt gesendeter Bericht enthält genau dieses Protokoll und sagt daher nichts darüber aus, was die App heute tut. Um ein Problem zu melden, schalte Protokollierung aktivieren wieder ein, lass es erneut auftreten und sende dann.</string>
     <string name="legacy_that_worked_keep_it_b0100883">Das hat funktioniert - beibehalten?</string>
     <string name="legacy_your_dashboard_is_now_accepting_the_picture_on_t_a2e41389">Dein Display akzeptiert das Bild jetzt mit dem Profil %1$s. Weiterhin für dieses Motorrad verwenden?</string>
-    <string name="legacy_you_have_just_found_out_something_moto_hub_could_5d173f67">Du hast gerade etwas herausgefunden, was MOTO-HUB allein nicht ermitteln konnte: welches Profil dieses Display tatsächlich akzeptiert. Wenn du dein Protokoll sendest, teilst du das - und der nächste Fahrer mit deinem Motorrad trifft es beim ersten Versuch.</string>
+    <string name="legacy_you_have_just_found_out_something_moto_hub_could_5d173f67">Du hast gerade etwas herausgefunden, was RideLink allein nicht ermitteln konnte: welches Profil dieses Display tatsächlich akzeptiert. Wenn du dein Protokoll sendest, teilst du das - und der nächste Fahrer mit deinem Motorrad trifft es beim ersten Versuch.</string>
     <string name="legacy_send_my_log_now_80f590fe">Mein Protokoll jetzt senden</string>
     <string name="legacy_send_logs_automatically_from_now_on_1efdfbe9">Protokolle ab jetzt automatisch senden</string>
     <string name="legacy_keep_it_318f8786">Beibehalten</string>
     <string name="legacy_undo_284d04">Rückgängig</string>
     <string name="legacy_try_another_profile_2632e907">Anderes Profil ausprobieren</string>
-    <string name="legacy_the_connection_to_your_motorcycle_is_fine_the_da_6a78bba4">Die Verbindung zu deinem Motorrad ist in Ordnung - das Display lehnt das Bild schlicht in dem Format ab, in dem es gesendet wird. Ein anderes Profil ändert dieses Format. Sobald du eines wählst, wird sofort neu verbunden, und wenn das Display es anzeigt, fragt MOTO-HUB, ob du es behalten willst.</string>
+    <string name="legacy_the_connection_to_your_motorcycle_is_fine_the_da_6a78bba4">Die Verbindung zu deinem Motorrad ist in Ordnung - das Display lehnt das Bild schlicht in dem Format ab, in dem es gesendet wird. Ein anderes Profil ändert dieses Format. Sobald du eines wählst, wird sofort neu verbunden, und wenn das Display es anzeigt, fragt RideLink, ob du es behalten willst.</string>
     <string name="legacy_your_dashboard_is_not_showing_this_9765fbe3">DEIN DISPLAY ZEIGT DAS NICHT AN</string>
     <string name="legacy_connected_but_the_picture_is_being_refused_tap_t_b17b1097">Verbunden, aber das Bild wird abgelehnt. Tippe, um ein anderes Profil zu probieren.</string>
     <string name="legacy_connected_not_displaying_53b322ca">VERBUNDEN, KEINE ANZEIGE</string>
@@ -1928,30 +1928,30 @@
     <string name="legacy_android_auto_is_waiting_for_one_step_from_you_31eacac3">Android Auto wartet auf einen Schritt von dir</string>
     <string name="legacy_session_is_being_prepared_742c490a">Sitzung wird vorbereitet</string>
     <string name="legacy_button_presses_are_off_2952e766">TASTENDRÜCKE SIND AUS</string>
-    <string name="legacy_moto_hub_advanced_owns_this_setting_and_writes_i_b8e328f7">Diese Einstellung gehört MOTO-HUB ADVANCED und wird von dort über diese geschrieben - schalte sie also dort ein, nicht hier.</string>
+    <string name="legacy_moto_hub_advanced_owns_this_setting_and_writes_i_b8e328f7">Diese Einstellung gehört RideLink ADVANCED und wird von dort über diese geschrieben - schalte sie also dort ein, nicht hier.</string>
     <string name="legacy_turn_presses_back_on_9d506146">Tastendrücke wieder einschalten</string>
     <string name="legacy_these_drive_the_ride_dashboard_so_they_do_nothin_d4d30d86">Diese steuern das Ride Dashboard und tun deshalb nichts, solange es nicht läuft - eine Android-Auto-Sitzung allein genügt nicht.</string>
     <string name="legacy_show_button_presses_on_the_dashboard_4ed2cd5e">Tastendrücke auf dem Display anzeigen</string>
 
     <!-- Source: feature/controls — the handlebar page after the Bluetooth controller was removed -->
-    <string name="legacy_your_motorcycle_s_own_handlebar_drives_moto_hub__f19519f3">Der Lenker deines Motorrads steuert MOTO-HUB. Einmal anlernen, dann jeder Taste die gewünschte Aktion geben.</string>
+    <string name="legacy_your_motorcycle_s_own_handlebar_drives_moto_hub__f19519f3">Der Lenker deines Motorrads steuert RideLink. Einmal anlernen, dann jeder Taste die gewünschte Aktion geben.</string>
     <string name="legacy_presses_still_arrive_and_still_show_up_on_this_p_62dfa27d">Tastendrücke kommen weiterhin an und erscheinen weiterhin auf dieser Seite - es wird nur nichts damit ausgeführt.</string>
     <string name="legacy_every_handlebar_press_432fb397">Jeder Lenkertastendruck </string>
     <!-- Home: MOTO-HUB ADVANCED promo card and dialog -->
-    <string name="legacy_couldn_t_open_moto_hub_advanced_89c059e1">MOTO-HUB ADVANCED konnte nicht geöffnet werden.</string>
-    <string name="legacy_moto_hub_advanced_1cc3b73d">MOTO-HUB ADVANCED</string>
+    <string name="legacy_couldn_t_open_moto_hub_advanced_89c059e1">RideLink ADVANCED konnte nicht geöffnet werden.</string>
+    <string name="legacy_moto_hub_advanced_1cc3b73d">RideLink ADVANCED</string>
     <string name="legacy_dashboard_navigation_and_trips_installed_on_this_7ffa5bb9">Dashboard, Navigation und Touren - auf diesem Telefon installiert.</string>
     <string name="legacy_free_companion_app_dashboard_navigation_trips_an_256e51cd">Kostenlose Begleit-App: Dashboard, Navigation, Touren und mehr.</string>
     <string name="legacy_open_259a6a">Öffnen</string>
     <string name="legacy_see_what_it_adds_c8867b38">Sieh, was dazukommt</string>
-    <string name="legacy_a_second_free_app_that_installs_next_to_moto_hub_96f5853f">Eine zweite kostenlose App, die sich neben MOTO-HUB installiert und dasselbe Display in einen vollwertigen Bordcomputer verwandelt. Zusätzliche Hardware ist nicht nötig.</string>
+    <string name="legacy_a_second_free_app_that_installs_next_to_moto_hub_96f5853f">Eine zweite kostenlose App, die sich neben RideLink installiert und dasselbe Display in einen vollwertigen Bordcomputer verwandelt. Zusätzliche Hardware ist nicht nötig.</string>
     <string name="legacy_ride_dashboard_gps_speed_live_map_and_trip_stats_e664cbab">Ride Dashboard - GPS-Tempo, Live-Karte und Tourdaten auf dem TFT</string>
     <string name="legacy_navigation_search_motorcycle_routing_and_route_p_269dbf5a">Navigation - Suche, Motorrad-Routing und Routenvorschau</string>
     <string name="legacy_on_the_route_weather_fuel_prices_and_speed_camer_1ec23092">Auf der Strecke - Wetter, Spritpreise und Blitzer</string>
     <string name="legacy_trips_recording_replay_analysis_and_gpx_export_ec08e237">Touren - Aufzeichnung, Wiedergabe, Auswertung und GPX-Export</string>
     <string name="legacy_ai_place_discovery_and_a_post_ride_riding_coach_34d4ea13">KI-Ortssuche und ein Riding Coach nach der Fahrt</string>
     <string name="legacy_group_intercom_rider_to_rider_voice_70e92f1a">Gruppen-Intercom - Sprache von Fahrer zu Fahrer</string>
-    <string name="legacy_moto_hub_stays_in_charge_of_the_motorcycle_pairi_6ccf9308">MOTO-HUB bleibt für das Motorrad zuständig: Kopplung, Verbindung und Android Auto laufen weiterhin hier. Installiere von beiden dieselbe Version.</string>
+    <string name="legacy_moto_hub_stays_in_charge_of_the_motorcycle_pairi_6ccf9308">RideLink bleibt für das Motorrad zuständig: Kopplung, Verbindung und Android Auto laufen weiterhin hier. Installiere von beiden dieselbe Version.</string>
     <string name="legacy_download_advanced_66a9c89a">ADVANCED herunterladen</string>
     <string name="legacy_resolution_177354cc">Auflösung</string>
     <string name="legacy_the_video_source_android_auto_sends_to_the_dashb_a90d80a4">Die Videoquelle, die Android Auto an das Cockpit sendet</string>
@@ -1964,34 +1964,34 @@
     <string name="legacy_1_s_is_holding_the_dashboard_connection_f85acc07">%1$s belegt die Verbindung zum Cockpit</string>
     <string name="legacy_another_app_is_holding_the_dashboard_connection_2f8f3870">Eine andere App belegt die Verbindung zum Cockpit</string>
     <string name="legacy_force_stop_your_motorcycle_s_own_companion_app_f_47bc5899">Beenden Sie die Begleit-App Ihres Motorrads zwangsweise über deren App-Info-Seite und versuchen Sie es erneut - Android lässt eine App die Verbindung einer anderen nicht freigeben.</string>
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_keep_74219a6">Blieb es auf dem Kopplungsbildschirm, probiert MOTO-HUB weiter Videoformate, bis eines funktioniert. Wenn andere Fahrer mit demselben Dashboard dieses bereits bestätigt haben, fragt es dich noch einmal, bevor es weitergeht.</string>
-    <string name="legacy_if_your_other_moto_hub_app_is_running_a_session__263cbf82">Wenn Ihre andere MOTO-HUB-App auf diesem Telefon eine Sitzung führt, beenden Sie stattdessen jene.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_keep_74219a6">Blieb es auf dem Kopplungsbildschirm, probiert RideLink weiter Videoformate, bis eines funktioniert. Wenn andere Fahrer mit demselben Dashboard dieses bereits bestätigt haben, fragt es dich noch einmal, bevor es weitergeht.</string>
+    <string name="legacy_if_your_other_moto_hub_app_is_running_a_session__263cbf82">Wenn Ihre andere RideLink-App auf diesem Telefon eine Sitzung führt, beenden Sie stattdessen jene.</string>
     <string name="legacy_import_qr_from_an_image_65acae9a">QR aus einem Bild importieren</string>
-    <string name="legacy_moto_hub_will_connect_on_its_own_when_the_dashbo_9f3fe52b">MOTO-HUB verbindet sich von selbst, sobald das Cockpit hochfährt.</string>
+    <string name="legacy_moto_hub_will_connect_on_its_own_when_the_dashbo_9f3fe52b">RideLink verbindet sich von selbst, sobald das Cockpit hochfährt.</string>
     <string name="legacy_on_this_phone_that_is_almost_always_1_s_force_st_26b6b463">Auf diesem Telefon ist das fast immer %1$s. Beenden Sie es zwangsweise über die App-Info-Seite und versuchen Sie es erneut - Android lässt eine App die Verbindung einer anderen nicht freigeben.</string>
-    <string name="legacy_shown_while_moto_hub_watches_for_the_motorcycle__5410550d">Wird angezeigt, während MOTO-HUB auf das WLAN des Motorrads wartet.</string>
-    <string name="legacy_the_three_local_ports_moto_hub_needs_for_the_das_ac32b51a">Die drei lokalen Ports, die MOTO-HUB für das Cockpit braucht (%1$s), sind gerade belegt, die Verbindung würde also scheitern.</string>
+    <string name="legacy_shown_while_moto_hub_watches_for_the_motorcycle__5410550d">Wird angezeigt, während RideLink auf das WLAN des Motorrads wartet.</string>
+    <string name="legacy_the_three_local_ports_moto_hub_needs_for_the_das_ac32b51a">Die drei lokalen Ports, die RideLink für das Cockpit braucht (%1$s), sind gerade belegt, die Verbindung würde also scheitern.</string>
     <string name="legacy_try_anyway_909523a8">Trotzdem versuchen</string>
     <string name="legacy_waiting_for_s_c5c92cf8">Warten auf %s</string>
     <string name="legacy_waiting_for_the_motorcycle_24d361aa">Warten auf das Motorrad</string>
     <!-- Source: trips/TripAnalysisScreen.kt, home/HubHomeScreen.kt, companion, ai/AiPreset, and the service notifications - literals that reached a lookup indirectly, or were never wrapped -->
-    <string name="legacy_1_s_in_moto_hub_advanced_is_coming_soon_use_moto_6bcb37c0">%1$s kommt bald in MOTO-HUB Advanced (nutze vorerst MOTO-HUB Core).</string>
+    <string name="legacy_1_s_in_moto_hub_advanced_is_coming_soon_use_moto_6bcb37c0">%1$s kommt bald in RideLink Advanced (nutze vorerst RideLink Core).</string>
     <string name="legacy_import_qr_6b03505c">QR importieren</string>
     <string name="legacy_scan_new_qr_ed7e6784">Neuen QR scannen</string>
     <!-- Source: feature/home - the secondary actions under the pairing and projection cards -->
     <string name="legacy_how_to_start_android_auto_e44c5dd3">So startest du Android Auto</string>
     <string name="legacy_open_wi_fi_settings_299670db">WLAN-Einstellungen öffnen</string>
-    <string name="legacy_couldn_t_open_moto_hub_adv_solo_67eb730a">MOTO-HUB ADV-SOLO ließ sich nicht öffnen.</string>
-    <string name="legacy_moto_hub_adv_solo_1bac54f4">MOTO-HUB ADV-SOLO</string>
+    <string name="legacy_couldn_t_open_moto_hub_adv_solo_67eb730a">RideLink ADV-SOLO ließ sich nicht öffnen.</string>
+    <string name="legacy_moto_hub_adv_solo_1bac54f4">RideLink ADV-SOLO</string>
     <string name="legacy_free_app_that_replaces_this_one_dashboard_naviga_f14ef8b3">Kostenlose App, die diese ersetzt: Dashboard, Navigation, Touren und mehr.</string>
     <string name="legacy_installed_on_this_phone_136503e7">AUF DIESEM TELEFON INSTALLIERT</string>
     <string name="legacy_free_app_d2eb824d">KOSTENLOSE APP</string>
-    <string name="legacy_everything_moto_hub_does_and_a_full_riding_compu_5afce456">Alles, was MOTO-HUB kann, plus ein vollwertiger Bordcomputer.</string>
-    <string name="legacy_moto_hub_adv_solo_is_a_free_app_that_replaces_th_9d1bc46c">MOTO-HUB ADV-SOLO ist eine kostenlose App, die diese ersetzt und dein TFT in einen vollwertigen Bordcomputer verwandelt: eigenes Dashboard, Navigation, aufgezeichnete Touren. Kein Abo, kein Konto und keine zusätzliche Hardware - sie nutzt die T-Box, die du schon hast.</string>
+    <string name="legacy_everything_moto_hub_does_and_a_full_riding_compu_5afce456">Alles, was RideLink kann, plus ein vollwertiger Bordcomputer.</string>
+    <string name="legacy_moto_hub_adv_solo_is_a_free_app_that_replaces_th_9d1bc46c">RideLink ADV-SOLO ist eine kostenlose App, die diese ersetzt und dein TFT in einen vollwertigen Bordcomputer verwandelt: eigenes Dashboard, Navigation, aufgezeichnete Touren. Kein Abo, kein Konto und keine zusätzliche Hardware - sie nutzt die T-Box, die du schon hast.</string>
     <string name="legacy_what_it_adds_cdd0b86b">WAS SIE BIETET</string>
     <string name="legacy_moving_to_adv_solo_21f5a90c">WECHSEL ZU ADV-SOLO</string>
     <string name="legacy_adv_solo_connects_to_the_motorcycle_on_its_own_p_ad9d6a7e">ADV-SOLO verbindet sich selbst mit dem Motorrad: Kopplung, WLAN-Verbindung, Lenkertasten und Android Auto laufen alle darin. Sie braucht diese App nicht.</string>
-    <string name="legacy_install_it_and_connect_your_motorcycle_there_the_526ab2e">Installiere sie und verbinde dort dein Motorrad, dann entferne MOTO-HUB - ADV-SOLO bietet es dir an. Hier gekoppelte Motorräder werden nicht übernommen: Kopple sie in ADV-SOLO neu.</string>
+    <string name="legacy_install_it_and_connect_your_motorcycle_there_the_526ab2e">Installiere sie und verbinde dort dein Motorrad, dann entferne RideLink - ADV-SOLO bietet es dir an. Hier gekoppelte Motorräder werden nicht übernommen: Kopple sie in ADV-SOLO neu.</string>
     <string name="legacy_links_4515799">LINKS</string>
     <string name="legacy_more_ways_to_start_dfa7360e">WEITERE MÖGLICHKEITEN ZU STARTEN</string>
     <string name="legacy_one_step_is_waiting_for_you_ad249079">Ein Schritt wartet auf dich</string>
@@ -2010,7 +2010,7 @@
     <!-- MainActivity.kt -->
     <string name="legacy_couldn_t_create_the_log_file_504d3105">Protokolldatei konnte nicht erstellt werden</string>
     <!-- MainActivity.kt -->
-    <string name="legacy_share_moto_hub_log_cd773e0a">MOTO-HUB-Protokoll teilen</string>
+    <string name="legacy_share_moto_hub_log_cd773e0a">RideLink-Protokoll teilen</string>
     <!-- MainActivity.kt -->
     <string name="legacy_couldn_t_open_github_832a3133">GitHub konnte nicht geöffnet werden</string>
     <!-- MainActivity.kt -->
@@ -2058,7 +2058,7 @@
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_force_stop_your_motorcycle_s_companion_app_then__f2ae11c7">Beende die Begleit-App deines Motorrads zwangsweise und versuche es erneut.</string>
     <!-- CompanionConflictGateHost.kt -->
-    <string name="legacy_running_a_session_in_your_other_moto_hub_app_sto_d9007392">Läuft eine Sitzung in deiner anderen MOTO-HUB-App? Beende sie stattdessen dort.</string>
+    <string name="legacy_running_a_session_in_your_other_moto_hub_app_sto_d9007392">Läuft eine Sitzung in deiner anderen RideLink-App? Beende sie stattdessen dort.</string>
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_busy_ports_1_s_b24949ac">Belegte Ports: %1$s</string>
     <!-- CompanionConflictGateHost.kt -->
@@ -2094,7 +2094,7 @@
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_button_presses_are_off_cea4dbe6">Tastendrücke sind aus</string>
     <!-- HandlebarMappingScreen.kt -->
-    <string name="legacy_moto_hub_advanced_manages_this_turn_them_on_ther_96e557a5">Das verwaltet MOTO-HUB ADVANCED. Schalte sie dort ein.</string>
+    <string name="legacy_moto_hub_advanced_manages_this_turn_them_on_ther_96e557a5">Das verwaltet RideLink ADVANCED. Schalte sie dort ein.</string>
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_they_still_show_up_here_but_do_nothing_c28856a1">Sie erscheinen weiter hier, bewirken aber nichts.</string>
     <!-- HandlebarMappingScreen.kt -->
@@ -2262,7 +2262,7 @@
     <!-- CrashDiagnosticsConsentDialog.kt -->
     <string name="legacy_don_t_send_a6ed6418">Nicht senden</string>
     <!-- CrashDiagnosticsConsentDialog.kt -->
-    <string name="legacy_reports_hold_your_dashboard_and_phone_models_the_adfb4999">Berichte enthalten Display- und Telefonmodell, die Android-, Android-Auto- und MOTO-HUB-Versionen und das App-Protokoll. Nie Passwörter, Positionen oder Hardwareadressen.</string>
+    <string name="legacy_reports_hold_your_dashboard_and_phone_models_the_adfb4999">Berichte enthalten Display- und Telefonmodell, die Android-, Android-Auto- und RideLink-Versionen und das App-Protokoll. Nie Passwörter, Positionen oder Hardwareadressen.</string>
     <!-- CrashDiagnosticsConsentDialog.kt -->
     <string name="legacy_send_reports_automatically_3af5d48a">Berichte automatisch senden</string>
     <!-- DiagnosticReportNoticeDialog.kt -->
@@ -2306,19 +2306,19 @@
     <!-- AdvancedPromo.kt -->
     <string name="legacy_adv_solo_connects_to_the_motorcycle_on_its_own_a_654f87f4">ADV-SOLO verbindet sich selbst mit dem Motorrad und braucht diese App nicht.</string>
     <!-- AdvancedPromo.kt -->
-    <string name="legacy_motorcycles_paired_here_don_t_move_across_pair_t_7210a22">Hier gekoppelte Motorräder werden nicht übernommen: Koppele sie in ADV-SOLO neu. Danach kann sie MOTO-HUB für dich entfernen.</string>
+    <string name="legacy_motorcycles_paired_here_don_t_move_across_pair_t_7210a22">Hier gekoppelte Motorräder werden nicht übernommen: Koppele sie in ADV-SOLO neu. Danach kann sie RideLink für dich entfernen.</string>
     <!-- AdvancedPromo.kt -->
     <string name="legacy_no_subscription_no_account_and_no_extra_hardware_5eee8be2">Kein Abo, kein Konto und keine zusätzliche Hardware.</string>
     <!-- AdvancedPromo.kt -->
     <string name="legacy_couldn_t_open_adv_solo_18178329">ADV-SOLO ließ sich nicht öffnen</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_2c50c19c">Als du dich zuletzt mit %1$s verbunden hast, sah vom Telefon aus alles gut aus. MOTO-HUB kann das Display nicht sehen, deshalb muss es fragen.</string>
+    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_2c50c19c">Als du dich zuletzt mit %1$s verbunden hast, sah vom Telefon aus alles gut aus. RideLink kann das Display nicht sehen, deshalb muss es fragen.</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_trie_5aaac04b">Blieb es auf dem Kopplungsbildschirm, probiert MOTO-HUB beim nächsten Mal ein anderes Videoformat.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_trie_5aaac04b">Blieb es auf dem Kopplungsbildschirm, probiert RideLink beim nächsten Mal ein anderes Videoformat.</string>
     <!-- WireVerdictDialog.kt -->
     <string name="legacy_try_android_auto_once_427c9e5c">Probiere Android Auto einmal aus</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_moto_hub_can_only_test_a_new_video_format_while__40b204fe">MOTO-HUB kann ein neues Videoformat nur testen, während Android Auto läuft; Mirroring nutzt immer sein eigenes. Verbinde dich einmal mit Android Auto, dann geht die Suche von selbst weiter.</string>
+    <string name="legacy_moto_hub_can_only_test_a_new_video_format_while__40b204fe">RideLink kann ein neues Videoformat nur testen, während Android Auto läuft; Mirroring nutzt immer sein eigenes. Verbinde dich einmal mit Android Auto, dann geht die Suche von selbst weiter.</string>
     <!-- ManualPairingScreen.kt -->
     <string name="legacy_keep_auto_unless_your_dashboard_asks_for_somethi_9fc1ebb3">Lass Auto stehen, außer dein Display verlangt etwas anderes.</string>
     <!-- ManualPairingScreen.kt -->
@@ -2382,11 +2382,11 @@
     <!-- UnverifiedQrDialog.kt -->
     <string name="legacy_this_code_has_wi_fi_details_for_1_s_but_it_comes_694bfb5e">Dieser Code enthält WLAN-Daten für „%1$s“, stammt aber aus einer unbekannten Quelle. Bei Displays unter anderem Markennamen ist das häufig. Fahre nur fort, wenn du dein eigenes Display gescannt hast.</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_configure_and_check_everything_only_while_parked_9cf36d5b">Richte alles nur im Stand ein und prüfe es dort, und nutze MOTO-HUB nur, wo es völlig sicher und kontrolliert ist.</string>
+    <string name="legacy_configure_and_check_everything_only_while_parked_9cf36d5b">Richte alles nur im Stand ein und prüfe es dort, und nutze RideLink nur, wo es völlig sicher und kontrolliert ist.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_not_a_safety_device_45231678">Kein Sicherheitsgerät</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_moto_hub_can_t_prevent_distraction_crashes_injur_1075bab">MOTO-HUB kann Ablenkung, Unfälle, Verletzungen oder Schäden nicht verhindern. Für sicheres und gesetzeskonformes Fahren bist allein du verantwortlich.</string>
+    <string name="legacy_moto_hub_can_t_prevent_distraction_crashes_injur_1075bab">RideLink kann Ablenkung, Unfälle, Verletzungen oder Schäden nicht verhindern. Für sicheres und gesetzeskonformes Fahren bist allein du verantwortlich.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_don_t_show_this_again_1b1445d1">Nicht mehr anzeigen</string>
     <!-- SafetyDisclaimerDialog.kt -->
@@ -2398,7 +2398,7 @@
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_hands_off_while_moving_6f454e0a">Hände weg während der Fahrt</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_never_use_moto_hub_mirroring_android_auto_naviga_e2dad7c8">Nutze MOTO-HUB, Mirroring, Android Auto, Navigation oder andere Bedienelemente auf dem Bildschirm nie, während das Motorrad fährt.</string>
+    <string name="legacy_never_use_moto_hub_mirroring_android_auto_naviga_e2dad7c8">Nutze RideLink, Mirroring, Android Auto, Navigation oder andere Bedienelemente auf dem Bildschirm nie, während das Motorrad fährt.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_set_up_while_parked_da74c35f">Im Stand einrichten</string>
     <!-- GithubUpdateDialog.kt -->
@@ -2426,7 +2426,7 @@
     <!-- GithubUpdateDialog.kt -->
     <string name="legacy_update_available_67de8452">Update verfügbar</string>
     <!-- GithubUpdateDialog.kt -->
-    <string name="legacy_moto_hub_1_s_is_2_s_your_only_internet_connectio_5f6bb34f">MOTO-HUB %1$s ist %2$s groß. Deine einzige Internetverbindung ist gerade %3$s, die dein Anbieter berechnen kann.</string>
+    <string name="legacy_moto_hub_1_s_is_2_s_your_only_internet_connectio_5f6bb34f">RideLink %1$s ist %2$s groß. Deine einzige Internetverbindung ist gerade %3$s, die dein Anbieter berechnen kann.</string>
     <!-- MotoHubKit.kt -->
     <string name="legacy_hide_details_80725d84">Details ausblenden</string>
     <!-- MotoHubKit.kt -->
@@ -2498,7 +2498,7 @@
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_in_developer_settings_older_versions_call_it_unk_8607841d">In den Entwicklereinstellungen. Ältere Versionen nennen es „Unbekannte Quellen“.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_android_auto_17_4_stopped_apps_from_asking_it_to_7813b8db">Seit Android Auto 17.4 können Apps es nicht mehr zum Starten auffordern. Über den Head-Unit-Server verbindet sich stattdessen MOTO-HUB damit.</string>
+    <string name="legacy_android_auto_17_4_stopped_apps_from_asking_it_to_7813b8db">Seit Android Auto 17.4 können Apps es nicht mehr zum Starten auffordern. Über den Head-Unit-Server verbindet sich stattdessen RideLink damit.</string>
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_start_it_from_android_auto_s_settings_58bd5018">Starte es in den Android-Auto-Einstellungen</string>
     <!-- AndroidAutoHelpScreen.kt -->
@@ -2516,15 +2516,15 @@
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_a_notification_confirms_it_it_stays_on_until_you_d7032ba9">Eine Benachrichtigung bestätigt das. Er läuft, bis du ihn stoppst oder das Telefon neu startest.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_start_android_auto_in_moto_hub_88a06a3e">Android Auto in MOTO-HUB starten</string>
+    <string name="legacy_start_android_auto_in_moto_hub_88a06a3e">Android Auto in RideLink starten</string>
     <!-- HandlebarMappingScreen.kt -->
-    <string name="legacy_moto_hub_adv_solo_manages_this_turn_them_on_ther_4e57c79c">Das verwaltet MOTO-HUB ADV-SOLO. Schalte sie dort ein.</string>
+    <string name="legacy_moto_hub_adv_solo_manages_this_turn_them_on_ther_4e57c79c">Das verwaltet RideLink ADV-SOLO. Schalte sie dort ein.</string>
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_bluetooth_is_on_f867c483">Bluetooth ist an</string>
     <!-- ApplicationLogScreen.kt -->
     <string name="legacy_clear_log_2b9a16d1">Protokoll löschen</string>
     <!-- ApplicationLogScreen.kt -->
-    <string name="legacy_what_moto_hub_recorded_on_this_phone_759bb17c">Was MOTO-HUB auf diesem Telefon aufgezeichnet hat</string>
+    <string name="legacy_what_moto_hub_recorded_on_this_phone_759bb17c">Was RideLink auf diesem Telefon aufgezeichnet hat</string>
     <!-- SupportIdSection.kt -->
     <string name="legacy_report_sent_513f32e4">Bericht gesendet</string>
     <!-- SupportIdSection.kt -->
@@ -2620,7 +2620,7 @@
     <!-- MotorcycleDetailsScreen.kt -->
     <string name="legacy_developer_72a307aa">Entwickler</string>
     <!-- TBoxCapabilityScreen.kt -->
-    <string name="legacy_shown_exactly_as_the_dashboard_reports_them_moto_d96e413e">Genau so angezeigt, wie das Display sie meldet; MOTO-HUB rät das Modell nicht.</string>
+    <string name="legacy_shown_exactly_as_the_dashboard_reports_them_moto_d96e413e">Genau so angezeigt, wie das Display sie meldet; RideLink rät das Modell nicht.</string>
     <!-- TBoxCapabilityScreen.kt -->
     <string name="legacy_software_and_protocol_f6ffc7a">Software und Protokoll</string>
     <!-- TBoxCapabilityScreen.kt -->
@@ -2692,7 +2692,7 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_finding_the_dashboard_3d3e712e">Display wird gesucht</string>
     <!-- HubHomeScreen.kt -->
-    <string name="legacy_this_can_take_up_to_90_seconds_keep_moto_hub_ope_453bf935">Das kann bis zu 90 Sekunden dauern. Lass MOTO-HUB geöffnet.</string>
+    <string name="legacy_this_can_take_up_to_90_seconds_keep_moto_hub_ope_453bf935">Das kann bis zu 90 Sekunden dauern. Lass RideLink geöffnet.</string>
     <!-- HubHomeScreen.kt -->
     <string name="legacy_show_on_the_dashboard_b400b3c7">Auf dem Display zeigen</string>
     <!-- HubHomeScreen.kt -->
@@ -2754,7 +2754,7 @@
     <!-- RideFailure.kt -->
     <string name="legacy_allow_nearby_devices_e2204213">Erlaube Geräte in der Nähe</string>
     <!-- RideFailure.kt -->
-    <string name="legacy_moto_hub_needs_it_to_find_the_dashboard_s_wi_fi_8ec6838">MOTO-HUB braucht das, um das WLAN des Displays zu finden.</string>
+    <string name="legacy_moto_hub_needs_it_to_find_the_dashboard_s_wi_fi_8ec6838">RideLink braucht das, um das WLAN des Displays zu finden.</string>
     <!-- RideFailure.kt -->
     <string name="legacy_they_keep_streaming_visible_and_let_you_stop_it_4b06c443">Sie halten das Streaming sichtbar, damit du es stoppen kannst.</string>
     <!-- RideFailure.kt -->
@@ -2946,7 +2946,7 @@
     <!-- ProfileOverride.kt -->
     <string name="legacy_sends_still_pictures_b50c85a2">Sendet Standbilder</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_your_phone_closed_moto_hub_48b081a">Dein Telefon hat MOTO-HUB beendet</string>
+    <string name="legacy_your_phone_closed_moto_hub_48b081a">Dein Telefon hat RideLink beendet</string>
     <!-- SystemKillNotice.kt -->
     <string name="legacy_at_1_s_while_it_was_running_b9d8bf70">Um %1$s, während es lief.</string>
     <!-- SystemKillNotice.kt -->
@@ -2962,7 +2962,7 @@
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Dein Handy kann %1$s im Hintergrund beenden. Wenn du es von der Akku-Optimierung ausnimmst, passiert das auf langen Fahrten viel seltener.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">MOTO-HUB die Verbindung erlauben</string>
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">RideLink die Verbindung erlauben</string>
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Öffne auf demselben Bildschirm ⋮ und tippe auf „Head-Unit-Server starten“.</string>
     <!-- AndroidAutoHelpScreen.kt -->

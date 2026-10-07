@@ -2,7 +2,7 @@
 <resources>
     <!-- Locale: cs-CZ. Contributed by Puzzlehead0 (issue #9); en-US stays the source of truth. -->
     <!-- Application identity -->
-    <string name="app_name">MOTO-HUB</string>
+    <string name="app_name">RideLink</string>
 
     <!-- Settings > General > Language. Names are kept in their native form. -->
     <string name="language_system_default">Výchozí dle systému</string>
@@ -18,13 +18,13 @@
     <string name="language_turkish">Türkçe</string>
     <string name="language_russian">Русский</string>
     <string name="language_title">Jazyk</string>
-    <string name="language_description">Vyberte jazyk používaný aplikací MOTO-HUB</string>
-    <string name="language_detail_description">MOTO-HUB se výchozím nastavením řídí jazykem telefonu. Výběrem jazyka níže jej pro tuto aplikaci přepíšete.</string>
+    <string name="language_description">Vyberte jazyk používaný aplikací RideLink</string>
+    <string name="language_detail_description">RideLink se výchozím nastavením řídí jazykem telefonu. Výběrem jazyka níže jej pro tuto aplikaci přepíšete.</string>
 
     <!-- Settings main page -->
     <string name="legacy_download_anyway_c17b27fb">Přesto stáhnout</string>
     <string name="legacy_download_over_1_s_23fdd550">Stáhnout přes %1$s?</string>
-    <string name="legacy_moto_hub_1_s_is_2_s_and_right_now_the_only_conne_8ebbc51c">MOTO-HUB %1$s má %2$s a jediné připojení, které se teď dostane na internet, je %3$s, které si operátor účtuje. Na motorce je to běžné: Wi-Fi přístrojové desky internet vůbec nemá.</string>
+    <string name="legacy_moto_hub_1_s_is_2_s_and_right_now_the_only_conne_8ebbc51c">RideLink %1$s má %2$s a jediné připojení, které se teď dostane na internet, je %3$s, které si operátor účtuje. Na motorce je to běžné: Wi-Fi přístrojové desky internet vůbec nemá.</string>
     <string name="legacy_waiting_for_wi_fi_costs_nothing_the_update_stays_3f38fec8">Počkat na Wi-Fi nic nestojí: aktualizace zůstane v tomto seznamu.</string>
     <string name="settings_configuration">KONFIGURACE</string>
     <string name="settings_title">Nastavení</string>
@@ -43,7 +43,7 @@
     <string name="video_quality_smoother">Plynulejší</string>
     <string name="video_quality_smoother_description">Nižší datový tok, méně tepla a nižší zátěž sítě.</string>
     <string name="video_quality_balanced">Vyvážená</string>
-    <string name="video_quality_balanced_description">Aktuální kvalita MOTO-HUB a doporučené výchozí nastavení.</string>
+    <string name="video_quality_balanced_description">Aktuální kvalita RideLink a doporučené výchozí nastavení.</string>
     <string name="video_quality_sharper">Ostřejší</string>
     <string name="video_quality_sharper_description">Vyšší datový tok pro čistší mapy a text.</string>
     <string name="video_power_auto">Automaticky</string>
@@ -55,7 +55,7 @@
     <string name="video_power_saver">Úsporný</string>
     <string name="video_power_saver_description">20 FPS pro snížení zahřívání a spotřeby baterie.</string>
     <string name="android_auto_resolution_auto">Automaticky</string>
-    <string name="android_auto_resolution_auto_description">Ponechat automatickou orientaci MOTO-HUB na základě zjištěné geometrie T-Boxu.</string>
+    <string name="android_auto_resolution_auto_description">Ponechat automatickou orientaci RideLink na základě zjištěné geometrie T-Boxu.</string>
     <string name="android_auto_resolution_landscape_sd">Na šířku 800 x 480</string>
     <string name="android_auto_resolution_landscape_sd_description">Standardní zdroj Android Auto na šířku.</string>
     <string name="android_auto_resolution_landscape_hd">Na šířku 1280 x 720</string>
@@ -102,15 +102,15 @@
     <string name="route_preference_scenic_description">Upřednostnění vedlejších silnic a vyhýbání se dálnicím.</string>
 
     <!-- Core/Pro bridge notification -->
-    <string name="core_bridge_channel_name">MOTO-HUB Core propojení</string>
-    <string name="core_bridge_channel_description">Udržuje spojení s T-Boxem aktivní, zatímco jej MOTO-HUB Pro používá</string>
-    <string name="core_bridge_notification_title">MOTO-HUB Core je aktivní</string>
-    <string name="core_bridge_notification_text">Obsluhuje MOTO-HUB Pro.</string>
+    <string name="core_bridge_channel_name">RideLink Core propojení</string>
+    <string name="core_bridge_channel_description">Udržuje spojení s T-Boxem aktivní, zatímco jej RideLink Pro používá</string>
+    <string name="core_bridge_notification_title">RideLink Core je aktivní</string>
+    <string name="core_bridge_notification_text">Obsluhuje RideLink Pro.</string>
 
     <!-- Projection notifications -->
-    <string name="projection_channel_name">Projekce MOTO-HUB</string>
+    <string name="projection_channel_name">Projekce RideLink</string>
     <string name="projection_channel_description">Stav streamování na displej motocyklu</string>
-    <string name="projection_notification_title">MOTO-HUB je aktivní</string>
+    <string name="projection_notification_title">RideLink je aktivní</string>
     <string name="projection_notification_text">Projekce obrazovky je aktivní.</string>
     <string name="projection_notification_dimmed_text">Projekce je aktivní, displej telefonu je ztmavený.</string>
     <string name="stop_projection">Zastavit</string>
@@ -118,19 +118,19 @@
     <string name="restore_phone_display">Obnovit displej</string>
 
     <!-- Android Auto notifications -->
-    <string name="android_auto_channel_name">MOTO-HUB Android Auto</string>
-    <string name="android_auto_notification_title">Relace MOTO-HUB Android Auto</string>
-    <string name="android_auto_notification_text">Relace je aktivní. Otevřete MOTO-HUB pro živý stav projekce.</string>
+    <string name="android_auto_channel_name">RideLink Android Auto</string>
+    <string name="android_auto_notification_title">Relace RideLink Android Auto</string>
+    <string name="android_auto_notification_text">Relace je aktivní. Otevřete RideLink pro živý stav projekce.</string>
     <string name="stop_android_auto">Zastavit Android Auto</string>
 
     <!-- Ride Dashboard notifications -->
-    <string name="ride_dashboard_channel_name">MOTO-HUB Ride Dashboard</string>
+    <string name="ride_dashboard_channel_name">RideLink Ride Dashboard</string>
     <string name="ride_dashboard_channel_description">Stav živého streamování dat jízdy</string>
-    <string name="ride_dashboard_notification_title">MOTO-HUB Ride Dashboard</string>
+    <string name="ride_dashboard_notification_title">RideLink Ride Dashboard</string>
     <string name="ride_dashboard_notification_text">Telemetrie GPS a streamování palubní desky jsou aktivní.</string>
     <string name="stop_ride_dashboard">Zastavit palubní desku</string>
     <!-- Source: MainActivity.kt -->
-    <string name="legacy_moto_hub_diagnostics_ba6420b1">Diagnostika MOTO-HUB</string>
+    <string name="legacy_moto_hub_diagnostics_ba6420b1">Diagnostika RideLink</string>
     <!-- Source: feature/about/AboutScreen.kt -->
     <string name="legacy_about_the_project_2feef1f7">O PROJEKTU</string>
     <!-- Source: feature/about/AboutScreen.kt -->
@@ -282,9 +282,9 @@
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
     <string name="legacy_the_wi_fi_password_is_stored_securely_on_this_ph_b6fb6382">Heslo Wi-Fi je bezpečně uloženo v tomto telefonu.</string>
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
-    <string name="legacy_the_name_is_only_used_inside_moto_hub_10a5f3a4">Název se používá pouze uvnitř aplikace MOTO-HUB.</string>
+    <string name="legacy_the_name_is_only_used_inside_moto_hub_10a5f3a4">Název se používá pouze uvnitř aplikace RideLink.</string>
     <!-- Source: feature/garage/MotorcycleDetailsScreen.kt -->
-    <string name="legacy_the_saved_connection_profile_and_its_photo_will__c6d581e2">Uložený profil připojení a jeho fotografie budou z MOTO-HUB odstraněny.</string>
+    <string name="legacy_the_saved_connection_profile_and_its_photo_will__c6d581e2">Uložený profil připojení a jeho fotografie budou z RideLink odstraněny.</string>
     <!-- Source: feature/garage/TBoxCapabilityScreen.kt -->
     <string name="legacy_could_not_derive_a_peer_ip_this_network_may_not__3fa3f2d0">Nelze odvodit IP adresu protějšku – tato síť možná ještě nemá použitelnou trasu.</string>
     <!-- Source: feature/garage/TBoxCapabilityScreen.kt -->
@@ -528,7 +528,7 @@
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_android_auto_content_insets_7046c7dd">OKRAJE OBSAHU ANDROID AUTO</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
-    <string name="legacy_choose_image_detail_and_how_moto_hub_balances_sm_577123e1">Vyberte detail obrazu a jak MOTO-HUB vyvažuje plynulost, zahřívání, baterii a zátěž Wi-Fi.</string>
+    <string name="legacy_choose_image_detail_and_how_moto_hub_balances_sm_577123e1">Vyberte detail obrazu a jak RideLink vyvažuje plynulost, zahřívání, baterii a zátěž Wi-Fi.</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_default_route_type_b528b630">VÝCHOZÍ TYP TRASY</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
@@ -602,7 +602,7 @@
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
     <string name="legacy_checking_github_releases_7e509ccb">Kontrola vydání na GitHubu...</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
-    <string name="legacy_moto_hub_updates_c98ab24f">Aktualizace MOTO-HUB</string>
+    <string name="legacy_moto_hub_updates_c98ab24f">Aktualizace RideLink</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
     <string name="legacy_no_apk_asset_attached_to_this_release_7a89904d">K tomuto vydání není připojen žádný soubor APK.</string>
     <!-- Source: feature/update/GithubUpdateDialog.kt -->
@@ -696,7 +696,7 @@
     <!-- Source: feature/navigation/NavigationScreen.kt -->
     <string name="legacy_take_me_home_bb1e43ee">Navést domů</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
-    <string name="legacy_about_moto_hub_6966e1f8">O aplikaci MOTO-HUB</string>
+    <string name="legacy_about_moto_hub_6966e1f8">O aplikaci RideLink</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
     <string name="legacy_android_auto_cb210d00">Android Auto</string>
     <!-- Source: feature/settings/SettingsScreen.kt -->
@@ -780,7 +780,7 @@
     <!-- Source: feature/trips/TripRecordingService.kt -->
     <string name="legacy_gps_ride_recording_and_trip_statistics_28992d34">Záznam jízdy přes GPS a statistiky trasy</string>
     <!-- Source: session/PhoneDisplayDimmer.kt -->
-    <string name="legacy_moto_hub_display_dimmer_57b6244b">Stmívač displeje MOTO-HUB</string>
+    <string name="legacy_moto_hub_display_dimmer_57b6244b">Stmívač displeje RideLink</string>
     <!-- Dynamic UI templates. Keep positional placeholders unchanged. -->
     <string name="legacy_filter_1_d_497daa14">FILTR %1$d</string>
     <string name="legacy_recording_1_s_b01f3573">ZÁZNAM · %1$s</string>
@@ -795,9 +795,9 @@
     <string name="legacy_1_d_km_h_6ce8c40f">%1$d KM/H</string>
     <!-- Weather forecast wind speed when the rider selects miles. -->
     <string name="legacy_1_d_mph_669c2f51">%1$d MPH</string>
-    <string name="legacy_moto_hub_258caaa5">MOTO-HUB</string>
+    <string name="legacy_moto_hub_258caaa5">RideLink</string>
     <string name="legacy_recording_this_ride_1aceedab">Záznam této jízdy</string>
-    <string name="legacy_moto_hub_controls_f72ba5d1">Ovládací prvky MOTO-HUB</string>
+    <string name="legacy_moto_hub_controls_f72ba5d1">Ovládací prvky RideLink</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_1_d_available_e7e32615">%1$d k dispozici</string>
     <!-- Source: localized UI literal / enum label -->
@@ -997,7 +997,7 @@
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_mode_2431a3">REŽIM</string>
     <!-- Source: localized UI literal / enum label -->
-    <string name="legacy_moto_hub_simulator_72ee829">Simulátor MOTO-HUB</string>
+    <string name="legacy_moto_hub_simulator_72ee829">Simulátor RideLink</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_moving_87e69c4e">POHYB</string>
     <!-- Source: localized UI literal / enum label -->
@@ -1199,7 +1199,7 @@
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_1_s_is_ready_to_connect_6b95609b">%1$s je připraven k připojení.</string>
     <!-- Source: localized UI literal / enum label -->
-    <string name="legacy_allow_moto_hub_notifications_to_keep_streaming_v_4700fc1e">Povolit oznámení MOTO-HUB pro udržení viditelného a ovladatelného streamování.</string>
+    <string name="legacy_allow_moto_hub_notifications_to_keep_streaming_v_4700fc1e">Povolit oznámení RideLink pro udržení viditelného a ovladatelného streamování.</string>
     <!-- Source: localized UI literal / enum label -->
     <string name="legacy_allow_nearby_devices_and_location_to_detect_the__a4c1fa2c">Povolte Zařízení v okolí a Polohu pro detekci Wi-Fi sítě T-Boxu.</string>
     <!-- Source: localized UI literal / enum label -->
@@ -1295,7 +1295,7 @@
     <!-- Android Auto pre-flight: an OEM companion app is installed, but may not be active. %1$s is
          its name as shown on the phone (CFMOTO, Zontes Smart, Carbit Ride, ...). -->
     <string name="legacy_1_s_detected_66208287">Zjištěno: %1$s</string>
-    <string name="legacy_moto_hub_starts_google_android_auto_not_1_s_3a77813f">Aplikace MOTO-HUB spouští Google Android Auto, nikoli %1$s.</string>
+    <string name="legacy_moto_hub_starts_google_android_auto_not_1_s_3a77813f">Aplikace RideLink spouští Google Android Auto, nikoli %1$s.</string>
     <string name="legacy_1_s_can_still_take_over_the_dashboard_connection_5bc85002">Aplikace %1$s může i na pozadí převzít připojení k palubní desce. Pro spolehlivé zrcadlení ji před pokračováním vynuceně ukončete v nastavení Androidu.</string>
     <string name="legacy_continue_with_android_auto_f6c7ef01">Pokračovat s Android Auto</string>
     <string name="legacy_open_1_s_settings_470b74f2">Otevřít nastavení aplikace %1$s</string>
@@ -1307,7 +1307,7 @@
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
     <string name="legacy_unfamiliar_pairing_code_714f8ce7">Neznámý párovací kód</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
-    <string name="legacy_this_code_carries_wi_fi_details_for_1_s_but_it_w_422a5994">Tento kód obsahuje podrobnosti Wi-Fi pro %1$s, ale nebyl vydán adresou Carbit jako u palubních desek známých aplikaci MOTO-HUB.</string>
+    <string name="legacy_this_code_carries_wi_fi_details_for_1_s_but_it_w_422a5994">Tento kód obsahuje podrobnosti Wi-Fi pro %1$s, ale nebyl vydán adresou Carbit jako u palubních desek známých aplikaci RideLink.</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
     <string name="legacy_several_manufacturers_ship_the_same_dashboard_so_49305d38">Několik výrobců dodává stejný software palubní desky pod vlastní značkou, takže to může být váš motocykl. Pokračujte pouze v případě, že jste jej naskenovali z vlastní palubní desky.</string>
     <!-- Source: feature/pairing/UnverifiedQrDialog.kt -->
@@ -1336,11 +1336,11 @@
     <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_890c8f24">Android Auto 17.4 odebral způsob, jakým aplikace mohla žádat o projekci. Műtö-HUB se o to stále pokouší a na starších verzích to funguje – ale když ne, Android Auto lze spustit z jeho vlastní vývojářské nabídky. Nic nemusíte instalovat.</string>
     <string name="legacy_android_auto_does_not_start_2266b70e">Android Auto se nespustí</string>
     <string name="legacy_every_time_android_auto_will_not_start_18ff3ab9">PO KAŽDÉM SELHÁNÍ SPUŠTĚNÍ ANDROID AUTO</string>
-    <string name="legacy_go_back_to_moto_hub_and_start_android_auto_it_co_ff8cc50d">Vraťte se do MOTO-HUBu a spusťte Android Auto. Připojí se samo během několika sekund – nic jiného není třeba tlačit.</string>
+    <string name="legacy_go_back_to_moto_hub_and_start_android_auto_it_co_ff8cc50d">Vraťte se do RideLinku a spusťte Android Auto. Připojí se samo během několika sekund – nic jiného není třeba tlačit.</string>
     <string name="legacy_in_android_auto_s_developer_settings_open_the_me_1ea3a8cf">V nastavení pro vývojáře Android Auto otevřete nabídku ⋮ v pravém horním rohu a vyberte „Spustit server hlavní jednotky“ (Start head unit server). Je to v této nabídce, nikoli v seznamu nastavení pod ní.</string>
     <string name="legacy_in_developer_settings_turn_on_add_new_cars_to_an_19f79566">V nastavení pro vývojáře zapněte „Přidat do Android Auto nová auta“ (starší verze tomu říkají „Neznámé zdroje“).</string>
     <string name="legacy_jumps_straight_to_the_app_where_the_menu_above_l_7c8b2093">Přejde přímo do aplikace, kde se nachází výše uvedená nabídka</string>
-    <string name="legacy_normally_moto_hub_waits_and_asks_android_auto_to_6c183bab">Normálně MOTO-HUB čeká a žádá Android Auto o připojení. Verze 17.4 tuto možnost uzavřela pro všechny aplikace tohoto druhu, nejen pro tuto. Server hlavní jednotky obrací směr – Android Auto čeká a MOTO-HUB se připojuje k němu – což jsou dvířka, která Google ponechal otevřená pro své vlastní testovací nástroje.</string>
+    <string name="legacy_normally_moto_hub_waits_and_asks_android_auto_to_6c183bab">Normálně RideLink čeká a žádá Android Auto o připojení. Verze 17.4 tuto možnost uzavřela pro všechny aplikace tohoto druhu, nejen pro tuto. Server hlavní jednotky obrací směr – Android Auto čeká a RideLink se připojuje k němu – což jsou dvířka, která Google ponechal otevřená pro své vlastní testovací nástroje.</string>
     <string name="legacy_one_time_setup_ca24c531">JEDNORÁZOVÉ NASTAVENÍ</string>
     <string name="legacy_open_android_auto_settings_48a5120d">Otevřít nastavení Android Auto</string>
     <string name="legacy_open_the_android_auto_app_scroll_to_the_bottom_a_69ae9e53">Otevřete aplikaci Android Auto, sjeďte dolů a desetkrát klepněte na „Verze“. Objeví se nastavení pro vývojáře.</string>
@@ -1391,10 +1391,10 @@
     <string name="legacy_no_motorcycle_no_problem_4346def1">ŽÁDNÝ MOTOCYKL? ŽÁDNÝ PROBLÉM</string>
 
     <!-- Source: feature/home/CoreAvailability.kt -->
-    <string name="legacy_advanced_needs_moto_hub_core_installed_and_paire_722fef7d">Pokročilé funkce vyžadují nainstalovaný MOTO-HUB (Core) spárovaný s vaší T-Box jednotkou pro připojení, zrcadlení nebo spuštění Android Auto.</string>
+    <string name="legacy_advanced_needs_moto_hub_core_installed_and_paire_722fef7d">Pokročilé funkce vyžadují nainstalovaný RideLink (Core) spárovaný s vaší T-Box jednotkou pro připojení, zrcadlení nebo spuštění Android Auto.</string>
     <string name="legacy_couldn_t_open_the_browser_3e0fae25">Nepodařilo se otevřít prohlížeč.</string>
-    <string name="legacy_download_moto_hub_core_976f62e2">Stáhnout MOTO-HUB Core</string>
-    <string name="legacy_moto_hub_core_not_found_b76c3f4f">MOTO-HUB CORE NENALEZEN</string>
+    <string name="legacy_download_moto_hub_core_976f62e2">Stáhnout RideLink Core</string>
+    <string name="legacy_moto_hub_core_not_found_b76c3f4f">RideLink CORE NENALEZEN</string>
 
     <!-- Source: feature/home/HubHomeScreen.kt -->
     <string name="legacy_android_auto_17_4_removed_the_way_apps_ask_it_to_b5455068">Android Auto 17.4 odebral způsob, jakým aplikace mohou žádat o projekci. Lze ho stále spustit z vlastní vývojářské nabídky Android Auto.</string>
@@ -1433,20 +1433,20 @@
     <string name="legacy_requires_the_phone_paired_to_the_motorcycle_s_bl_dda6960a">Vyžaduje telefon spárovaný s Bluetooth motocyklu. Hudba hraje dál, ale její tlačítka jsou během běžící relace zachycena.</string>
     <string name="legacy_set_the_dash_clock_over_bluetooth_experimental_3431b284">Nastavit hodiny na palubní desce přes Bluetooth (experimentální)</string>
     <string name="legacy_set_the_dash_clock_over_wi_fi_292a2ca5">Nastavit hodiny na palubní desce přes Wi-Fi</string>
-    <string name="legacy_on_by_default_and_what_sets_the_time_on_most_das_6234cd82">Ve výchozím nastavení zapnuto a právě to nastavuje čas na většině palubních desek. Vypněte jen tehdy, pokud si vaše palubní deska řekne MOTO-HUBu o čas, odpověď ignoruje a přesto ukazuje 01.01.1970: u takových jednotek zápis hodin nic nezmění a může přepsat čas, který jste na palubní desce nastavili ručně. Když je toto vypnuté, motorka se připojí normálně, jen se nikdy nedozví, kolik je hodin.</string>
+    <string name="legacy_on_by_default_and_what_sets_the_time_on_most_das_6234cd82">Ve výchozím nastavení zapnuto a právě to nastavuje čas na většině palubních desek. Vypněte jen tehdy, pokud si vaše palubní deska řekne RideLinku o čas, odpověď ignoruje a přesto ukazuje 01.01.1970: u takových jednotek zápis hodin nic nezmění a může přepsat čas, který jste na palubní desce nastavili ručně. Když je toto vypnuté, motorka se připojí normálně, jen se nikdy nedozví, kolik je hodin.</string>
     <string name="legacy_your_dashboard_has_been_seen_asking_for_the_time_c02f4d97">U vaší palubní desky bylo pozorováno, že si řekne o čas, dostane odpověď a přesto dál počítá od vlastního zapnutí. Tento přepínač na ní v žádné poloze nic nezmění: tyto hodiny si vede palubní deska, ne telefon.</string>
     <string name="legacy_settings_595d2043">Nastavení</string>
-    <string name="legacy_some_dashboards_ask_for_the_time_over_bluetooth__b44ce43b">Některé palubní desky požadují čas přes Bluetooth namísto Wi-Fi a bez něj ukazují 00:00. Vyžaduje, aby motorka již byla spárovaná s tímto telefonem v nastavení Bluetooth systému Android. Ve výchozím nastavení vypnuto; MOTO-HUB odpovídá pouze zařízením, která si o to řeknou vlastním protokolem palubní desky.</string>
+    <string name="legacy_some_dashboards_ask_for_the_time_over_bluetooth__b44ce43b">Některé palubní desky požadují čas přes Bluetooth namísto Wi-Fi a bez něj ukazují 00:00. Vyžaduje, aby motorka již byla spárovaná s tímto telefonem v nastavení Bluetooth systému Android. Ve výchozím nastavení vypnuto; RideLink odpovídá pouze zařízením, která si o to řeknou vlastním protokolem palubní desky.</string>
     <string name="legacy_some_dashboards_forget_settings_like_the_clock_w_76d95842">Některé palubní desky zapomínají nastavení jako hodiny, když se spojení Wi-Fi Direct zcela přeruší. Udržuje telefon spojený se sítí motorky, dokud neopustíte aplikaci nebo nevypnete Wi-Fi. Ve výchozím nastavení vypnuto; zapínejte pouze v případě, že vaše palubní deska po odpojení ztrácí čas.</string>
     <string name="legacy_start_automatically_2cb44c45">Spustit automaticky</string>
     <string name="legacy_start_on_connect_94487a47">Spustit při připojení</string>
     <string name="legacy_stay_linked_to_the_bike_s_wi_fi_after_disconnect_81b0e941">Zůstat připojen k Wi-Fi motocyklu i po odpojení</string>
-    <string name="legacy_the_motorcycle_s_buttons_reach_the_phone_over_bl_356cbf0d">Tlačítka motocyklu dorazí do telefonu přes Bluetooth jako mediální klávesy. Během streamování relace je MOTO-HUB může zachytit a ovládat jimi navigaci Android Auto namísto hudebního přehrávače.</string>
+    <string name="legacy_the_motorcycle_s_buttons_reach_the_phone_over_bl_356cbf0d">Tlačítka motocyklu dorazí do telefonu přes Bluetooth jako mediální klávesy. Během streamování relace je RideLink může zachytit a ovládat jimi navigaci Android Auto namísto hudebního přehrávače.</string>
     <string name="legacy_what_each_press_double_press_and_hold_does_97201ad9">Co dělá jednotlivé stisknutí, dvojité stisknutí a podržení</string>
     <string name="legacy_what_to_do_when_android_auto_refuses_to_project_fa692d1b">Co dělat, když Android Auto odmítá provádět projekci</string>
     <string name="legacy_what_to_start_5b78fc39">CO SPUSTIT</string>
     <string name="legacy_while_capture_is_on_the_volume_buttons_navigate__9e410bf">Když je zachytávání zapnuté, tlačítka hlasitosti slouží k navigaci namísto změny hlasitosti – úroveň poslechu nastavte zde.</string>
-    <string name="legacy_with_this_on_moto_hub_skips_the_what_should_i_sh_498b0614">Když je tato možnost zapnutá, MOTO-HUB přeskočí obrazovku „co mám zobrazit?“ a po navázání spojení s motocyklem rovnou zobrazí zvolenou obrazovku na TFT panelu. Spustí se jednou při spuštění aplikace – zastavte obrazovku a jste zpět v ovládání.</string>
+    <string name="legacy_with_this_on_moto_hub_skips_the_what_should_i_sh_498b0614">Když je tato možnost zapnutá, RideLink přeskočí obrazovku „co mám zobrazit?“ a po navázání spojení s motocyklem rovnou zobrazí zvolenou obrazovku na TFT panelu. Spustí se jednou při spuštění aplikace – zastavte obrazovku a jste zpět v ovládání.</string>
 
     <!-- Source: ui/components/SystemKillNotice.kt -->
     <string name="legacy_dismiss_c6dc4a6a">Zavřít</string>
@@ -1481,7 +1481,7 @@
     <string name="legacy_bluetooth_is_turned_off_so_the_obd_adapter_canno_5a8640c">Bluetooth je vypnuté, takže se nelze spojit s OBD adaptérem.</string>
     <string name="legacy_customizable_vector_map_rendered_on_the_tft_bfa6e220">Přizpůsobitelná vektorová mapa vykreslená na TFT panelu</string>
     <string name="legacy_gps_following_8ad5867b">Sledování GPS</string>
-    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_obd_af681be3">MOTO-HUB potřebuje přístup k Bluetooth, aby mohl komunikovat s OBD adaptérem.</string>
+    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_obd_af681be3">RideLink potřebuje přístup k Bluetooth, aby mohl komunikovat s OBD adaptérem.</string>
     <string name="legacy_no_map_live_engine_data_from_a_paired_elm327_ada_8ecf531c">Bez mapy: živá data motoru ze spárovaného adaptéru ELM327</string>
     <string name="legacy_no_paired_obd_adapter_found_pair_the_elm327_dong_90029f7c">Nebyl nalezen žádný spárovaný OBD adaptér. Nejprve spárujte modul ELM327.</string>
     <string name="legacy_restore_gps_76fc23d8">Obnovit GPS</string>
@@ -1504,7 +1504,7 @@
     <string name="legacy_bluetooth_is_turned_off_92ceda3f">Bluetooth je vypnuté.</string>
     <string name="legacy_connected_and_reading_1e53c68c">Připojeno a čte se</string>
     <string name="legacy_connecting_ca35204e">Připojování…</string>
-    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_ada_8763b3f4">MOTO-HUB potřebuje přístup k Bluetooth, aby dosáhl na adaptér.</string>
+    <string name="legacy_moto_hub_needs_bluetooth_access_to_reach_the_ada_8763b3f4">RideLink potřebuje přístup k Bluetooth, aby dosáhl na adaptér.</string>
     <string name="legacy_no_paired_obd_adapter_found_72c35314">Nebyl nalezen žádný spárovaný OBD adaptér.</string>
     <string name="legacy_not_connected_273cf5d2">Nepřipojeno.</string>
 
@@ -1573,7 +1573,7 @@
     <string name="legacy_gps_only_e6f03982">POUZE GPS</string>
          description; rendered outside the app's own Compose runtime, so it is a plain string
          resource rather than a motoHubText() call). -->
-    <string name="handlebar_hid_capture_description">Umožňuje aplikaci MOTO-HUB číst stisknutí směrového ovladače (D-pad) z Bluetooth HID dálkového ovladače na řídítkách, pokud je v nastavení tlačítek řídítek vybrán režim HID.</string>
+    <string name="handlebar_hid_capture_description">Umožňuje aplikaci RideLink číst stisknutí směrového ovladače (D-pad) z Bluetooth HID dálkového ovladače na řídítkách, pokud je v nastavení tlačítek řídítek vybrán režim HID.</string>
 
     <!-- ==================================================================
          Handlebar HID mode, phone-only Android Auto and the teach
@@ -1590,19 +1590,19 @@
     <string name="legacy_android_auto_straight_to_your_phone_f0cc540c">Android Auto — přímo do vašeho telefonu</string>
     <string name="legacy_input_protocol_8ff4fe4e">VSTUPNÍ PROTOKOL</string>
     <string name="legacy_most_dashboards_send_buttons_as_avrcp_media_keys_6e1dd82c">Většina přístrojových desek posílá tlačítka jako médiové klávesy AVRCP — ponechte nastaveno na AVRCP. Režim HID zvolte pouze v případě, že se ovladač páruje jako Bluetooth klávesnice a jeho stisknutí se níže vůbec nezaznamenávají.</string>
-    <string name="legacy_hid_mode_also_needs_moto_hub_s_accessibility_ser_c0cdf4cc">Režim HID vyžaduje také zapnutou Službu usnadnění MOTO-HUB, jinak stisknutí nebudou rozpoznána.</string>
+    <string name="legacy_hid_mode_also_needs_moto_hub_s_accessibility_ser_c0cdf4cc">Režim HID vyžaduje také zapnutou Službu usnadnění RideLink, jinak stisknutí nebudou rozpoznána.</string>
     <string name="legacy_open_accessibility_settings_a01c954b">Otevřít nastavení Usnadnění</string>
-    <string name="legacy_turn_on_moto_hub_so_handlebar_presses_reach_the__b41c5310">Zapněte MOTO-HUB, aby stisknutí z řídítek dorazila do aplikace z jakékoli obrazovky</string>
-    <string name="legacy_was_moto_hub_s_switch_greyed_out_android_blocks__b5233420">Byl přepínač MOTO-HUB zašedlý? Android jej blokuje pro aplikace, které nebyly nainstalovány z obchodu, a MOTO-HUB je stažen z GitHubu. Otevřete Informace o aplikaci, klepněte na ⋮ vpravo nahoře, zvolte „Povolit omezená nastavení“ a poté se vraťte a přepínač zapněte.</string>
+    <string name="legacy_turn_on_moto_hub_so_handlebar_presses_reach_the__b41c5310">Zapněte RideLink, aby stisknutí z řídítek dorazila do aplikace z jakékoli obrazovky</string>
+    <string name="legacy_was_moto_hub_s_switch_greyed_out_android_blocks__b5233420">Byl přepínač RideLink zašedlý? Android jej blokuje pro aplikace, které nebyly nainstalovány z obchodu, a RideLink je stažen z GitHubu. Otevřete Informace o aplikaci, klepněte na ⋮ vpravo nahoře, zvolte „Povolit omezená nastavení“ a poté se vraťte a přepínač zapněte.</string>
     <string name="legacy_open_app_info_7c77c863">Otevřít Informace o aplikaci</string>
     <string name="legacy_where_allow_restricted_settings_lives_8f29fea1">Kde se nachází „Povolit omezená nastavení“</string>
     <string name="legacy_avrcp_media_keys_f50e20c7">AVRCP (médiové klávesy)</string>
     <string name="legacy_hid_d_pad_a247f04a">HID (směrový ovladač)</string>
     <string name="legacy_default_the_dashboard_sends_bluetooth_media_key__ccbdfbf7">Výchozí. Přístrojová deska odesílá příkazy médiových kláves Bluetooth pro přehrávání/pauzu, skladbu a hlasitost.</string>
-    <string name="legacy_for_remotes_that_pair_as_a_bluetooth_keyboard_an_25055a66">Pro ovladače, které se párují jako Bluetooth klávesnice a odesílají stisknutí směrového ovladače. Vyžaduje zapnutí Služby usnadnění MOTO-HUB níže.</string>
+    <string name="legacy_for_remotes_that_pair_as_a_bluetooth_keyboard_an_25055a66">Pro ovladače, které se párují jako Bluetooth klávesnice a odesílají stisknutí směrového ovladače. Vyžaduje zapnutí Služby usnadnění RideLink níže.</string>
 
     <!-- External display service (USB AOA) - notification channel and ongoing notification -->
-    <string name="legacy_moto_hub_external_display_streaming_1be823ca">MOTO-HUB streamování na externí displej</string>
+    <string name="legacy_moto_hub_external_display_streaming_1be823ca">RideLink streamování na externí displej</string>
     <string name="legacy_streaming_to_external_display_via_usb_ab5c31c6">Streamování na externí displej přes USB</string>
     <string name="legacy_stop_external_display_c050e9ab">Zastavit externí displej</string>
     <string name="legacy_aap_accessory_probe_running_bcf6ccd1">Běží test příslušenství AAP</string>
@@ -1610,8 +1610,8 @@
     <!-- About screen -->
     <string name="legacy_your_phone_your_motorcycle_display_c5956fcb">Váš telefon.\nVáš displej motocyklu.</string>
     <string name="legacy_follow_development_join_our_community_report_iss_b8b8fffa">Sledujte vývoj, připojte se k naší komunitě, hlašte chyby a stahujte nová vydání.</string>
-    <string name="legacy_moto_hub_is_an_independent_project_it_is_not_aff_9e4c2633">MOTO-HUB je nezávislý projekt. Není propojen, schválen ani sponzorován společností Carbit, CFMOTO, žádným jiným výrobcem, jehož přístrojová deska používá EasyConn, společností Google ani Android Auto. Všechny názvy produktů a ochranné známky patří jejich příslušným vlastníkům.</string>
-    <string name="legacy_moto_hub_is_an_experimental_proof_of_concept_not_34b4b321">MOTO-HUB je experimentální koncept (proof-of-concept), nikoli produkční produkt.</string>
+    <string name="legacy_moto_hub_is_an_independent_project_it_is_not_aff_9e4c2633">RideLink je nezávislý projekt. Není propojen, schválen ani sponzorován společností Carbit, CFMOTO, žádným jiným výrobcem, jehož přístrojová deska používá EasyConn, společností Google ani Android Auto. Všechny názvy produktů a ochranné známky patří jejich příslušným vlastníkům.</string>
+    <string name="legacy_moto_hub_is_an_experimental_proof_of_concept_not_34b4b321">RideLink je experimentální koncept (proof-of-concept), nikoli produkční produkt.</string>
     <string name="legacy_development_and_testing_happen_on_a_cfmoto_700mt_ac58afbf">Vývoj a testování probíhá na přístrojové desce CFMOTO 700MT-ADV s telefony OnePlus 13 / Galaxy Z Fold4. Ostatní motocykly, značky, verze firmwaru T-Boxu a telefony zde nejsou testovány: očekávejte odlišné chování, opakované pokusy o připojení nebo stav bez připojení. Pokud přístrojová deska zobrazuje QR kód pro párování, stojí za to to vyzkoušet.</string>
     <string name="legacy_do_not_rely_on_it_as_your_only_source_of_critica_39775433">Nespoléhejte na tuto aplikaci jako na jediný zdroj kritické navigace. Navigaci nastavte pouze při zaparkování a software používejte na vlastní nebezpečí.</string>
 
@@ -1654,7 +1654,7 @@
     <string name="legacy_head_unit_name_1d44c987">Název hlavní jednotky</string>
     <string name="legacy_vehicle_brand_1ca30d73">Značka vozidla</string>
     <string name="legacy_vehicle_model_1d3cbd15">Model vozidla</string>
-    <string name="legacy_these_values_are_shown_exactly_as_reported_by_th_16427b8c">Tyto hodnoty jsou zobrazeny přesně tak, jak je nahlásil T-Box. MOTO-HUB neodvozuje model motocyklu z QR kódu ani z názvu sítě.</string>
+    <string name="legacy_these_values_are_shown_exactly_as_reported_by_th_16427b8c">Tyto hodnoty jsou zobrazeny přesně tak, jak je nahlásil T-Box. RideLink neodvozuje model motocyklu z QR kódu ani z názvu sítě.</string>
     <string name="legacy_software_protocol_2108716b">SOFTWARE A PROTOKOL</string>
     <string name="legacy_pxc_version_5fba84f3">Verze PXC</string>
     <string name="legacy_sdk_version_aacf3ed2">Verze SDK</string>
@@ -1704,9 +1704,9 @@
 
     <!-- Safety disclaimer shown on first launch -->
     <string name="legacy_safety_warning_243ef82e">BEZPEČNOSTNÍ UPOZORNĚNÍ</string>
-    <string name="legacy_riding_requires_your_full_attention_never_intera_96038a24">Jízda vyžaduje vaši plnou pozornost. Nikdy nemanipulujte s MOTO-HUB, Android Auto, navigací, zrcadlením, záznamem trasy ani s žádnými prvky na obrazovce, pokud je motocykl v pohybu.</string>
+    <string name="legacy_riding_requires_your_full_attention_never_intera_96038a24">Jízda vyžaduje vaši plnou pozornost. Nikdy nemanipulujte s RideLink, Android Auto, navigací, zrcadlením, záznamem trasy ani s žádnými prvky na obrazovce, pokud je motocykl v pohybu.</string>
     <string name="legacy_configure_and_verify_everything_only_while_parke_57e1b31b">Vše nastavujte a ověřujte pouze při zaparkování. Tuto aplikaci používejte výhradně v zcela bezpečné a kontrolované situaci. Pokud podmínky nejsou zcela bezpečné, aplikaci nepoužívejte.</string>
-    <string name="legacy_moto_hub_is_not_a_safety_device_and_cannot_preve_a3d43f2f">MOTO-HUB není bezpečnostní zařízení a nemůže zabránit nepozornosti, nehodám, zraněním ani škodám. Jste výhradně odpovědní za bezpečnou jízdu a dodržování všech platných zákonů.</string>
+    <string name="legacy_moto_hub_is_not_a_safety_device_and_cannot_preve_a3d43f2f">RideLink není bezpečnostní zařízení a nemůže zabránit nepozornosti, nehodám, zraněním ani škodám. Jste výhradně odpovědní za bezpečnou jízdu a dodržování všech platných zákonů.</string>
     <string name="legacy_i_understand_do_not_show_this_warning_again_e4526192">Rozumím — toto upozornění již nezobrazovat</string>
 
     <!-- GitHub update dialog -->
@@ -1737,23 +1737,23 @@
     <!-- The "MOTO-HUB is still looking" notification shown while a connection attempt runs,
          and the hosted-network wording that tells the rider not to close the app. %1$s is
          the motorcycle network name. -->
-    <string name="legacy_moto_hub_connection_progress_c260af34">Průběh připojování MOTO-HUB</string>
+    <string name="legacy_moto_hub_connection_progress_c260af34">Průběh připojování RideLink</string>
     <string name="legacy_looking_for_1_s_9983a22f">Hledání %1$s</string>
     <string name="legacy_connecting_to_1_s_2f10e3b8">Připojování k %1$s</string>
-    <string name="legacy_keep_moto_hub_open_closing_it_stops_the_search_54ec507">Nezavírejte MOTO-HUB – zavřením se vyhledávání zastaví.</string>
-    <string name="legacy_hotspot_is_up_searching_it_for_the_dashboard_thi_caab4cd3">Hotspot je aktivní. Vyhledává se přístrojový panel – může to trvat až 90 sekund, proto nechejte MOTO-HUB otevřený.</string>
+    <string name="legacy_keep_moto_hub_open_closing_it_stops_the_search_54ec507">Nezavírejte RideLink – zavřením se vyhledávání zastaví.</string>
+    <string name="legacy_hotspot_is_up_searching_it_for_the_dashboard_thi_caab4cd3">Hotspot je aktivní. Vyhledává se přístrojový panel – může to trvat až 90 sekund, proto nechejte RideLink otevřený.</string>
     <!-- Asked once per video format tried, after a session that looked healthy from the phone:
          only the rider can see whether the dashboard actually displayed it. %1$s is the
          motorcycle name. -->
     <string name="legacy_did_it_show_up_on_the_dashboard_f341c05">Zobrazilo se to na přístrojovém panelu?</string>
-    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_46fc9a09">Při posledním připojení k %1$s vypadalo z pohledu telefonu vše v pořádku. MOTO-HUB nemá jak vidět obrazovku přístrojového panelu, takže toto je jediná věc, na kterou se musí zeptat.</string>
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_will_40398b69">Pokud zůstala obrazovka párování, MOTO-HUB zkusí při příští jízdě jiný formát videa a bude pokračovat, dokud některý nebude fungovat.</string>
+    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_46fc9a09">Při posledním připojení k %1$s vypadalo z pohledu telefonu vše v pořádku. RideLink nemá jak vidět obrazovku přístrojového panelu, takže toto je jediná věc, na kterou se musí zeptat.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_will_40398b69">Pokud zůstala obrazovka párování, RideLink zkusí při příští jízdě jiný formát videa a bude pokračovat, dokud některý nebude fungovat.</string>
     <string name="legacy_yes_i_saw_it_625527f4">Ano, viděl(a) jsem to</string>
     <string name="legacy_no_nothing_appeared_f92c88fc">Ne, nic se nezobrazilo</string>
     <!-- Shown when the video-format search cannot progress because every session so far ran the
          Ride Dashboard, which sends its own format. -->
     <string name="legacy_the_video_format_search_is_waiting_ac28c9a">Vyhledávání formátu videa čeká</string>
-    <string name="legacy_moto_hub_is_still_looking_for_a_video_format_you_44b4c53c">MOTO-HUB stále hledá formát videa, který váš přístrojový panel dokáže zobrazit, ale během spuštěného Android Auto může testovat pouze jeden – Ride Dashboard totiž vždy posílá svůj vlastní formát.</string>
+    <string name="legacy_moto_hub_is_still_looking_for_a_video_format_you_44b4c53c">RideLink stále hledá formát videa, který váš přístrojový panel dokáže zobrazit, ale během spuštěného Android Auto může testovat pouze jeden – Ride Dashboard totiž vždy posílá svůj vlastní formát.</string>
     <string name="legacy_connect_once_with_android_auto_and_the_search_mo_71871380">Připojte se jednou pomocí Android Auto a vyhledávání bude automaticky pokračovat.</string>
     <string name="legacy_got_it_7f79855f">Rozumím</string>
 
@@ -1777,7 +1777,7 @@
     <string name="legacy_take_a_photo_cefc733a">Vyfotit</string>
 
     <!-- Source: feature/about/AboutScreen.kt -->
-    <string name="legacy_moto_hub_connects_an_android_12_phone_to_a_motor_b791c32e">MOTO-HUB propojuje telefon s Androidem 12+ s palubní deskou motocyklu přes EasyConn — softwarové řešení od Carbitu, které dodává několik výrobců, mimo jiné CFMOTO. Podporuje zrcadlení obrazovky a aplikací, projekci Android Auto, uložené profily motocyklů a diagnostiku přímo v zařízení.</string>
+    <string name="legacy_moto_hub_connects_an_android_12_phone_to_a_motor_b791c32e">RideLink propojuje telefon s Androidem 12+ s palubní deskou motocyklu přes EasyConn — softwarové řešení od Carbitu, které dodává několik výrobců, mimo jiné CFMOTO. Podporuje zrcadlení obrazovky a aplikací, projekci Android Auto, uložené profily motocyklů a diagnostiku přímo v zařízení.</string>
 
     <!-- Source: feature/controls — a controller button stands in for a handlebar press -->
     <string name="legacy_handlebar_presses_32db65bc">STISKY NA ŘÍDÍTKÁCH</string>
@@ -1849,7 +1849,7 @@
 
     <!-- Source: feature/controls — the three input sources, and which one is live -->
     <string name="legacy_motorcycle_handlebar_dc90fcfc">ŘÍDÍTKA MOTOCYKLU</string>
-    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_217ec1b2">Android Auto verze 17.4 odstranil možnost, jak může aplikace požádat o spuštění projekce. MOTO-HUB se o to stále pokouší a u starších verzí to funguje – pokud tomu tak není, čtyři níže uvedené kroky spustí Android Auto přímo z jeho vlastního vývojářského menu. Toto funguje, i když vše ostatní selže, a nemusíte nic instalovat.</string>
+    <string name="legacy_android_auto_17_4_removed_the_way_an_app_can_ask_217ec1b2">Android Auto verze 17.4 odstranil možnost, jak může aplikace požádat o spuštění projekce. RideLink se o to stále pokouší a u starších verzí to funguje – pokud tomu tak není, čtyři níže uvedené kroky spustí Android Auto přímo z jeho vlastního vývojářského menu. Toto funguje, i když vše ostatní selže, a nemusíte nic instalovat.</string>
     <string name="legacy_start_android_auto_yourself_3b0dffe1">SPUSŤTE ANDROID AUTO RUČNĚ</string>
     <string name="legacy_open_the_android_auto_app_s_settings_scroll_to_t_4ef36207">Otevřete nastavení aplikace Android Auto, kolečkem projeďte úplně dolů a klepněte desetkrát na „Verze“. Tím se zpřístupní vývojářské možnosti – stačí to udělat pouze jednou.</string>
     <string name="legacy_stay_on_that_same_android_auto_settings_screen_o_2c08cebc">Zůstaňte na stejné obrazovce nastavení Android Auto, otevřete nabídku tří teček vpravo nahoře a vyberte „Spustit server hlavní jednotky“. Je to v této nabídce, nikoli ve Vývojářských možnostech. Toto je krok, který vše spustí.</string>
@@ -1872,10 +1872,10 @@
 
     <!-- Source: failure text the home screen's error banner draws. Declared as constants and compared by
          identity on the way there, so the catalogue is the only place they can be translated -->
-    <string name="legacy_google_android_auto_never_connected_to_moto_hub__bd46b5a3">Služba Google Android Auto se k aplikaci MOTO-HUB nikdy nepřipojila. Novější verze Android Auto odstranily způsob, jakým aplikace žádají o projekci, takže ji spusťte přímo z Android Auto. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností. Poté na stejné obrazovce nastavení otevřete nabídku tří teček vpravo nahoře a vyberte „Spustit server hlavní jednotky“ – tato nabídka je na běžné obrazovce nastavení Android Auto, nikoli ve Vývojářských možnostech. Nechte MOTO-HUB běžet: připojí se automaticky během několika sekund a server můžete nechat běžet i pro příště.</string>
-    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__ae0978d0">Služba Google Android Auto přijala požadavek MOTO-HUB a poté jej ignorovala. To dělá v případě, že hlavní jednotce dosud neudělila důvěru. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností, otevřete Vývojářská nastavení a zapněte „Přidat nová auta do Android Auto“ (starší verze používají název „Neznámé zdroje“), poté znovu spusťte Android Auto z MOTO-HUB. Pokud se stále nic neděje, vraťte se na obrazovku nastavení Android Auto a použijte nabídku tří teček vpravo nahoře: „Spustit server hlavní jednotky“.</string>
-    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__3e12afc0">Služba Google Android Auto přijala požadavek aplikace MOTO-HUB a poté jej ignorovala, což je vše, co v této verzi dělá: Android Auto 17.3 a novější odstranily způsob, jakým může aplikace požádat o projekci. Spusťte ji místo toho přímo z Android Auto. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností, poté otevřete nabídku tří teček vpravo nahoře na stejné obrazovce nastavení a vyberte „Spustit server hlavní jednotky“. Nechte MOTO-HUB běžet: připojí se automaticky během několika sekund. Když už tam jste, měla by být zapnuta i volba „Přidat nová auta do Android Auto“ ve Vývojářských možnostech.</string>
-    <string name="legacy_another_easyconn_session_is_already_using_the_lo_fa50b26f">Místní připojovací porty (10920–10922) již používá jiná relace EasyConn. Ukončete jakoukoli aktivní relaci MOTO-HUB nebo vynuceně ukončete doprovodnou aplikaci motocyklu (CFMOTO, Zontes Smart, Carbit Ride a ekvivalenty jiných značek) a zkuste připojení zopakovat.</string>
+    <string name="legacy_google_android_auto_never_connected_to_moto_hub__bd46b5a3">Služba Google Android Auto se k aplikaci RideLink nikdy nepřipojila. Novější verze Android Auto odstranily způsob, jakým aplikace žádají o projekci, takže ji spusťte přímo z Android Auto. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností. Poté na stejné obrazovce nastavení otevřete nabídku tří teček vpravo nahoře a vyberte „Spustit server hlavní jednotky“ – tato nabídka je na běžné obrazovce nastavení Android Auto, nikoli ve Vývojářských možnostech. Nechte RideLink běžet: připojí se automaticky během několika sekund a server můžete nechat běžet i pro příště.</string>
+    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__ae0978d0">Služba Google Android Auto přijala požadavek RideLink a poté jej ignorovala. To dělá v případě, že hlavní jednotce dosud neudělila důvěru. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností, otevřete Vývojářská nastavení a zapněte „Přidat nová auta do Android Auto“ (starší verze používají název „Neznámé zdroje“), poté znovu spusťte Android Auto z RideLink. Pokud se stále nic neděje, vraťte se na obrazovku nastavení Android Auto a použijte nabídku tří teček vpravo nahoře: „Spustit server hlavní jednotky“.</string>
+    <string name="legacy_google_android_auto_took_moto_hub_s_request_and__3e12afc0">Služba Google Android Auto přijala požadavek aplikace RideLink a poté jej ignorovala, což je vše, co v této verzi dělá: Android Auto 17.3 a novější odstranily způsob, jakým může aplikace požádat o projekci. Spusťte ji místo toho přímo z Android Auto. Otevřete nastavení aplikace Android Auto, dole klepněte desetkrát na „Verze“ pro odemknutí vývojářských možností, poté otevřete nabídku tří teček vpravo nahoře na stejné obrazovce nastavení a vyberte „Spustit server hlavní jednotky“. Nechte RideLink běžet: připojí se automaticky během několika sekund. Když už tam jste, měla by být zapnuta i volba „Přidat nová auta do Android Auto“ ve Vývojářských možnostech.</string>
+    <string name="legacy_another_easyconn_session_is_already_using_the_lo_fa50b26f">Místní připojovací porty (10920–10922) již používá jiná relace EasyConn. Ukončete jakoukoli aktivní relaci RideLink nebo vynuceně ukončete doprovodnou aplikaci motocyklu (CFMOTO, Zontes Smart, Carbit Ride a ekvivalenty jiných značek) a zkuste připojení zopakovat.</string>
     <string name="legacy_phone_wi_fi_is_off_turn_it_on_then_tap_connect_a_5fd21cc0">Wi-Fi v telefonu je vypnutá. Zapněte ji a znovu klepněte na Připojit.</string>
     <string name="legacy_phone_hotspot_is_off_turn_it_on_then_tap_connect_683a58f1">Aktivní přístupový bod (hotspot) v telefonu je vypnutý. Zapněte jej a znovu klepněte na Připojit.</string>
     <string name="legacy_action_needed_a446e8df">VYŽADOVÁNA AKCE</string>
@@ -1885,20 +1885,20 @@
     <string name="legacy_run_clock_experiments_8ad4688f">Spustit experimenty s hodinami</string>
     <string name="legacy_live_log_831d05f0">ŽIVÝ PROTOKOL</string>
     <string name="legacy_nothing_yet_power_the_dash_on_then_run_the_exper_b1ec5c8f">Zatím nic. Zapněte palubní desku a poté spusťte experimenty.</string>
-    <string name="legacy_moto_hub_closed_unexpectedly_30f439d7">Aplikace MOTO-HUB byla neočekávaně ukončena</string>
-    <string name="legacy_the_last_time_you_used_moto_hub_it_stopped_becau_8448d27c">Při posledním použití aplikace MOTO-HUB došlo k chybě a jejímu zastavení. Odeslání diagnostické zprávy umožní vývojáři zjistit příčinu.</string>
-    <string name="legacy_the_report_contains_your_motorcycle_s_dashboard__f4208b9f">Zpráva obsahuje model palubní desky vašich motocyklů, model telefonu, verze systémů Android a Android Auto, nainstalované verze MOTO-HUB a protokol událostí aplikace včetně chyby. Hesla, poloha a hardwarové adresy se nikdy neodesílají.</string>
+    <string name="legacy_moto_hub_closed_unexpectedly_30f439d7">Aplikace RideLink byla neočekávaně ukončena</string>
+    <string name="legacy_the_last_time_you_used_moto_hub_it_stopped_becau_8448d27c">Při posledním použití aplikace RideLink došlo k chybě a jejímu zastavení. Odeslání diagnostické zprávy umožní vývojáři zjistit příčinu.</string>
+    <string name="legacy_the_report_contains_your_motorcycle_s_dashboard__f4208b9f">Zpráva obsahuje model palubní desky vašich motocyklů, model telefonu, verze systémů Android a Android Auto, nainstalované verze RideLink a protokol událostí aplikace včetně chyby. Hesla, poloha a hardwarové adresy se nikdy neodesílají.</string>
     <string name="legacy_send_reports_automatically_from_now_on_7cdd2209">Odteraz odesílat zprávy automaticky</string>
     <string name="legacy_send_report_55908cac">Odeslat zprávu</string>
     <string name="legacy_how_your_data_is_handled_ff77c87f">Jak je nakládáno s vašimi daty</string>
     <string name="legacy_not_now_e202d7e9">Nyní ne</string>
-    <string name="legacy_help_improve_moto_hub_9bf5292c">Pomozte vylepšit MOTO-HUB</string>
-    <string name="legacy_moto_hub_can_send_a_diagnostics_report_to_the_de_36cc6ba6">MOTO-HUB může vývojáři odesílat diagnostickou zprávu: model palubní desky motocyklu, model telefonu, verze systémů Android, Android Auto, nainstalované verze MOTO-HUB a protokol událostí aplikace. Hesla, poloha a hardwarové adresy se nikdy neodesílají.</string>
+    <string name="legacy_help_improve_moto_hub_9bf5292c">Pomozte vylepšit RideLink</string>
+    <string name="legacy_moto_hub_can_send_a_diagnostics_report_to_the_de_36cc6ba6">RideLink může vývojáři odesílat diagnostickou zprávu: model palubní desky motocyklu, model telefonu, verze systémů Android, Android Auto, nainstalované verze RideLink a protokol událostí aplikace. Hesla, poloha a hardwarové adresy se nikdy neodesílají.</string>
     <string name="legacy_reports_go_out_at_most_once_a_day_after_an_updat_6fc12b8d">Zprávy se odesílají maximálně jednou denně, po aktualizaci nebo po pádu aplikace, a to pouze přes připojení s přístupem k internetu. Vaše ID podpory je zobrazeno v Nastavení ▸ Diagnostika, kde lze tuto funkci kdykoli zapnout nebo vypnout.</string>
     <string name="legacy_send_reports_5c810947">Odesílat zprávy</string>
     <string name="legacy_diagnostics_privacy_notice_1f708f84">Oznámení o ochraně osobních údajů diagnostiky</string>
     <string name="legacy_support_id_5239972c">ID podpory</string>
-    <string name="legacy_moto_hub_support_id_7149b87">ID podpory MOTO-HUB</string>
+    <string name="legacy_moto_hub_support_id_7149b87">ID podpory RideLink</string>
     <string name="legacy_tap_to_copy_quote_it_when_asking_for_help_it_ide_edc7231">Klepnutím zkopírujete. Uveďte jej při žádosti o pomoc; identifikuje tento telefon a motocykl.</string>
     <string name="legacy_support_id_copied_63da1e38">ID podpory zkopírováno</string>
     <string name="legacy_what_gets_sent_f4a13bbf">Co se odesílá</string>
@@ -1916,13 +1916,13 @@
     <string name="legacy_a_report_sent_now_carries_that_log_so_it_says_no_cb65d9dc">Zpráva odeslaná nyní obsahuje tento protokol, takže neříká nic o tom, co aplikace dělá dnes. Chcete-li nahlásit problém, zapněte znovu Povolit protokolování, vyvolejte problém znovu a poté zprávu odešlete.</string>
     <string name="legacy_that_worked_keep_it_b0100883">Fungovalo to – zachovat?</string>
     <string name="legacy_your_dashboard_is_now_accepting_the_picture_on_t_a2e41389">Vaše palubní deska nyní přijímá obraz v profilu %1$s. Používat jej i nadále pro tento motocykl?</string>
-    <string name="legacy_you_have_just_found_out_something_moto_hub_could_5d173f67">Právě jste zjistili něco, co MOTO-HUB nedokázal sám určit: který profil tato palubní deska skutečně přijímá. Odesláním protokolu to budete sdílet, takže další jezdec s vaším motocyklem získá správné nastavení hned napoprvé.</string>
+    <string name="legacy_you_have_just_found_out_something_moto_hub_could_5d173f67">Právě jste zjistili něco, co RideLink nedokázal sám určit: který profil tato palubní deska skutečně přijímá. Odesláním protokolu to budete sdílet, takže další jezdec s vaším motocyklem získá správné nastavení hned napoprvé.</string>
     <string name="legacy_send_my_log_now_80f590fe">Odeslat můj protokol nyní</string>
     <string name="legacy_send_logs_automatically_from_now_on_1efdfbe9">Odteraz odesílat protokoly automaticky</string>
     <string name="legacy_keep_it_318f8786">Ponechat</string>
     <string name="legacy_undo_284d04">Zpět</string>
     <string name="legacy_try_another_profile_2632e907">Zkusit jiný profil</string>
-    <string name="legacy_the_connection_to_your_motorcycle_is_fine_the_da_6a78bba4">Připojení k motocyklu je v pořádku – palubní deska pouze odmítá obraz ve formátu, ve kterém je odesílán. Jiný profil tento formát změní. Výběrem profilu se připojení ihned obnoví, a pokud jej palubní deska začne zobrazovat, MOTO-HUB se dotáže, zda jej chcete zachovat.</string>
+    <string name="legacy_the_connection_to_your_motorcycle_is_fine_the_da_6a78bba4">Připojení k motocyklu je v pořádku – palubní deska pouze odmítá obraz ve formátu, ve kterém je odesílán. Jiný profil tento formát změní. Výběrem profilu se připojení ihned obnoví, a pokud jej palubní deska začne zobrazovat, RideLink se dotáže, zda jej chcete zachovat.</string>
     <string name="legacy_your_dashboard_is_not_showing_this_9765fbe3">VAŠE PALUBNÍ DESKA TOTO NEZOBRAZUJE</string>
     <string name="legacy_connected_but_the_picture_is_being_refused_tap_t_b17b1097">Připojeno, ale obraz je odmítán. Klepnutím vyzkoušejte jiný profil.</string>
     <string name="legacy_connected_not_displaying_53b322ca">PŘIPOJENO, NEZOBRAZUJE SE</string>
@@ -1936,30 +1936,30 @@
     <string name="legacy_android_auto_is_waiting_for_one_step_from_you_31eacac3">Android Auto čeká na jeden krok z vaší strany</string>
     <string name="legacy_session_is_being_prepared_742c490a">Relace se připravuje</string>
     <string name="legacy_button_presses_are_off_2952e766">STISKY TLAČÍTEK JSOU VYPNUTY</string>
-    <string name="legacy_moto_hub_advanced_owns_this_setting_and_writes_i_b8e328f7">Toto nastavení spravuje MOTO-HUB ADVANCED a přepisuje je, takže je zapněte tam, nikoli zde.</string>
+    <string name="legacy_moto_hub_advanced_owns_this_setting_and_writes_i_b8e328f7">Toto nastavení spravuje RideLink ADVANCED a přepisuje je, takže je zapněte tam, nikoli zde.</string>
     <string name="legacy_turn_presses_back_on_9d506146">Znovu zapnout stisky</string>
     <string name="legacy_these_drive_the_ride_dashboard_so_they_do_nothin_d4d30d86">Tyto prvky ovládají Ride Dashboard, takže nic nedělají, pokud aplikace neběží – samotná relace Android Auto nestačí.</string>
     <string name="legacy_show_button_presses_on_the_dashboard_4ed2cd5e">Zobrazovat stisky tlačítek na palubní desce</string>
 
     <!-- Source: feature/controls — the handlebar page after the Bluetooth controller was removed -->
-    <string name="legacy_your_motorcycle_s_own_handlebar_drives_moto_hub__f19519f3">MOTO-HUB se ovládá přímo z řídítek vašeho motocyklu. Jednou je nastavte a poté každému tlačítku přiřaďte požadovanou akci.</string>
+    <string name="legacy_your_motorcycle_s_own_handlebar_drives_moto_hub__f19519f3">RideLink se ovládá přímo z řídítek vašeho motocyklu. Jednou je nastavte a poté každému tlačítku přiřaďte požadovanou akci.</string>
     <string name="legacy_presses_still_arrive_and_still_show_up_on_this_p_62dfa27d">Stisky stále přicházejí a zobrazují se na této stránce – neprovádí se s nimi však žádná akce.</string>
     <string name="legacy_every_handlebar_press_432fb397">Každé stisknutí na řídítkách </string>
     <!-- Home: MOTO-HUB ADVANCED promo card and dialog -->
-    <string name="legacy_couldn_t_open_moto_hub_advanced_89c059e1">MOTO-HUB ADVANCED nelze otevřít.</string>
-    <string name="legacy_moto_hub_advanced_1cc3b73d">MOTO-HUB ADVANCED</string>
+    <string name="legacy_couldn_t_open_moto_hub_advanced_89c059e1">RideLink ADVANCED nelze otevřít.</string>
+    <string name="legacy_moto_hub_advanced_1cc3b73d">RideLink ADVANCED</string>
     <string name="legacy_dashboard_navigation_and_trips_installed_on_this_7ffa5bb9">Palubní deska, navigace a jízdy – nainstalováno v tomto telefonu.</string>
     <string name="legacy_free_companion_app_dashboard_navigation_trips_an_256e51cd">Bezplatná doprovodná aplikace: palubní deska, navigace, jízdy a další.</string>
     <string name="legacy_open_259a6a">Otevřít</string>
     <string name="legacy_see_what_it_adds_c8867b38">Zjistit, co přináší navíc</string>
-    <string name="legacy_a_second_free_app_that_installs_next_to_moto_hub_96f5853f">Druhá bezplatná aplikace, která se nainstaluje vedle MOTO-HUB a promění stejnou palubní desku v plnohodnotný palubní počítač. Nevyžaduje žádný další hardware.</string>
+    <string name="legacy_a_second_free_app_that_installs_next_to_moto_hub_96f5853f">Druhá bezplatná aplikace, která se nainstaluje vedle RideLink a promění stejnou palubní desku v plnohodnotný palubní počítač. Nevyžaduje žádný další hardware.</string>
     <string name="legacy_ride_dashboard_gps_speed_live_map_and_trip_stats_e664cbab">Ride Dashboard – GPS rychlost, živá mapa a statistiky jízdy na TFT</string>
     <string name="legacy_navigation_search_motorcycle_routing_and_route_p_269dbf5a">Navigace – vyhledávání, plánování tras pro motocykly a náhled trasy</string>
     <string name="legacy_on_the_route_weather_fuel_prices_and_speed_camer_1ec23092">Na trase – počasí, ceny paliv a rychlostní kamery</string>
     <string name="legacy_trips_recording_replay_analysis_and_gpx_export_ec08e237">Jízdy – záznam, přehrávání, analýza a export do GPX</string>
     <string name="legacy_ai_place_discovery_and_a_post_ride_riding_coach_34d4ea13">AI objevování míst a trenér jízdy po dokončení trasy</string>
     <string name="legacy_group_intercom_rider_to_rider_voice_70e92f1a">Skupinový interkom – hlasová komunikace mezi jezdci</string>
-    <string name="legacy_moto_hub_stays_in_charge_of_the_motorcycle_pairi_6ccf9308">MOTO-HUB zůstává zodpovědný za motocykl: párování, připojení a Android Auto zde běžný dál. Nainstalujte stejnou verzi obou aplikací.</string>
+    <string name="legacy_moto_hub_stays_in_charge_of_the_motorcycle_pairi_6ccf9308">RideLink zůstává zodpovědný za motocykl: párování, připojení a Android Auto zde běžný dál. Nainstalujte stejnou verzi obou aplikací.</string>
     <string name="legacy_download_advanced_66a9c89a">Stáhnout ADVANCED</string>
     <string name="legacy_resolution_177354cc">Rozlišení</string>
     <string name="legacy_the_video_source_android_auto_sends_to_the_dashb_a90d80a4">Zdroj videa, který Android Auto odesílá na palubní desku</string>
@@ -1972,34 +1972,34 @@
     <string name="legacy_1_s_is_holding_the_dashboard_connection_f85acc07">Aplikace %1$s blokuje připojení k palubní desce</string>
     <string name="legacy_another_app_is_holding_the_dashboard_connection_2f8f3870">Jiná aplikace blokuje připojení k palubní desce</string>
     <string name="legacy_force_stop_your_motorcycle_s_own_companion_app_f_47bc5899">Vynuceně ukončete vlastní doprovodnou aplikaci motocyklu na její stránce Informace o aplikaci a zkuste to znovu – systém Android neumožňuje jedné aplikaci uvolnit připojení jiné aplikace.</string>
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_keep_74219a6">Pokud zůstala na obrazovce párování, MOTO-HUB zkouší další video formáty, dokud některý nezafunguje. Pokud ostatní jezdci se stejnou palubní deskou tento formát již potvrdili, aplikace se vás před pokračováním dotáže ještě jednou.</string>
-    <string name="legacy_if_your_other_moto_hub_app_is_running_a_session__263cbf82">Pokud vaše druhá aplikace MOTO-HUB spouští relaci na tomto telefonu, ukončete raději ji.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_keep_74219a6">Pokud zůstala na obrazovce párování, RideLink zkouší další video formáty, dokud některý nezafunguje. Pokud ostatní jezdci se stejnou palubní deskou tento formát již potvrdili, aplikace se vás před pokračováním dotáže ještě jednou.</string>
+    <string name="legacy_if_your_other_moto_hub_app_is_running_a_session__263cbf82">Pokud vaše druhá aplikace RideLink spouští relaci na tomto telefonu, ukončete raději ji.</string>
     <string name="legacy_import_qr_from_an_image_65acae9a">Importovat QR kód z obrázku</string>
-    <string name="legacy_moto_hub_will_connect_on_its_own_when_the_dashbo_9f3fe52b">MOTO-HUB se připojí automaticky, jakmile se palubní deska spustí.</string>
+    <string name="legacy_moto_hub_will_connect_on_its_own_when_the_dashbo_9f3fe52b">RideLink se připojí automaticky, jakmile se palubní deska spustí.</string>
     <string name="legacy_on_this_phone_that_is_almost_always_1_s_force_st_26b6b463">Na tomto telefonu je to téměř vždy %1$s. Vynuceně ji ukončete na její stránce Informace o aplikaci a zkuste to znovu – systém Android neumožňuje jedné aplikaci uvolnit připojení jiné aplikace.</string>
-    <string name="legacy_shown_while_moto_hub_watches_for_the_motorcycle__5410550d">Zobrazuje se, zatímco MOTO-HUB vyhledává Wi-Fi síť motocyklu.</string>
-    <string name="legacy_the_three_local_ports_moto_hub_needs_for_the_das_ac32b51a">Tři místní porty, které MOTO-HUB potřebuje pro palubní desku (%1$s), se v současnosti používají, takže připojení by selhalo.</string>
+    <string name="legacy_shown_while_moto_hub_watches_for_the_motorcycle__5410550d">Zobrazuje se, zatímco RideLink vyhledává Wi-Fi síť motocyklu.</string>
+    <string name="legacy_the_three_local_ports_moto_hub_needs_for_the_das_ac32b51a">Tři místní porty, které RideLink potřebuje pro palubní desku (%1$s), se v současnosti používají, takže připojení by selhalo.</string>
     <string name="legacy_try_anyway_909523a8">Přesto zkuste</string>
     <string name="legacy_waiting_for_s_c5c92cf8">Čekání na %s</string>
     <string name="legacy_waiting_for_the_motorcycle_24d361aa">Čekání na motocykl</string>
     <!-- Source: trips/TripAnalysisScreen.kt, home/HubHomeScreen.kt, companion, ai/AiPreset, and the service notifications - literals that reached a lookup indirectly, or were never wrapped -->
-    <string name="legacy_1_s_in_moto_hub_advanced_is_coming_soon_use_moto_6bcb37c0">%1$s bude v MOTO-HUB Advanced brzy (zatím použijte MOTO-HUB Core).</string>
+    <string name="legacy_1_s_in_moto_hub_advanced_is_coming_soon_use_moto_6bcb37c0">%1$s bude v RideLink Advanced brzy (zatím použijte RideLink Core).</string>
     <string name="legacy_import_qr_6b03505c">Importovat QR</string>
     <string name="legacy_scan_new_qr_ed7e6784">Naskenovat nový QR</string>
     <!-- Source: feature/home - the secondary actions under the pairing and projection cards -->
     <string name="legacy_how_to_start_android_auto_e44c5dd3">Jak spustit Android Auto</string>
     <string name="legacy_open_wi_fi_settings_299670db">Otevřít nastavení Wi-Fi</string>
-    <string name="legacy_couldn_t_open_moto_hub_adv_solo_67eb730a">MOTO-HUB ADV-SOLO se nepodařilo otevřít.</string>
-    <string name="legacy_moto_hub_adv_solo_1bac54f4">MOTO-HUB ADV-SOLO</string>
+    <string name="legacy_couldn_t_open_moto_hub_adv_solo_67eb730a">RideLink ADV-SOLO se nepodařilo otevřít.</string>
+    <string name="legacy_moto_hub_adv_solo_1bac54f4">RideLink ADV-SOLO</string>
     <string name="legacy_free_app_that_replaces_this_one_dashboard_naviga_f14ef8b3">Bezplatná aplikace, která nahrazuje tuto: přístrojovka, navigace, jízdy a další.</string>
     <string name="legacy_installed_on_this_phone_136503e7">NAINSTALOVÁNO V TOMTO TELEFONU</string>
     <string name="legacy_free_app_d2eb824d">BEZPLATNÁ APLIKACE</string>
-    <string name="legacy_everything_moto_hub_does_and_a_full_riding_compu_5afce456">Vše, co umí MOTO-HUB, a k tomu plnohodnotný palubní počítač.</string>
-    <string name="legacy_moto_hub_adv_solo_is_a_free_app_that_replaces_th_9d1bc46c">MOTO-HUB ADV-SOLO je bezplatná aplikace, která nahrazuje tuto a z vašeho TFT udělá plnohodnotný palubní počítač: vlastní přístrojovka, navigace, zaznamenané jízdy. Žádné předplatné, žádný účet ani další hardware - využívá T-Box, který už máte.</string>
+    <string name="legacy_everything_moto_hub_does_and_a_full_riding_compu_5afce456">Vše, co umí RideLink, a k tomu plnohodnotný palubní počítač.</string>
+    <string name="legacy_moto_hub_adv_solo_is_a_free_app_that_replaces_th_9d1bc46c">RideLink ADV-SOLO je bezplatná aplikace, která nahrazuje tuto a z vašeho TFT udělá plnohodnotný palubní počítač: vlastní přístrojovka, navigace, zaznamenané jízdy. Žádné předplatné, žádný účet ani další hardware - využívá T-Box, který už máte.</string>
     <string name="legacy_what_it_adds_cdd0b86b">CO PŘIDÁVÁ</string>
     <string name="legacy_moving_to_adv_solo_21f5a90c">PŘECHOD NA ADV-SOLO</string>
     <string name="legacy_adv_solo_connects_to_the_motorcycle_on_its_own_p_ad9d6a7e">ADV-SOLO se k motocyklu připojí sám: párování, připojení Wi-Fi, tlačítka na řídítkách i Android Auto běží uvnitř něj. Tuto aplikaci nepotřebuje.</string>
-    <string name="legacy_install_it_and_connect_your_motorcycle_there_the_526ab2e">Nainstalujte ho, připojte v něm motocykl a pak odeberte MOTO-HUB - ADV-SOLO vám to nabídne. Motocykly spárované tady se nepřenesou: spárujte je znovu v ADV-SOLO.</string>
+    <string name="legacy_install_it_and_connect_your_motorcycle_there_the_526ab2e">Nainstalujte ho, připojte v něm motocykl a pak odeberte RideLink - ADV-SOLO vám to nabídne. Motocykly spárované tady se nepřenesou: spárujte je znovu v ADV-SOLO.</string>
     <string name="legacy_links_4515799">ODKAZY</string>
     <string name="legacy_more_ways_to_start_dfa7360e">DALŠÍ ZPŮSOBY, JAK ZAČÍT</string>
     <string name="legacy_one_step_is_waiting_for_you_ad249079">Čeká na vás jeden krok</string>
@@ -2018,7 +2018,7 @@
     <!-- MainActivity.kt -->
     <string name="legacy_couldn_t_create_the_log_file_504d3105">Nelze vytvořit soubor protokolu</string>
     <!-- MainActivity.kt -->
-    <string name="legacy_share_moto_hub_log_cd773e0a">Sdílet protokol MOTO-HUB</string>
+    <string name="legacy_share_moto_hub_log_cd773e0a">Sdílet protokol RideLink</string>
     <!-- MainActivity.kt -->
     <string name="legacy_couldn_t_open_github_832a3133">Nelze otevřít GitHub</string>
     <!-- MainActivity.kt -->
@@ -2066,7 +2066,7 @@
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_force_stop_your_motorcycle_s_companion_app_then__f2ae11c7">Vynuceně ukončete doprovodnou aplikaci motocyklu a zkuste to znovu.</string>
     <!-- CompanionConflictGateHost.kt -->
-    <string name="legacy_running_a_session_in_your_other_moto_hub_app_sto_d9007392">Běží relace ve vaší druhé aplikaci MOTO-HUB? Ukončete ji raději tam.</string>
+    <string name="legacy_running_a_session_in_your_other_moto_hub_app_sto_d9007392">Běží relace ve vaší druhé aplikaci RideLink? Ukončete ji raději tam.</string>
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_busy_ports_1_s_b24949ac">Obsazené porty: %1$s</string>
     <!-- CompanionConflictGateHost.kt -->
@@ -2102,7 +2102,7 @@
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_button_presses_are_off_cea4dbe6">Stisknutí tlačítek jsou vypnutá</string>
     <!-- HandlebarMappingScreen.kt -->
-    <string name="legacy_moto_hub_advanced_manages_this_turn_them_on_ther_96e557a5">Toto spravuje MOTO-HUB ADVANCED. Zapněte je tam.</string>
+    <string name="legacy_moto_hub_advanced_manages_this_turn_them_on_ther_96e557a5">Toto spravuje RideLink ADVANCED. Zapněte je tam.</string>
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_they_still_show_up_here_but_do_nothing_c28856a1">Zde se stále zobrazují, ale nic nedělají.</string>
     <!-- HandlebarMappingScreen.kt -->
@@ -2270,7 +2270,7 @@
     <!-- CrashDiagnosticsConsentDialog.kt -->
     <string name="legacy_don_t_send_a6ed6418">Neodesílat</string>
     <!-- CrashDiagnosticsConsentDialog.kt -->
-    <string name="legacy_reports_hold_your_dashboard_and_phone_models_the_adfb4999">Zprávy obsahují modely palubní desky a telefonu, verze systému Android, Android Auto a MOTO-HUB a protokol aplikace. Nikdy hesla, polohy ani hardwarové adresy.</string>
+    <string name="legacy_reports_hold_your_dashboard_and_phone_models_the_adfb4999">Zprávy obsahují modely palubní desky a telefonu, verze systému Android, Android Auto a RideLink a protokol aplikace. Nikdy hesla, polohy ani hardwarové adresy.</string>
     <!-- CrashDiagnosticsConsentDialog.kt -->
     <string name="legacy_send_reports_automatically_3af5d48a">Odesílat zprávy automaticky</string>
     <!-- DiagnosticReportNoticeDialog.kt -->
@@ -2314,19 +2314,19 @@
     <!-- AdvancedPromo.kt -->
     <string name="legacy_adv_solo_connects_to_the_motorcycle_on_its_own_a_654f87f4">ADV-SOLO se k motocyklu připojí samo a tuto aplikaci nepotřebuje.</string>
     <!-- AdvancedPromo.kt -->
-    <string name="legacy_motorcycles_paired_here_don_t_move_across_pair_t_7210a22">Motocykly spárované zde se nepřenesou: spárujte je znovu v ADV-SOLO. To pak může MOTO-HUB odebrat za vás.</string>
+    <string name="legacy_motorcycles_paired_here_don_t_move_across_pair_t_7210a22">Motocykly spárované zde se nepřenesou: spárujte je znovu v ADV-SOLO. To pak může RideLink odebrat za vás.</string>
     <!-- AdvancedPromo.kt -->
     <string name="legacy_no_subscription_no_account_and_no_extra_hardware_5eee8be2">Žádné předplatné, žádný účet a žádný další hardware.</string>
     <!-- AdvancedPromo.kt -->
     <string name="legacy_couldn_t_open_adv_solo_18178329">Nelze otevřít ADV-SOLO</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_2c50c19c">Při posledním připojení k %1$s vypadalo z telefonu vše v pořádku. MOTO-HUB palubní desku nevidí, a proto se musí zeptat.</string>
+    <string name="legacy_last_time_you_connected_to_1_s_everything_looked_2c50c19c">Při posledním připojení k %1$s vypadalo z telefonu vše v pořádku. RideLink palubní desku nevidí, a proto se musí zeptat.</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_trie_5aaac04b">Pokud zůstala obrazovka párování, MOTO-HUB příště zkusí jiný formát videa.</string>
+    <string name="legacy_if_it_stayed_on_the_pairing_screen_moto_hub_trie_5aaac04b">Pokud zůstala obrazovka párování, RideLink příště zkusí jiný formát videa.</string>
     <!-- WireVerdictDialog.kt -->
     <string name="legacy_try_android_auto_once_427c9e5c">Zkuste jednou Android Auto</string>
     <!-- WireVerdictDialog.kt -->
-    <string name="legacy_moto_hub_can_only_test_a_new_video_format_while__40b204fe">MOTO-HUB může nový formát videa testovat jen při spuštěném Android Auto; zrcadlení vždy používá vlastní. Připojte se jednou s Android Auto a hledání bude pokračovat samo.</string>
+    <string name="legacy_moto_hub_can_only_test_a_new_video_format_while__40b204fe">RideLink může nový formát videa testovat jen při spuštěném Android Auto; zrcadlení vždy používá vlastní. Připojte se jednou s Android Auto a hledání bude pokračovat samo.</string>
     <!-- ManualPairingScreen.kt -->
     <string name="legacy_keep_auto_unless_your_dashboard_asks_for_somethi_9fc1ebb3">Ponechte Auto, pokud palubní deska nevyžaduje něco jiného.</string>
     <!-- ManualPairingScreen.kt -->
@@ -2390,11 +2390,11 @@
     <!-- UnverifiedQrDialog.kt -->
     <string name="legacy_this_code_has_wi_fi_details_for_1_s_but_it_comes_694bfb5e">Tento kód obsahuje údaje Wi-Fi pro „%1$s“, ale pochází z neznámého zdroje. U přeznačených palubních desek je to běžné. Pokračujte, jen pokud jste naskenovali vlastní palubní desku.</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_configure_and_check_everything_only_while_parked_9cf36d5b">Vše nastavujte a kontrolujte pouze při zaparkování a MOTO-HUB používejte jen tam, kde je to zcela bezpečné a pod kontrolou.</string>
+    <string name="legacy_configure_and_check_everything_only_while_parked_9cf36d5b">Vše nastavujte a kontrolujte pouze při zaparkování a RideLink používejte jen tam, kde je to zcela bezpečné a pod kontrolou.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_not_a_safety_device_45231678">Nejde o bezpečnostní zařízení</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_moto_hub_can_t_prevent_distraction_crashes_injur_1075bab">MOTO-HUB nedokáže zabránit rozptýlení, nehodám, zraněním ani škodám. Za bezpečnou jízdu v souladu se zákonem odpovídáte výhradně vy.</string>
+    <string name="legacy_moto_hub_can_t_prevent_distraction_crashes_injur_1075bab">RideLink nedokáže zabránit rozptýlení, nehodám, zraněním ani škodám. Za bezpečnou jízdu v souladu se zákonem odpovídáte výhradně vy.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_don_t_show_this_again_1b1445d1">Znovu nezobrazovat</string>
     <!-- SafetyDisclaimerDialog.kt -->
@@ -2406,7 +2406,7 @@
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_hands_off_while_moving_6f454e0a">Za jízdy nesahejte</string>
     <!-- SafetyDisclaimerDialog.kt -->
-    <string name="legacy_never_use_moto_hub_mirroring_android_auto_naviga_e2dad7c8">Nikdy nepoužívejte MOTO-HUB, zrcadlení, Android Auto, navigaci ani žádné ovládací prvky na obrazovce, když je motocykl v pohybu.</string>
+    <string name="legacy_never_use_moto_hub_mirroring_android_auto_naviga_e2dad7c8">Nikdy nepoužívejte RideLink, zrcadlení, Android Auto, navigaci ani žádné ovládací prvky na obrazovce, když je motocykl v pohybu.</string>
     <!-- SafetyDisclaimerDialog.kt -->
     <string name="legacy_set_up_while_parked_da74c35f">Nastavujte při zaparkování</string>
     <!-- GithubUpdateDialog.kt -->
@@ -2434,7 +2434,7 @@
     <!-- GithubUpdateDialog.kt -->
     <string name="legacy_update_available_67de8452">K dispozici je aktualizace</string>
     <!-- GithubUpdateDialog.kt -->
-    <string name="legacy_moto_hub_1_s_is_2_s_your_only_internet_connectio_5f6bb34f">MOTO-HUB %1$s má %2$s. Jediné připojení k internetu je teď %3$s, které si operátor může účtovat.</string>
+    <string name="legacy_moto_hub_1_s_is_2_s_your_only_internet_connectio_5f6bb34f">RideLink %1$s má %2$s. Jediné připojení k internetu je teď %3$s, které si operátor může účtovat.</string>
     <!-- MotoHubKit.kt -->
     <string name="legacy_hide_details_80725d84">Skrýt podrobnosti</string>
     <!-- MotoHubKit.kt -->
@@ -2506,7 +2506,7 @@
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_in_developer_settings_older_versions_call_it_unk_8607841d">Ve Vývojářských nastaveních. Starší verze tomu říkají „Neznámé zdroje“.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_android_auto_17_4_stopped_apps_from_asking_it_to_7813b8db">Android Auto 17.4 přestalo aplikacím dovolovat, aby ho žádaly o spuštění. Server hlavní jednotky místo toho umožní MOTO-HUB připojit se k němu.</string>
+    <string name="legacy_android_auto_17_4_stopped_apps_from_asking_it_to_7813b8db">Android Auto 17.4 přestalo aplikacím dovolovat, aby ho žádaly o spuštění. Server hlavní jednotky místo toho umožní RideLink připojit se k němu.</string>
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_start_it_from_android_auto_s_settings_58bd5018">Spusťte ho z nastavení Android Auto</string>
     <!-- AndroidAutoHelpScreen.kt -->
@@ -2524,15 +2524,15 @@
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_a_notification_confirms_it_it_stays_on_until_you_d7032ba9">Potvrdí to oznámení. Zůstane zapnutý, dokud ho nezastavíte nebo nerestartujete telefon.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_start_android_auto_in_moto_hub_88a06a3e">Spusťte Android Auto v MOTO-HUB</string>
+    <string name="legacy_start_android_auto_in_moto_hub_88a06a3e">Spusťte Android Auto v RideLink</string>
     <!-- HandlebarMappingScreen.kt -->
-    <string name="legacy_moto_hub_adv_solo_manages_this_turn_them_on_ther_4e57c79c">Toto spravuje MOTO-HUB ADV-SOLO. Zapněte je tam.</string>
+    <string name="legacy_moto_hub_adv_solo_manages_this_turn_them_on_ther_4e57c79c">Toto spravuje RideLink ADV-SOLO. Zapněte je tam.</string>
     <!-- HandlebarMappingScreen.kt -->
     <string name="legacy_bluetooth_is_on_f867c483">Bluetooth je zapnutý</string>
     <!-- ApplicationLogScreen.kt -->
     <string name="legacy_clear_log_2b9a16d1">Vymazat protokol</string>
     <!-- ApplicationLogScreen.kt -->
-    <string name="legacy_what_moto_hub_recorded_on_this_phone_759bb17c">Záznamy MOTO-HUB v tomto telefonu</string>
+    <string name="legacy_what_moto_hub_recorded_on_this_phone_759bb17c">Záznamy RideLink v tomto telefonu</string>
     <!-- SupportIdSection.kt -->
     <string name="legacy_report_sent_513f32e4">Zpráva odeslána</string>
     <!-- SupportIdSection.kt -->
@@ -2628,7 +2628,7 @@
     <!-- MotorcycleDetailsScreen.kt -->
     <string name="legacy_developer_72a307aa">Pro vývojáře</string>
     <!-- TBoxCapabilityScreen.kt -->
-    <string name="legacy_shown_exactly_as_the_dashboard_reports_them_moto_d96e413e">Zobrazeno přesně tak, jak je palubní deska hlásí; MOTO-HUB model neodhaduje.</string>
+    <string name="legacy_shown_exactly_as_the_dashboard_reports_them_moto_d96e413e">Zobrazeno přesně tak, jak je palubní deska hlásí; RideLink model neodhaduje.</string>
     <!-- TBoxCapabilityScreen.kt -->
     <string name="legacy_software_and_protocol_f6ffc7a">Software a protokol</string>
     <!-- TBoxCapabilityScreen.kt -->
@@ -2700,7 +2700,7 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_finding_the_dashboard_3d3e712e">Hledání palubní desky</string>
     <!-- HubHomeScreen.kt -->
-    <string name="legacy_this_can_take_up_to_90_seconds_keep_moto_hub_ope_453bf935">Může to trvat až 90 sekund. Nezavírejte MOTO-HUB.</string>
+    <string name="legacy_this_can_take_up_to_90_seconds_keep_moto_hub_ope_453bf935">Může to trvat až 90 sekund. Nezavírejte RideLink.</string>
     <!-- HubHomeScreen.kt -->
     <string name="legacy_show_on_the_dashboard_b400b3c7">Zobrazit na palubní desce</string>
     <!-- HubHomeScreen.kt -->
@@ -2762,7 +2762,7 @@
     <!-- RideFailure.kt -->
     <string name="legacy_allow_nearby_devices_e2204213">Povolte zařízení v okolí</string>
     <!-- RideFailure.kt -->
-    <string name="legacy_moto_hub_needs_it_to_find_the_dashboard_s_wi_fi_8ec6838">MOTO-HUB to potřebuje k nalezení Wi-Fi palubní desky.</string>
+    <string name="legacy_moto_hub_needs_it_to_find_the_dashboard_s_wi_fi_8ec6838">RideLink to potřebuje k nalezení Wi-Fi palubní desky.</string>
     <!-- RideFailure.kt -->
     <string name="legacy_they_keep_streaming_visible_and_let_you_stop_it_4b06c443">Díky nim je streamování vidět a můžete ho zastavit.</string>
     <!-- RideFailure.kt -->
@@ -2954,7 +2954,7 @@
     <!-- ProfileOverride.kt -->
     <string name="legacy_sends_still_pictures_b50c85a2">Posílá statické snímky</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_your_phone_closed_moto_hub_48b081a">Telefon ukončil MOTO-HUB</string>
+    <string name="legacy_your_phone_closed_moto_hub_48b081a">Telefon ukončil RideLink</string>
     <!-- SystemKillNotice.kt -->
     <string name="legacy_at_1_s_while_it_was_running_b9d8bf70">V %1$s, zatímco běžela.</string>
     <!-- SystemKillNotice.kt -->
@@ -2970,7 +2970,7 @@
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Telefon může %1$s na pozadí ukončit. Vyjmutí z optimalizace baterie to na dlouhé jízdě výrazně omezí.</string>
     <!-- AndroidAutoHelpScreen.kt -->
-    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Povolte MOTO-HUB připojení</string>
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Povolte RideLink připojení</string>
     <!-- AndroidAutoHelpScreen.kt -->
     <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Na stejné obrazovce otevřete ⋮ a klepněte na „Spustit server hlavní jednotky“.</string>
     <!-- AndroidAutoHelpScreen.kt -->
