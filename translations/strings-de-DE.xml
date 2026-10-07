@@ -2982,4 +2982,8 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_motorcycle_options_8e431f2f">Motorradoptionen</string>
     <string name="legacy_motorcycle_details_35958ad3">Motorraddetails</string>
+    <string name="legacy_source_code_5adeb6b2">Quellcode</string>
+    <string name="legacy_based_on_moto_hub_145772b9">Basiert auf MOTO-HUB</string>
+    <string name="legacy_by_vincenzo_buonomano_agpl_3_0_3648a352">Von Vincenzo Buonomano · AGPL-3.0</string>
+    <string name="legacy_ridelink_is_an_independent_personal_fork_of_moto_ad8e56b4">RideLink ist ein unabhängiger, privater Fork von MOTO-HUB und freie Software unter der GNU AGPL v3. Es steht in keiner Verbindung zu Carbit, CFMOTO, anderen Herstellern, deren Cockpit EasyConn nutzt, Google oder Android Auto und wird von diesen weder unterstützt noch gesponsert. Alle Produktnamen und Marken gehören ihren jeweiligen Inhabern.</string>
 </resources>

@@ -1684,7 +1684,7 @@ class MediaButtonBridge(
         if (appearancePublished && !force) return
         session?.setMetadata(
             MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, "MOTO-HUB controls")
+                .putString(MediaMetadata.METADATA_KEY_TITLE, motoHubText("MOTO-HUB controls"))
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, "Handlebar controls for $targetName")
                 .putLong(MediaMetadata.METADATA_KEY_DURATION, TRACK_DURATION_MS)
                 .build()
