@@ -15,16 +15,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.ToggleOn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.ui.components.MhFootnote
+import io.motohub.android.ui.components.MhIconCircle
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhPrimaryButton
 import io.motohub.android.ui.components.MhScreen
@@ -61,7 +64,7 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     MhScreen(
         title = motoHubText("Android Auto won't start"),
-        subtitle = motoHubText("Start it from Android Auto's own settings. Nothing to install."),
+        subtitle = motoHubText("Start it from Android Auto's settings"),
         onBack = onBack,
         bottomBar = {
             MhPrimaryButton(
@@ -99,10 +102,11 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
         }
         MhSectionHeader(motoHubText("Also worth doing"))
         MhListGroup {
+            // Not step 5: it isn't part of the sequence above, so it gets a glyph, not a number.
             StepRow(
-                5,
-                motoHubText("Turn on “Add new cars to Android Auto”"),
-                motoHubText("In Developer settings. Older versions call it “Unknown sources”.")
+                icon = Icons.Rounded.ToggleOn,
+                title = motoHubText("Turn on “Add new cars to Android Auto”"),
+                body = motoHubText("In Developer settings. Older versions call it “Unknown sources”.")
             )
         }
         MhFootnote(
@@ -116,21 +120,26 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
 
 /**
  * A numbered step laid out like an MhListRow: the number in a neutral circle where a row's icon
- * goes, never lime - nothing here is tappable. ponytail: MhListRow takes only an icon, and the
- * kit has no numeral glyphs.
+ * goes, never lime - nothing here is tappable. An [icon] takes the number's place, same circle,
+ * for a tip outside the sequence. ponytail: MhListRow takes only an icon, and the kit has no
+ * numeral glyphs.
  */
 @Composable
-private fun StepRow(number: Int, title: String, body: String) {
+private fun StepRow(number: Int = 0, title: String, body: String, icon: ImageVector? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            Modifier.size(32.dp).background(MotoHubColors.Fill, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("$number", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+        if (icon != null) {
+            MhIconCircle(icon, size = 32.dp)
+        } else {
+            Box(
+                Modifier.size(32.dp).background(MotoHubColors.Fill, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("$number", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+            }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
