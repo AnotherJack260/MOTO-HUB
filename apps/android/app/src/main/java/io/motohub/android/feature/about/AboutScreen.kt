@@ -6,22 +6,22 @@ package io.motohub.android.feature.about
 import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.i18n.motoHubText
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,11 +29,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.motohub.android.BuildConfig
 import io.motohub.android.ui.components.MhFootnote
-import io.motohub.android.ui.components.MhIconCircle
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
 import io.motohub.android.ui.components.MhScreen
 import io.motohub.android.ui.components.MhSectionHeader
+import io.motohub.android.ui.components.ScreenSlideTransition
 
 const val MOTO_HUB_GITHUB_URL = "https://github.com/vincenzobpt/MOTO-HUB"
 const val MOTO_HUB_DISCORD_URL = "https://discord.gg/FzhXZtPhC8"
@@ -58,21 +58,50 @@ fun AboutScreen(
      *  rather than taking a tap the running check would swallow. */
     checkingForUpdates: Boolean = false
 ) {
+    // The two long paragraphs live one row away, on their own page: read once, they were the bulk
+    // of About on every later visit.
+    var showLegal by rememberSaveable { mutableStateOf(false) }
+    ScreenSlideTransition(screen = showLegal, isBase = { !it }, label = "about-legal") { legal ->
+        if (legal) {
+            LegalScreen(onBack = { showLegal = false })
+        } else {
+            AboutContent(
+                onOpenGithub = onOpenGithub,
+                onOpenDiscord = onOpenDiscord,
+                onCheckUpdates = onCheckUpdates,
+                onOpenLegal = { showLegal = true },
+                onBack = onBack,
+                onUnlockPrototype = onUnlockPrototype,
+                showsMaps = showsMaps,
+                checkingForUpdates = checkingForUpdates
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutContent(
+    onOpenGithub: () -> Unit,
+    onOpenDiscord: () -> Unit,
+    onCheckUpdates: () -> Unit,
+    onOpenLegal: () -> Unit,
+    onBack: () -> Unit,
+    onUnlockPrototype: (() -> Unit)?,
+    showsMaps: Boolean,
+    checkingForUpdates: Boolean
+) {
     val context = LocalContext.current
     // Android developer-options style easter egg. The count resets every time the About screen is
     // reopened, and the row is not clickable at all in an edition that passes no unlock.
     var tapCount by remember { mutableIntStateOf(0) }
 
-    MhScreen(title = null, onBack = onBack) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            MhIconCircle(Icons.Rounded.TwoWheeler, size = 56.dp)
-            Text("MOTO-HUB", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(
-                motoHubText("Mirroring and Android Auto for dashboards that pair over EasyConn."),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+    // Titled like the row that opens it, with the one-line pitch under it: no hero, the same
+    // large title every other screen has.
+    MhScreen(
+        title = motoHubText("About MOTO-HUB"),
+        subtitle = motoHubText("Mirroring and Android Auto for dashboards that pair over EasyConn."),
+        onBack = onBack
+    ) {
         MhListGroup {
             MhListRow(
                 title = motoHubText("Version"),
@@ -128,15 +157,26 @@ fun AboutScreen(
                 onClick = onOpenGithub
             )
         }
+        MhListGroup {
+            MhListRow(title = motoHubText("Legal"), icon = Icons.Rounded.Gavel, onClick = onOpenLegal)
+        }
+        // Not behind Legal: OpenStreetMap asks for its credit one step from the map at most.
         if (showsMaps) MapCredits()
-        MhFootnote(
+    }
+}
+
+/** The experimental-use warning and the independence notice, word for word as About had them. */
+@Composable
+private fun LegalScreen(onBack: () -> Unit) {
+    MhScreen(title = motoHubText("Legal"), onBack = onBack) {
+        LegalParagraph(
             motoHubText(
                 "Experimental software, tested on a CFMOTO 700MT-ADV with OnePlus 13 and Galaxy Z Fold4 " +
                     "phones. Other motorcycles and phones may behave differently or not connect. Don't " +
                     "rely on it for critical navigation; use it at your own risk."
             )
         )
-        MhFootnote(
+        LegalParagraph(
             motoHubText(
                 "MOTO-HUB is an independent project. It is not affiliated with, endorsed by, " +
                     "or sponsored by Carbit, CFMOTO, any other manufacturer whose dashboard uses " +
@@ -145,6 +185,11 @@ fun AboutScreen(
             )
         )
     }
+}
+
+@Composable
+private fun LegalParagraph(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /**

@@ -5,6 +5,8 @@ package io.motohub.android.feature.update
 
 import io.motohub.android.i18n.motoHubText
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,6 +47,7 @@ import io.motohub.android.BuildConfig
 import io.motohub.android.ui.components.MhBanner
 import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhPrimaryButton
 import io.motohub.android.ui.components.MhSecondaryButton
 import io.motohub.android.ui.components.MhSectionHeader
@@ -79,114 +84,150 @@ fun GithubUpdateDialog(
     // capabilities for each, which is binder work, and this runs from a tap.
     val networkScope = rememberCoroutineScope()
     val installing = installingTag == release.tagName
-    val metered = meteredConfirmation
+    // Kept for the fold out: the banner leaves with the words it came with.
+    val lastError = remember { mutableStateOf(error) }
+    if (error != null) lastError.value = error
     // The metered question is the same sheet with its words swapped, not a second window on top.
-    MhSheet(
-        onDismiss = onDismiss,
-        title = if (metered != null) {
-            motoHubText("Download over %1\$s?", metered.networkDescription)
-        } else {
-            motoHubText("Update available")
-        },
-        body = metered?.let {
-            motoHubText(
-                "MOTO-HUB %1\$s is %2\$s. Your only Internet connection right now is %3\$s, which " +
-                    "your operator may charge for.",
-                it.release.versionName,
-                with(GithubUpdateInstaller) { it.release.apkAsset.sizeText() },
-                it.networkDescription
-            )
-        }
-    ) { close ->
-        if (metered != null) {
-            MeteredQuestion(
-                onDownload = {
-                    meteredConfirmation = null
-                    onInstall(metered.release)
-                },
-                onWait = { meteredConfirmation = null }
-            )
-        } else {
-            MhListRow(
-                title = motoHubText("New version"),
-                trailing = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (release.isPrerelease) MhStatusChip(motoHubText("Pre-release"), MhTone.NEUTRAL)
-                        MonoValue(release.versionName)
-                    }
-                }
-            )
-            MhListRow(
-                title = motoHubText("Installed version"),
-                trailing = { MonoValue("${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") }
-            )
-            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (release.title.isNotBlank() && release.title != release.versionName) {
-                    Text(release.title, style = MaterialTheme.typography.titleMedium)
-                }
-                if (release.notes.isNotBlank()) {
-                    MhSectionHeader(motoHubText("What's new"))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp)
-                            .clip(MaterialTheme.shapes.large)
-                            .background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        Text(
-                            releaseNotesAnnotated(release.notes),
-                            modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+    // Title, body and actions swap as one block, fading through while the sheet's height follows
+    // on the same clock - the kit's own title and body would have snapped while the rest faded.
+    MhSheet(onDismiss = onDismiss) { close ->
+        AnimatedContent(
+            targetState = meteredConfirmation,
+            transitionSpec = { MhMotion.fadeThrough(animateHeight = true) },
+            label = "update-sheet"
+        ) { metered ->
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SheetHeading(
+                    title = if (metered != null) {
+                        motoHubText("Download over %1\$s?", metered.networkDescription)
+                    } else {
+                        motoHubText("Update available")
+                    },
+                    body = metered?.let {
+                        motoHubText(
+                            "MOTO-HUB %1\$s is %2\$s. Your only Internet connection right now is %3\$s, which " +
+                                "your operator may charge for.",
+                            it.release.versionName,
+                            with(GithubUpdateInstaller) { it.release.apkAsset.sizeText() },
+                            it.networkDescription
                         )
                     }
-                }
-                if (error != null) {
-                    MhBanner(
-                        title = motoHubText("Couldn't install the update"),
-                        details = {
-                            Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                )
+                if (metered != null) {
+                    MeteredQuestion(
+                        onDownload = {
+                            meteredConfirmation = null
+                            onInstall(metered.release)
+                        },
+                        onWait = { meteredConfirmation = null }
+                    )
+                } else {
+                    MhListRow(
+                        title = motoHubText("New version"),
+                        trailing = {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (release.isPrerelease) MhStatusChip(motoHubText("Pre-release"), MhTone.NEUTRAL)
+                                MonoValue(release.versionName)
+                            }
                         }
                     )
-                }
-                when {
-                    release.apkAsset == null ->
-                        MhBanner(title = motoHubText("This release has no APK to install"), tone = MhTone.WARNING)
-                    !canInstallUnknownSources ->
-                        MhPrimaryButton(motoHubText("Allow installing updates"), onAllowUnknownSources)
-                    else -> {
-                        if (installing) DownloadProgressRow(installingProgress)
-                        MhPrimaryButton(
-                            motoHubText("Download and install"),
-                            loading = installing,
-                            onClick = {
-                                // The one place the metered question is asked, so no caller can
-                                // ship an Install button that skips it. A definitely-metered
-                                // network gets a confirmation; everything else - Wi-Fi, an
-                                // unmetered plan, a network Android will not describe - starts
-                                // the download as before.
-                                networkScope.launch {
-                                    val network = withContext(Dispatchers.IO) {
-                                        GithubUpdateInstaller.downloadNetwork(context)
-                                    }
-                                    if (network.metered) {
-                                        meteredConfirmation = MeteredDownload(release, network.description)
-                                    } else {
-                                        onInstall(release)
-                                    }
-                                }
+                    MhListRow(
+                        title = motoHubText("Installed version"),
+                        trailing = { MonoValue("${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") }
+                    )
+                    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (release.title.isNotBlank() && release.title != release.versionName) {
+                            Text(release.title, style = MaterialTheme.typography.titleMedium)
+                        }
+                        if (release.notes.isNotBlank()) {
+                            MhSectionHeader(motoHubText("What's new"))
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 280.dp)
+                                    .clip(MaterialTheme.shapes.large)
+                                    .background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                Text(
+                                    releaseNotesAnnotated(release.notes),
+                                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
+                        }
+                        AnimatedVisibility(visible = error != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+                            MhBanner(
+                                title = motoHubText("Couldn't install the update"),
+                                details = {
+                                    Text(
+                                        lastError.value.orEmpty(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            )
+                        }
+                        when {
+                            release.apkAsset == null ->
+                                MhBanner(title = motoHubText("This release has no APK to install"), tone = MhTone.WARNING)
+                            !canInstallUnknownSources ->
+                                MhPrimaryButton(motoHubText("Allow installing updates"), onAllowUnknownSources)
+                            else -> {
+                                AnimatedVisibility(visible = installing, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+                                    DownloadProgressRow(installingProgress)
+                                }
+                                MhPrimaryButton(
+                                    motoHubText("Download and install"),
+                                    loading = installing,
+                                    onClick = {
+                                        // The one place the metered question is asked, so no caller can
+                                        // ship an Install button that skips it. A definitely-metered
+                                        // network gets a confirmation; everything else - Wi-Fi, an
+                                        // unmetered plan, a network Android will not describe - starts
+                                        // the download as before.
+                                        networkScope.launch {
+                                            val network = withContext(Dispatchers.IO) {
+                                                GithubUpdateInstaller.downloadNetwork(context)
+                                            }
+                                            if (network.metered) {
+                                                meteredConfirmation = MeteredDownload(release, network.description)
+                                            } else {
+                                                onInstall(release)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        MhTextButton(
+                            motoHubText("Skip this version"),
+                            onClick = { close { onSkip(release) } },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !installing
                         )
                     }
                 }
-                MhTextButton(
-                    motoHubText("Skip this version"),
-                    onClick = { close { onSkip(release) } },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !installing
-                )
             }
         }
+    }
+}
+
+/** What MhSheet draws for its own title and body, drawn here so it can swap with the content. */
+@Composable
+private fun SheetHeading(title: String, body: String?) {
+    val inset = Modifier.padding(horizontal = 16.dp)
+    Text(title, modifier = inset.semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+    if (body != null) {
+        Text(
+            body,
+            modifier = inset,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

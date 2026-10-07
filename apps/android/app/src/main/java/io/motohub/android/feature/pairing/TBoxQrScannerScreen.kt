@@ -19,8 +19,17 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import android.os.SystemClock
+import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +46,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FlashOff
 import androidx.compose.material.icons.rounded.FlashOn
@@ -45,16 +53,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -72,8 +89,9 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit
-import android.util.Size
+import kotlinx.coroutines.delay
 import androidx.activity.compose.BackHandler
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhNavIcon
 import io.motohub.android.ui.components.MhSecondaryButton
 import io.motohub.android.ui.components.MhTopBar
@@ -117,6 +135,24 @@ fun TBoxQrScannerScreen(
     var zoomRatio by remember { mutableStateOf(1f) }
     var torchAvailable by remember { mutableStateOf(false) }
     var torchEnabled by remember { mutableStateOf(false) }
+    // A code that was read: the frame turns lime and dips, the phone confirms, and only then,
+    // 250 ms later, does the screen go. The rider holding the phone at the dashboard gets an
+    // unmistakable "got it" instead of the camera simply vanishing.
+    var found by remember { mutableStateOf<TBoxQrPayload?>(null) }
+    val view = LocalView.current
+    val currentOnPayload by rememberUpdatedState(onPayload)
+    LaunchedEffect(found) {
+        val payload = found ?: return@LaunchedEffect
+        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        delay(FOUND_HOLD_MILLIS)
+        currentOnPayload(payload)
+    }
+    val frameColor by animateColorAsState(
+        if (found != null) MotoHubColors.Lime else Color.White.copy(alpha = 0.9f),
+        tween(MhMotion.FAST),
+        label = "qr-frame"
+    )
+    val frameScale by animateFloatAsState(if (found != null) 0.96f else 1f, MhMotion.pop(), label = "qr-scale")
     fun setZoom(requestedRatio: Float) {
         val value = requestedRatio.coerceIn(minZoomRatio, maxZoomRatio)
         zoomRatio = value
@@ -151,7 +187,7 @@ fun TBoxQrScannerScreen(
                             it.surfaceProvider = surfaceProvider
                         }
                         val analysis = ImageAnalysis.Builder()
-                            .setTargetResolution(Size(1280, 720))
+                            .setTargetResolution(android.util.Size(1280, 720))
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
                             .also {
@@ -159,8 +195,9 @@ fun TBoxQrScannerScreen(
                                     ContextCompat.getMainExecutor(viewContext),
                                     TBoxQrAnalyzer(
                                         scanner = scanner,
-                                        onPayload = onPayload,
-                                        onStatus = { scanStatus = it }
+                                        onPayload = { found = it },
+                                        onStatus = { scanStatus = it },
+                                        onWrongCode = { view.performHapticFeedback(HapticFeedbackConstants.REJECT) }
                                     )
                                 )
                             }
@@ -242,28 +279,51 @@ fun TBoxQrScannerScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Still while searching - the camera image already moves. Both values are read where
+            // they draw, so the "got it" repaints the frame without recomposing the screen.
             Box(
                 modifier = Modifier
                     .size(268.dp)
-                    .border(
-                        width = 2.dp,
-                        color = Color.White.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(28.dp)
-                    )
+                    .graphicsLayer {
+                        scaleX = frameScale
+                        scaleY = frameScale
+                    }
+                    .drawBehind {
+                        val stroke = 2.dp.toPx()
+                        drawRoundRect(
+                            color = frameColor,
+                            topLeft = Offset(stroke / 2, stroke / 2),
+                            size = Size(size.width - stroke, size.height - stroke),
+                            cornerRadius = CornerRadius(28.dp.toPx() - stroke / 2),
+                            style = Stroke(stroke)
+                        )
+                    }
             )
             // No line limit: the parser's own verdict on an unusable code runs to three sentences.
-            Text(
-                scanStatus,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .widthIn(max = 320.dp)
-                    .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
+            // The line swaps with a quick fade and its box follows on the shared clock; the live
+            // region sits on the box, so TalkBack reads each new line once.
+            AnimatedContent(
+                targetState = scanStatus,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                transitionSpec = {
+                    fadeIn(tween(MhMotion.FAST)) togetherWith fadeOut(tween(MhMotion.FAST)) using
+                        SizeTransform(clip = false) { _, _ -> tween(MhMotion.BASE, easing = MhMotion.Standard) }
+                },
+                contentAlignment = Alignment.Center,
+                label = "qr-status"
+            ) { status ->
+                Text(
+                    status,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .widthIn(max = 320.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         Column(
@@ -332,10 +392,12 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 private class TBoxQrAnalyzer(
     private val scanner: BarcodeScanner,
     private val onPayload: (TBoxQrPayload) -> Unit,
-    private val onStatus: (String) -> Unit
+    private val onStatus: (String) -> Unit,
+    private val onWrongCode: () -> Unit
 ) : ImageAnalysis.Analyzer {
     private val processing = AtomicBoolean(false)
     private val delivered = AtomicBoolean(false)
+    private val rejects = RejectThrottle()
 
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
@@ -362,6 +424,7 @@ private class TBoxQrAnalyzer(
                         failure.message?.takeIf(String::isNotBlank)
                             ?: motoHubText("That's not a dashboard QR code")
                     )
+                    if (rejects.shouldBuzz(rawValue, SystemClock.uptimeMillis())) onWrongCode()
                     return@addOnSuccessListener
                 }
                 if (delivered.compareAndSet(false, true)) onPayload(payload)
@@ -375,3 +438,24 @@ private class TBoxQrAnalyzer(
             }
     }
 }
+
+/**
+ * When a wrong code earns a REJECT buzz. The analyzer reads the same code frame after frame, so a
+ * read can't be the trigger, and the status text can't either (two different codes can share a
+ * verdict). Keyed on the raw payload: a code buzzes once while the camera keeps seeing it, a
+ * different code buzzes at once, and the same code buzzes again only after it has been out of
+ * sight for [quietMs].
+ */
+internal class RejectThrottle(private val quietMs: Long = 2_000) {
+    private var lastRaw: String? = null
+    private var lastSeenAt = 0L
+
+    fun shouldBuzz(raw: String, nowMs: Long): Boolean {
+        val buzz = raw != lastRaw || nowMs - lastSeenAt >= quietMs
+        lastRaw = raw
+        lastSeenAt = nowMs
+        return buzz
+    }
+}
+
+private const val FOUND_HOLD_MILLIS = 250L

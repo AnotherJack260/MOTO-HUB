@@ -17,9 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,15 +41,17 @@ import androidx.compose.ui.unit.dp
 import io.motohub.android.session.LogLevel
 import io.motohub.android.session.ProjectionEvent
 import io.motohub.android.ui.components.MhActionStyle
+import io.motohub.android.ui.components.MhListGroup
+import io.motohub.android.ui.components.MhListRow
 import io.motohub.android.ui.components.MhScreen
-import io.motohub.android.ui.components.MhSecondaryButton
 import io.motohub.android.ui.components.MhSheet
-import io.motohub.android.ui.components.MhTextButton
+import io.motohub.android.ui.components.MhTopBarAction
 import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.ui.theme.MotoHubColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun ApplicationLogScreen(
@@ -56,25 +64,38 @@ fun ApplicationLogScreen(
     val context = LocalContext.current
     // Asked first: clearing also truncates the log file, so there is nothing to undo it with.
     var confirmingClear by remember { mutableStateOf(false) }
+    // Copy answers on its own button: the glyph turns into a lime check for a moment. Android 13
+    // and later confirm a copy themselves, so this is the app's one acknowledgement there.
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(COPIED_MILLIS)
+            copied = false
+        }
+    }
 
     MhScreen(
         title = motoHubText("Application logs"),
-        subtitle = motoHubText("Persistent events from Wi-Fi, T-Box, mirroring, encoder, and Android Auto."),
+        subtitle = motoHubText("What MOTO-HUB recorded on this phone"),
         onBack = onBack,
-        scrollable = false
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            MhSecondaryButton(motoHubText("Copy log"), onCopy, Modifier.weight(1f))
-            MhSecondaryButton(motoHubText("Share"), onShare, Modifier.weight(1f))
-            MhTextButton(motoHubText("Clear"), onClick = { confirmingClear = true }, color = MaterialTheme.colorScheme.error)
+        scrollable = false,
+        // Copy and Share act on the whole log, so they sit with the title, not above the entries.
+        actions = {
+            MhTopBarAction(
+                icon = if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy,
+                contentDescription = if (copied) motoHubText("Log copied") else motoHubText("Copy log"),
+                active = copied,
+                onClick = {
+                    onCopy()
+                    copied = true
+                }
+            )
+            // No spacer: the 48 dp targets already leave 8 dp between the 40 dp circles.
+            MhTopBarAction(Icons.Rounded.Share, motoHubText("Share"), onShare)
         }
+    ) {
         Text(
             motoHubText("%1\$d entries · newest first", events.size),
-            modifier = Modifier.padding(horizontal = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -93,6 +114,21 @@ fun ApplicationLogScreen(
             }
             items(events.asReversed(), key = { it.sequence }) {
                 LogEntryCard(it)
+            }
+            // At the end, the way Reset actions ends Button mapping: red, and a sheet asks first.
+            if (events.isNotEmpty()) {
+                item {
+                    MhListGroup(Modifier.padding(top = 16.dp)) {
+                        MhListRow(
+                            title = motoHubText("Clear log"),
+                            icon = Icons.Rounded.DeleteSweep,
+                            iconTint = MotoHubColors.Error,
+                            titleColor = MaterialTheme.colorScheme.error,
+                            showChevron = false,
+                            onClick = { confirmingClear = true }
+                        )
+                    }
+                }
             }
         }
     }
@@ -172,3 +208,5 @@ private fun LogEntryCard(event: ProjectionEvent) {
 }
 
 private val LOG_TIME_FORMAT = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+
+private const val COPIED_MILLIS = 1_500L

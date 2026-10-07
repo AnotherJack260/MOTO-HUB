@@ -6,18 +6,27 @@ package io.motohub.android.feature.controls
 import android.Manifest
 import android.os.Build
 import android.os.SystemClock
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.Check
@@ -40,6 +49,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -69,7 +80,9 @@ import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhIconCircle
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhNavIcon
+import io.motohub.android.ui.components.MhPop
 import io.motohub.android.ui.components.MhPrimaryButton
 import io.motohub.android.ui.components.MhScreen
 import io.motohub.android.ui.components.MhSecondaryButton
@@ -285,7 +298,7 @@ private fun HandlebarListContent(
         subtitle = motoHubText("Teach it once, then pick what each press does."),
         onBack = onBack
     ) {
-        if (!captureEnabled) {
+        AnimatedVisibility(visible = !captureEnabled, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
             CaptureOffBanner(
                 managedByCompanion = HandlebarControlStore.isManagedByCompanion(context),
                 onEnable = captureControl?.let { control ->
@@ -324,19 +337,23 @@ private fun HandlebarListContent(
             MhPrimaryButton(motoHubText("Teach my handlebar"), onTeach, loading = teachLoading)
         }
 
-        HandlebarCalibration.presentButtons(context).forEach { button ->
-            ButtonSection(button = button, revision = revision, litGesture = litGesture, onEdit = onEdit)
-        }
-        HandlebarTimingSection()
-        MhListGroup {
-            MhListRow(
-                title = motoHubText("Reset actions"),
-                icon = Icons.Rounded.RestartAlt,
-                iconTint = MotoHubColors.Error,
-                titleColor = MaterialTheme.colorScheme.error,
-                showChevron = false,
-                onClick = onReset
-            )
+        // Before anything is taught there is nothing of this handlebar's to map: a wall of
+        // "Not taught yet" rows only buried the one button that fixes it.
+        if (handlebarTaught) {
+            HandlebarCalibration.presentButtons(context).forEach { button ->
+                ButtonSection(button = button, revision = revision, litGesture = litGesture, onEdit = onEdit)
+            }
+            HandlebarTimingSection()
+            MhListGroup {
+                MhListRow(
+                    title = motoHubText("Reset actions"),
+                    icon = Icons.Rounded.RestartAlt,
+                    iconTint = MotoHubColors.Error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                    showChevron = false,
+                    onClick = onReset
+                )
+            }
         }
     }
 }
@@ -362,7 +379,7 @@ private fun CaptureOffBanner(managedByCompanion: Boolean, onEnable: (() -> Unit)
         title = motoHubText("Button presses are off"),
         tone = MhTone.WARNING,
         body = when {
-            managedByCompanion -> motoHubText("MOTO-HUB ADVANCED manages this. Turn them on there.")
+            managedByCompanion -> motoHubText("MOTO-HUB ADV-SOLO manages this. Turn them on there.")
             onEnable != null -> motoHubText("They still show up here, but do nothing.")
             // CORE: the switch lives on the page that opened this one.
             else -> motoHubText(
@@ -464,7 +481,8 @@ private fun BluetoothStatusRows() {
             !current.supported -> motoHubText("This phone has no Bluetooth.")
             !current.enabled -> motoHubText("Bluetooth is off. Turn it on, then pair the remote.")
             !current.permitted -> motoHubText("Allow Bluetooth access to read the remote.")
-            else -> motoHubText("Bluetooth is on. HID remotes don't show as connected here.")
+            // A HID remote pairs as a keyboard and never shows as connected, so on is all there is to say.
+            else -> motoHubText("Bluetooth is on")
         },
         icon = Icons.Rounded.Bluetooth,
         iconTint = if (ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -510,7 +528,11 @@ private fun LiveCaptureRow(litGesture: HandlebarGesture?) {
     )
 }
 
-/** One physical button, with its three ways of being pressed. */
+/**
+ * One physical button, with the ways of pressing it that were taught. A press the motorcycle
+ * never sent (skipped, or not on this handlebar) has nothing to map, so it has no row; a button
+ * with none has no section.
+ */
 @Composable
 private fun ButtonSection(
     button: HandlebarButton,
@@ -519,26 +541,25 @@ private fun ButtonSection(
     onEdit: (PhysicalPress) -> Unit
 ) {
     val context = LocalContext.current
+    val taught = remember(button, revision) {
+        PhysicalPress.entries
+            .filter { it.button == button }
+            .mapNotNull { press -> HandlebarCalibration.gestureFor(context, press)?.let { press to it } }
+    }
+    if (taught.isEmpty()) return
     Section(button.title()) {
-        PressKind.entries.forEach { kind ->
-            val press = PhysicalPress.entries.first { it.button == button && it.kind == kind }
-            if (HandlebarCalibration.isMissing(context, press)) return@forEach
-            val gesture = remember(press, revision) { HandlebarCalibration.gestureFor(context, press) }
+        taught.forEach { (press, gesture) ->
             // A lit row fades its background in; no border - the design system has no glow.
             val highlight by animateColorAsState(
-                if (gesture != null && gesture == litGesture) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                if (gesture == litGesture) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 tween(MOTION_MILLIS),
                 label = "pressHighlight"
             )
             MhListRow(
-                title = kind.title(),
+                title = press.kind.title(),
                 modifier = Modifier.background(highlight),
-                // Honest about the gap: no motorcycle command is known for this press yet,
-                // so the app cannot pretend to map it.
-                value = gesture?.let { HandlebarControlStore.action(context, it).displayLabel() }
-                    ?: motoHubText("Not taught yet"),
-                enabled = gesture != null,
-                onClick = gesture?.let { { onEdit(press) } }
+                value = HandlebarControlStore.action(context, gesture).displayLabel(),
+                onClick = { onEdit(press) }
             )
         }
     }
@@ -567,9 +588,11 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
     // volume-mapped button has no hold gesture at all) - shown instead of silently advancing
     // past it with nothing on screen to explain why (field report 2026-08-13).
     var skipNotice by remember { mutableStateOf<String?>(null) }
-    // The press was recorded and the step is about to move on: the chip says so during the
-    // pause, which used to pass with nothing on screen changing.
-    var captured by remember { mutableStateOf(false) }
+    // The step whose press was recorded: its chip says so during the pause before the next one,
+    // and keeps saying so while it fades out. A step number rather than a flag, so the outgoing
+    // block isn't flipped back to "Listening" by the reset for the next step.
+    var capturedStep by remember { mutableIntStateOf(-1) }
+    val view = LocalView.current
 
     /** The gesture recorded for this button's PRESS step, taught earlier in the fixed
      *  press/double/hold order - tells us which family (and so which double/hold siblings, if
@@ -582,7 +605,6 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
         stepStartedAt = SystemClock.elapsedRealtime()
         mismatchHint = null
         skipNotice = null
-        captured = false
         val current = press ?: return@LaunchedEffect
         if (current.kind == PressKind.PRESS) return@LaunchedEffect
         val baseGesture = baseGestureFor(current)
@@ -639,12 +661,17 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
                 PressKind.HOLD -> motoHubText("That was a tap. Hold it a moment longer.")
                 PressKind.PRESS -> null
             }
+            // Once per gesture event (the feed delivers them already classified), so a repeated
+            // wrong press buzzes again even though the hint reads the same. The rider's eyes are
+            // on the handlebar.
+            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
             return@LaunchedEffect
         }
 
         mismatchHint = null
         HandlebarCalibration.record(context, current, event.gesture)
-        captured = true
+        capturedStep = step
+        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         ProjectionEventLog.record("CONTROLS", "Calibrated ${current.id} = ${event.gesture.id}")
         learned++
         delay(CALIBRATION_CONFIRM_MILLIS)
@@ -686,14 +713,15 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
             }
         }
     ) {
-        if (press == null) {
-            TeachFinished(learned)
-        } else {
-            val total = PhysicalPress.entries.size
-            val progress by animateFloatAsState((step + 1f) / total, tween(MOTION_MILLIS), label = "teachProgress")
+        val total = PhysicalPress.entries.size
+        // The header and the footnote belong to the steps: they fold away as the last page slides
+        // in. Coerced, because while folding they still draw once the step count has run out.
+        AnimatedVisibility(visible = press != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+            val shown = step.coerceAtMost(total - 1)
+            val progress by animateFloatAsState((shown + 1f) / total, tween(MOTION_MILLIS), label = "teachProgress")
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    motoHubText("Step %1\$d of %2\$d", step + 1, total),
+                    motoHubText("Step %1\$d of %2\$d", shown + 1, total),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -707,58 +735,106 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
                     drawStopIndicator = {}
                 )
             }
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                MhIconCircle(press.button.icon(), size = 72.dp)
-                Text(
-                    press.button.title(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+        }
+        // The next step arrives from a little to the right while the last one fades: "moved on",
+        // without the whole page sliding like a new screen.
+        AnimatedContent(
+            targetState = step,
+            transitionSpec = {
+                (slideInHorizontally(tween(MhMotion.BASE, easing = MhMotion.Enter)) { it / 5 } +
+                    fadeIn(tween(MhMotion.BASE, easing = MhMotion.Enter))) togetherWith
+                    fadeOut(tween(MhMotion.FAST, easing = MhMotion.Exit))
+            },
+            label = "teach-step"
+        ) { shownStep ->
+            val shownPress = PhysicalPress.entries.getOrNull(shownStep)
+            if (shownPress == null) {
+                TeachFinished(learned)
+            } else {
+                TeachStep(
+                    press = shownPress,
+                    captured = capturedStep == shownStep,
+                    // The outgoing block lets its notes go: they were about that step.
+                    mismatchHint = mismatchHint.takeIf { shownStep == step },
+                    skipNotice = skipNotice.takeIf { shownStep == step }
                 )
-                Text(
-                    when (press.kind) {
-                        PressKind.PRESS -> motoHubText("Press once")
-                        PressKind.DOUBLE -> motoHubText("Press twice, quickly")
-                        PressKind.HOLD -> motoHubText("Press and hold")
-                    },
-                    style = MaterialTheme.typography.displaySmall,
-                    textAlign = TextAlign.Center
-                )
-                if (captured) {
-                    MhStatusChip(motoHubText("Got it"), MhTone.LIVE)
-                } else {
-                    MhStatusChip(motoHubText("Listening"), MhTone.PROGRESS)
-                }
-                // A correction, not an error, and announced: the rider's eyes are on the handlebar.
-                mismatchHint?.let { hint ->
-                    Text(
-                        hint,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MotoHubColors.Warning,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                skipNotice?.let { notice ->
-                    Text(
-                        notice,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
             }
+        }
+        AnimatedVisibility(visible = press != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
             // A CFMOTO CFDL16 keeps the SHORT rocker press to itself and sends the phone nothing.
             MhFootnote(
                 motoHubText(
                     "Nothing happens? Some dashboards keep a button to themselves. Tap “Not on my motorcycle”."
                 ),
                 modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+    }
+}
+
+/**
+ * One step of the wizard: which button, how to press it, and whether it has been heard. A press
+ * that lands sweeps the circle to lime as the chip says "Got it".
+ */
+@Composable
+private fun TeachStep(press: PhysicalPress, captured: Boolean, mismatchHint: String?, skipNotice: String?) {
+    val sweep = tween<Color>(MhMotion.FAST, easing = MhMotion.Standard)
+    val circle by animateColorAsState(if (captured) MotoHubColors.LimeContainer else MotoHubColors.Fill, sweep, label = "teach-circle")
+    val glyph by animateColorAsState(
+        if (captured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        sweep,
+        label = "teach-glyph"
+    )
+    // Kept for the fade out: the hint clears the moment the right press lands.
+    val lastHint = remember { mutableStateOf(mismatchHint) }
+    if (mismatchHint != null) lastHint.value = mismatchHint
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        MhIconCircle(press.button.icon(), size = 72.dp, tint = glyph, container = circle)
+        Text(
+            press.button.title(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            when (press.kind) {
+                PressKind.PRESS -> motoHubText("Press once")
+                PressKind.DOUBLE -> motoHubText("Press twice, quickly")
+                PressKind.HOLD -> motoHubText("Press and hold")
+            },
+            style = MaterialTheme.typography.displaySmall,
+            textAlign = TextAlign.Center
+        )
+        // One chip that changes, not two: the kit sweeps its colour and crossfades the word.
+        MhStatusChip(
+            if (captured) motoHubText("Got it") else motoHubText("Listening"),
+            if (captured) MhTone.LIVE else MhTone.PROGRESS
+        )
+        // A correction, not an error, and announced: the rider's eyes are on the handlebar.
+        AnimatedVisibility(
+            visible = mismatchHint != null,
+            enter = fadeIn(tween(MhMotion.FAST)),
+            exit = fadeOut(tween(MhMotion.FAST))
+        ) {
+            Text(
+                lastHint.value.orEmpty(),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MotoHubColors.Warning,
+                textAlign = TextAlign.Center
+            )
+        }
+        skipNotice?.let { notice ->
+            Text(
+                notice,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -773,12 +849,19 @@ private fun TeachFinished(learned: Int) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (learned > 0) {
-            MhIconCircle(
-                Icons.Rounded.Check,
-                size = 72.dp,
-                tint = MaterialTheme.colorScheme.primary,
-                container = MaterialTheme.colorScheme.primaryContainer
-            )
+            // The check pops in as the page arrives: the one overshoot the wizard has.
+            var arrived by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { arrived = true }
+            Box(Modifier.size(72.dp)) {
+                MhPop(arrived) {
+                    MhIconCircle(
+                        Icons.Rounded.Check,
+                        size = 72.dp,
+                        tint = MaterialTheme.colorScheme.primary,
+                        container = MaterialTheme.colorScheme.primaryContainer
+                    )
+                }
+            }
             Text(motoHubText("Handlebar taught"), style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
             Text(
                 motoHubText("%1\$d presses learned. Missing ones are hidden.", learned),

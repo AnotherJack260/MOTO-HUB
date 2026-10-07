@@ -5,12 +5,14 @@ package io.motohub.android.feature.pairing
 
 import io.motohub.android.i18n.motoHubText
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
@@ -19,6 +21,7 @@ import io.motohub.android.ui.components.MhBanner
 import io.motohub.android.ui.components.MhChoiceRow
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhNavIcon
 import io.motohub.android.ui.components.MhPrimaryButton
 import io.motohub.android.ui.components.MhScreen
@@ -53,6 +56,12 @@ fun ManualPairingScreen(
     onClose: () -> Unit
 ) {
     var showModes by rememberSaveable { mutableStateOf(false) }
+    // Both banners fold in and out under the field above them, so the form glides instead of
+    // jumping. Each keeps its last text for the way out.
+    val lastSuggestion = remember { mutableStateOf(ssidSuggestion) }
+    if (ssidSuggestion != null) lastSuggestion.value = ssidSuggestion
+    val lastFormError = remember { mutableStateOf(formError) }
+    if (formError != null) lastFormError.value = formError
 
     MhScreen(
         title = motoHubText("Enter details manually"),
@@ -75,9 +84,9 @@ fun ManualPairingScreen(
         // Deliberately not an error colour, and deliberately not blocking. The rider may well
         // be right; this only makes the other reading visible before a second motorcycle is
         // created that can never be joined.
-        ssidSuggestion?.let { suggestion ->
+        AnimatedVisibility(visible = ssidSuggestion != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
             MhBanner(
-                title = motoHubText("Did you mean “%1\$s”?", suggestion),
+                title = motoHubText("Did you mean “%1\$s”?", lastSuggestion.value.orEmpty()),
                 body = motoHubText("This phone knows that name. To keep yours, tap Save again."),
                 tone = MhTone.NEUTRAL,
                 actionLabel = motoHubText("Use this name"),
@@ -101,11 +110,15 @@ fun ManualPairingScreen(
             )
         }
         // In practice a persistence failure: the raw reason stays one tap away for support.
-        formError?.let { reason ->
+        AnimatedVisibility(visible = formError != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
             MhBanner(
                 title = motoHubText("Couldn't save the motorcycle"),
                 details = {
-                    Text(reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        lastFormError.value.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             )
         }
@@ -132,7 +145,7 @@ fun ManualPairingScreen(
 private fun TBoxConnectionMode.label(): String = when (this) {
     TBoxConnectionMode.AUTO -> motoHubText("Auto")
     TBoxConnectionMode.ACCESS_POINT -> motoHubText("Access point")
-    TBoxConnectionMode.WIFI_DIRECT -> motoHubText("Wi-Fi Direct (P2P)")
+    TBoxConnectionMode.WIFI_DIRECT -> motoHubText("Wi-Fi Direct")
     // Named from the rider's point of view: what they have to do, not what the dash is. They pick
     // this after their dash asks them to open a hotspot, so "phone hotspot" is the phrase they
     // just read on the screen.
