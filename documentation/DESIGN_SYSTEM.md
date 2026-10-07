@@ -1,6 +1,7 @@
-# MOTO-HUB design system
+# RideLink design system
 
-How the Android app looks and behaves. The values live in
+How the RideLink Android app (a personal fork of MOTO-HUB) looks and behaves.
+The values live in
 `apps/android/app/src/main/java/io/motohub/android/ui/theme/MotoHubTheme.kt`.
 The building blocks live in `ui/components/`. A screen that needs something this
 document does not describe should add it here first.
@@ -367,11 +368,9 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - **Ride.** One composition in every state: hero card, then the state's content,
   then the pinned action slot above the dock.
   - The hero is a 208 dp card (it grows only for a name that wraps) in the 16 dp
-    gutter, 20 dp corners. With a photo: the photo edge to edge, cropped, under a
-    vertical black scrim from 15% to 75%. Without one: a tonal gradient from
-    `SurfaceHigh` (top-left) to `background` and a 120 dp `TwoWheeler`
-    watermark at 8% white bleeding off the end. A restrained lime radial bloom
-    is added only while connected or live; offline stays neutral, so lime never
+    gutter, 20 dp corners. The rider's photo, or without one the default cover
+    (`ride_hero_default`), edge to edge, cropped, under a vertical black scrim
+    from 15% to 75%. No tonal gradient, watermark or lime bloom: lime never
     claims a link that isn't there. Bottom-left, 16 dp in: the name in
     `displaySmall` (wraps, never cut), then the status chip and the monospaced
     Wi-Fi name. With no motorcycle the same card says "Connect your
@@ -380,11 +379,12 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
     glyph top-right) that opens the "Motorcycle options" sheet (P1): "Switch
     motorcycle" (only with two or more saved), "Add photo" / "Change photo"
     (the photo sheet) and "Motorcycle details". Connecting or streaming it does
-    nothing and the glyph fades out.
+    nothing and the glyph fades out. The glyph sits on black at 40%, photo or
+    cover.
   - Between the hero and the slot: the failure banner right under the hero,
     the delivery warning, the system-kill notice (at rest only), then the
     state's content (the two setup rows with no motorcycle, the timeline, the
-    mode rows, the session controls) and the promo (rest only, P12).
+    mode rows, the session controls).
   - The pinned slot keeps one place for the thing to press, with snackbar
     clearance and the 400 ms tap guard: lime "Scan QR code" with no
     motorcycle; at rest and after a failure lime "Connect" / "Try again" with
@@ -430,7 +430,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | P9 | Back | System back always does what the back icon does. Nested Settings states go to their parent. Sheets and full-screen pages dismiss. Scanner and wizard exit through their cleanup callback. |
 | P10 | Feedback order | A snackbar is emitted only after the sheet that caused it has closed. An error while a sheet stays open goes inline in the sheet. |
 | P11 | Motion | 220 ms on one clock, heights included. State swaps fade through (`ScreenCrossfade`, `MhMotion.fadeThrough`); navigation slides. Pills and cards dip on press. Haptics: CONFIRM = it worked (connected, picture on the dashboard, Stop, destructive confirmed, QR read, press captured); REJECT = it failed (connection failed, wrong QR, wrong press). Nothing else vibrates. See Motion. |
-| P12 | Promo | One `AdvancedPromoRow` (owned by Overlays) on Ride PAIRING, Ride CONNECTION and Settings › App. Nowhere during connecting or riding. No red. |
+| P12 | Promo | Removed: RideLink promotes nothing. |
 
 ## Copy glossary (canonical English)
 
@@ -496,12 +496,11 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - Log copied
 - Support ID copied
 - Report sent
-- You have the latest version
 - Prototype unlocked (K)
 - Stopped · %1$s · %2$s (Ride-end receipt: the mode, then "<1 min", "%d min" or "%d h %d min")
 
 **Error:**
-- Couldn't open Wi-Fi settings / hotspot settings / VPN settings / app settings / Android Auto / GitHub / Discord / ADV-SOLO / the browser
+- Couldn't open Wi-Fi settings / hotspot settings / VPN settings / app settings / Android Auto / GitHub / the browser
 - Couldn't save changes
 - Couldn't save the motorcycle
 - Couldn't save the photo
@@ -509,8 +508,6 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - Couldn't switch motorcycles
 - Couldn't create the log file
 - Couldn't send the report
-- Couldn't check for updates [Try again]
-- Couldn't install the update
 - Stop streaming first
 - Allow the camera to scan QR codes [Settings]
 - Allow the camera to take a photo [Settings]
@@ -554,14 +551,12 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - Allow notifications
 - Connection failed
 - Your dashboard isn't showing the picture
-- Your phone closed MOTO-HUB
+- Your phone closed RideLink
 - Button presses are off
 - Accessibility service is off
 - Switch greyed out?
 - Logging is off
 - Couldn't save the motorcycle
-- Couldn't install the update
-- This release has no APK to install
 - Did you mean “%1$s”? (NEUTRAL)
 
 ### Row warnings (MhListRow subtitle in Warning)
@@ -580,10 +575,11 @@ A row's title is always the title of the screen it opens.
 | Garage | Garage · Current motorcycle · Other motorcycles · Add a motorcycle |
 | Motorcycle details | Name (row and its sheet) · Android Auto · Connection · Advanced · Display fit · Screen margins · Dashboard profile · Dashboard capabilities |
 | Settings headers | On the motorcycle · Connection · Help · App |
-| Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · Check for updates on launch · About MOTO-HUB · MOTO-HUB ADV-SOLO · Developer tools |
+| Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · About RideLink · Developer tools |
 | Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs · Legal (About) |
+| About RideLink | Version · Source code (this fork) · Based on MOTO-HUB (upstream, its author and the licence) · Legal |
 | Video quality choices | Picture: Lighter · Balanced · Sharper (not "Smoother": a frame-rate subtitle already says "Smoothest"). Frame rate: Auto · 30 fps · 24 fps · 20 fps |
 | Button type choices | Media controls (Most dashboards) · Bluetooth keyboard (For remotes paired as a Bluetooth keyboard) |
-| Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
+| Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.
