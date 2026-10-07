@@ -23,7 +23,7 @@ internal enum class RideFailureKind {
     DASH_NOT_FOUND, NEARBY_PERMISSION, NOTIFICATION_PERMISSION, GENERIC
 }
 
-/** The one thing the banner offers to fix it. Never "Try again": the hero button is the retry. */
+/** The one thing the banner offers to fix it. Never "Try again": Ride's pinned button is the retry. */
 internal enum class RideFix {
     NONE, WIFI_SETTINGS, HOTSPOT_SETTINGS, PHONE_HOTSPOT, COMPANION_APP_SETTINGS,
     ANDROID_AUTO_HELP, VPN_SETTINGS, APP_SETTINGS
