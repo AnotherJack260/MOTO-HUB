@@ -8,13 +8,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Speed
-import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -109,7 +109,7 @@ fun AdvancedPromoRow(onOpenDetails: () -> Unit) {
         } else {
             motoHubText("Free app with navigation, trips and a dashboard")
         },
-        icon = Icons.Rounded.TwoWheeler,
+        icon = Icons.Rounded.Map,
         onClick = {
             if (!installed || !launchAdvanced(context)) {
                 installed = false
