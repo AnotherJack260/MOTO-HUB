@@ -2969,4 +2969,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s is already exempt from battery optimisation, so your phone\'s own app management stopped it. In its app info, allow background activity (some phones call it Battery usage or App launch) and lock %1$s in recent apps.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Your phone may stop %1$s in the background. Excluding it from battery optimisation makes that much less likely on a long ride.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Allow MOTO-HUB to connect</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">On the same screen, open ⋮ and tap “Start head unit server”.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">For older Android Auto versions</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Recent Android Auto versions require this manual step.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Media controls</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Bluetooth keyboard</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">For remotes paired as a Bluetooth keyboard</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Bluetooth keyboard presses aren\'t seen until you turn it on.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Turn off the Wi-Fi clock only if the dashboard still shows the wrong date after connecting.</string>
 </resources>

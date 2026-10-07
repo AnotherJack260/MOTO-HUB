@@ -2961,4 +2961,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s ist bereits von der Akku-Optimierung ausgenommen, also hat die App-Verwaltung deines Handys es beendet. Erlaube in den App-Infos die Hintergrundaktivität (auf manchen Handys heißt das Akkunutzung oder App-Start) und fixiere %1$s in den zuletzt verwendeten Apps.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Dein Handy kann %1$s im Hintergrund beenden. Wenn du es von der Akku-Optimierung ausnimmst, passiert das auf langen Fahrten viel seltener.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">MOTO-HUB die Verbindung erlauben</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Öffne auf demselben Bildschirm ⋮ und tippe auf „Head-Unit-Server starten“.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Für ältere Android-Auto-Versionen</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Neuere Android-Auto-Versionen erfordern diesen manuellen Schritt.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Mediensteuerung</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Bluetooth-Tastatur</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Für Fernbedienungen, die als Bluetooth-Tastatur gekoppelt sind</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Drücke der Bluetooth-Tastatur kommen erst an, wenn du die Bedienungshilfe einschaltest.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Schalte die WLAN-Uhr nur aus, wenn das Display nach dem Verbinden noch ein falsches Datum zeigt.</string>
 </resources>

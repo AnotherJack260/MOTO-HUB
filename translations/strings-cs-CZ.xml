@@ -2969,4 +2969,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s je již vyjmut z optimalizace baterie, takže jej ukončila správa aplikací telefonu. V informacích o aplikaci povolte činnost na pozadí (na některých telefonech se jmenuje Využití baterie nebo Spouštění aplikací) a uzamkněte %1$s v nedávných aplikacích.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Telefon může %1$s na pozadí ukončit. Vyjmutí z optimalizace baterie to na dlouhé jízdě výrazně omezí.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Povolte MOTO-HUB připojení</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Na stejné obrazovce otevřete ⋮ a klepněte na „Spustit server hlavní jednotky“.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Pro starší verze Android Auto</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Novější verze Android Auto vyžadují tento ruční krok.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Ovládání médií</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Bluetooth klávesnice</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Pro ovladače spárované jako Bluetooth klávesnice</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Stisknutí na Bluetooth klávesnici se nezaznamenají, dokud službu nezapnete.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Hodiny přes Wi-Fi vypněte, jen pokud palubní deska po připojení stále ukazuje špatné datum.</string>
 </resources>

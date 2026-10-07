@@ -2961,4 +2961,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s is al uitgezonderd van batterijoptimalisatie, dus het appbeheer van je telefoon heeft het gestopt. Sta in de app-info achtergrondactiviteit toe (op sommige telefoons heet dat Batterijgebruik of App starten) en zet %1$s vast in de recente apps.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Je telefoon kan %1$s op de achtergrond stoppen. Als je het uitzondert van batterijoptimalisatie, gebeurt dat op een lange rit veel minder vaak.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Sta MOTO-HUB toe verbinding te maken</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Open op hetzelfde scherm ⋮ en tik op “Head unit-server starten”.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Voor oudere versies van Android Auto</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Recente versies van Android Auto vereisen deze handmatige stap.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Mediabediening</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Bluetooth-toetsenbord</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Voor afstandsbedieningen die als Bluetooth-toetsenbord zijn gekoppeld</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Drukken op een Bluetooth-toetsenbord worden pas gezien als je de service aanzet.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Zet de wifiklok alleen uit als het dashboard na het verbinden nog steeds de verkeerde datum toont.</string>
 </resources>

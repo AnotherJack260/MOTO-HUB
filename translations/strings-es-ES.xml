@@ -2960,4 +2960,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s ya está excluido de la optimización de batería, así que lo ha cerrado la gestión de apps del teléfono. En la información de la app, permite la actividad en segundo plano (en algunos teléfonos se llama Uso de batería o Inicio de apps) y fija %1$s en las apps recientes.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Tu teléfono puede cerrar %1$s en segundo plano. Excluirlo de la optimización de batería lo hace mucho menos probable en un viaje largo.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Permite que MOTO-HUB se conecte</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">En la misma pantalla, abre ⋮ y toca «Iniciar servidor de unidad principal».</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Para versiones antiguas de Android Auto</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Las versiones recientes de Android Auto requieren este paso manual.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Controles multimedia</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Teclado Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Para mandos emparejados como teclado Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Las pulsaciones del teclado Bluetooth no se detectan hasta que lo actives.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Desactiva el reloj por Wi-Fi solo si el cuadro sigue mostrando la fecha incorrecta después de conectarse.</string>
 </resources>

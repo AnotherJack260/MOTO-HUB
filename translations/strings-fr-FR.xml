@@ -2960,4 +2960,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s est déjà exclu de l\'optimisation de la batterie : c\'est donc la gestion des applis du téléphone qui l\'a fermé. Dans les infos de l\'appli, autorisez l\'activité en arrière-plan (parfois appelée Utilisation de la batterie ou Lancement des applis) et verrouillez %1$s dans les applis récentes.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Votre téléphone peut arrêter %1$s en arrière-plan. L\'exclure de l\'optimisation de la batterie rend cela bien moins probable lors d\'un long trajet.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Autorisez MOTO-HUB à se connecter</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Sur le même écran, ouvrez ⋮ et touchez « Démarrer le serveur d\'unité principale ».</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Pour les anciennes versions d\'Android Auto</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Les versions récentes d\'Android Auto exigent cette étape manuelle.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Commandes multimédia</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Clavier Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Pour les télécommandes appairées comme clavier Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Les appuis du clavier Bluetooth ne sont pas détectés tant que vous ne l\'activez pas.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Ne désactivez l\'horloge Wi-Fi que si le tableau de bord affiche encore une date erronée après la connexion.</string>
 </resources>

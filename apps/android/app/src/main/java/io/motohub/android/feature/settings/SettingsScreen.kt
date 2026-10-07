@@ -720,12 +720,12 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
             HandlebarInputMode.entries.forEach { candidate ->
                 MhChoiceRow(
                     title = when (candidate) {
-                        HandlebarInputMode.AVRCP -> motoHubText("Media keys")
-                        HandlebarInputMode.HID -> motoHubText("Keyboard remote")
+                        HandlebarInputMode.AVRCP -> motoHubText("Media controls")
+                        HandlebarInputMode.HID -> motoHubText("Bluetooth keyboard")
                     },
                     subtitle = when (candidate) {
                         HandlebarInputMode.AVRCP -> motoHubText("Most dashboards")
-                        HandlebarInputMode.HID -> motoHubText("Remotes that pair as a Bluetooth keyboard")
+                        HandlebarInputMode.HID -> motoHubText("For remotes paired as a Bluetooth keyboard")
                     },
                     selected = inputMode == candidate,
                     onClick = {
@@ -751,7 +751,7 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
             if (!openedAccessibilitySettings) {
                 MhBanner(
                     title = motoHubText("Accessibility service is off"),
-                    body = motoHubText("Keyboard remote presses aren't seen until you turn it on."),
+                    body = motoHubText("Bluetooth keyboard presses aren't seen until you turn it on."),
                     tone = MhTone.WARNING,
                     actionLabel = motoHubText("Open accessibility settings"),
                     onAction = openAccessibilitySettings
@@ -881,7 +881,7 @@ private fun ClockDetail(onBack: () -> Unit) {
                 }
             )
         }
-        MhFootnote(motoHubText("Turn the Wi-Fi clock off only if your dashboard still shows 01.01.1970."))
+        MhFootnote(motoHubText("Turn off the Wi-Fi clock only if the dashboard still shows the wrong date after connecting."))
     }
 }
 

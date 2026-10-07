@@ -419,6 +419,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | **Mirroring / Android Auto / External display** | Mirror, Auto, External | These are the mode names (nouns) everywhere. |
 | **app settings** | App info, app info | Android's per-app page. |
 | **report** | diagnostics (as a verb object), log (for the upload) | The screen name "Diagnostics" stays, because legal text cites it. |
+| **Media controls / Bluetooth keyboard** | Media keys, Keyboard remote, AVRCP, HID | The two Handlebar buttons types. "Bluetooth keyboard" is for remotes paired as a Bluetooth keyboard. |
 | **and** | & | |
 
 ### Form rules
@@ -556,6 +557,7 @@ A row's title is always the title of the screen it opens.
 | Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · Check for updates on launch · About MOTO-HUB · MOTO-HUB ADV-SOLO · Developer tools |
 | Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs · Legal (About) |
 | Video quality choices | Picture: Lighter · Balanced · Sharper (not "Smoother": a frame-rate subtitle already says "Smoothest"). Frame rate: Auto · 30 fps · 24 fps · 20 fps |
+| Button type choices | Media controls (Most dashboards) · Bluetooth keyboard (For remotes paired as a Bluetooth keyboard) |
 | Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.

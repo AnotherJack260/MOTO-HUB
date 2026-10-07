@@ -53,7 +53,8 @@ import io.motohub.android.ui.theme.MotoHubColors
  * the Developer settings list - but "Start head unit server" is not in that list at all. It is
  * in the three-dot menu at the top right of Android Auto's ordinary settings screen. Step 2
  * says so in as many words, because the rider who scrolls Developer settings looking for it
- * finds nothing and concludes the whole page is wrong.
+ * finds nothing and concludes the whole page is wrong. Rider copy names the head unit server only
+ * by quoting that menu label; the step itself is "Allow MOTO-HUB to connect".
  *
  * Shown as a full-screen overlay straight from MainActivity, not inside the hub. MhScreen brings
  * the background and the back handling, so the swipe-back gesture closes the page instead of
@@ -86,8 +87,8 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
             )
             StepRow(
                 2,
-                motoHubText("Start the head unit server"),
-                motoHubText("Same screen, three-dot menu at the top right. Not in Developer settings.")
+                motoHubText("Allow MOTO-HUB to connect"),
+                motoHubText("On the same screen, open ⋮ and tap “Start head unit server”.")
             )
             StepRow(
                 3,
@@ -100,7 +101,7 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
                 motoHubText("It connects by itself within a few seconds.")
             )
         }
-        MhSectionHeader(motoHubText("Also worth doing"))
+        MhSectionHeader(motoHubText("For older Android Auto versions"))
         MhListGroup {
             // Not step 5: it isn't part of the sequence above, so it gets a glyph, not a number.
             StepRow(
@@ -109,12 +110,7 @@ fun AndroidAutoHelpScreen(onBack: () -> Unit) {
                 body = motoHubText("In Developer settings. Older versions call it “Unknown sources”.")
             )
         }
-        MhFootnote(
-            motoHubText(
-                "Android Auto 17.4 stopped apps from asking it to start. The head unit server lets " +
-                    "MOTO-HUB connect to it instead."
-            )
-        )
+        MhFootnote(motoHubText("Recent Android Auto versions require this manual step."))
     }
 }
 

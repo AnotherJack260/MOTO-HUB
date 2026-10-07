@@ -2384,4 +2384,22 @@
     <string name="legacy_1_s_is_already_exempt_from_battery_optimisation__9278d741">%1$s è già escluso dall\'ottimizzazione della batteria, quindi l\'ha chiuso la gestione app del telefono. Nelle info dell\'app consenti l\'attività in background (su alcuni telefoni si chiama Utilizzo batteria o Avvio app) e blocca %1$s nelle app recenti.</string>
     <!-- BatteryOptimisationGate.kt -->
     <string name="legacy_your_phone_may_stop_1_s_in_the_background_exclud_bdd32222">Il telefono può chiudere %1$s in background. Escluderlo dall\'ottimizzazione della batteria lo rende molto meno probabile durante un viaggio lungo.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_allow_moto_hub_to_connect_35d1cd29">Consenti a MOTO-HUB di collegarsi</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_on_the_same_screen_open_and_tap_start_head_unit__2fa76386">Nella stessa schermata, apri ⋮ e tocca “Avvia server unità principale”.</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_for_older_android_auto_versions_55224b8">Per le versioni meno recenti di Android Auto</string>
+    <!-- AndroidAutoHelpScreen.kt -->
+    <string name="legacy_recent_android_auto_versions_require_this_manual_b16b6885">Le versioni recenti di Android Auto richiedono questo passaggio manuale.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_media_controls_13302392">Controlli multimediali</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_b5e27139">Tastiera Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_for_remotes_paired_as_a_bluetooth_keyboard_a6b2cd49">Per telecomandi associati come tastiera Bluetooth</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Le pressioni della tastiera Bluetooth non vengono rilevate finché non lo attivi.</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Disattiva l\'orologio via Wi-Fi solo se, dopo la connessione, il cruscotto mostra ancora la data sbagliata.</string>
 </resources>
