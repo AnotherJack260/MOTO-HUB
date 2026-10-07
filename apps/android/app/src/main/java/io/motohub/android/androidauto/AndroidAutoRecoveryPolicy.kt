@@ -42,6 +42,20 @@ internal fun androidAutoRecoveryRefusal(hasReachedStreaming: Boolean, enabled: B
 internal fun companionAutoRecovery(provided: Boolean, value: Boolean): Boolean? =
     if (provided) value else null
 
+/**
+ * Whether a phone-only session Android Auto dropped at [droppedAtElapsed] (0 when nothing dropped)
+ * is still worth starting again at [nowElapsed].
+ *
+ * A phone call is the usual drop: the dialer comes to the front and Android Auto closes the socket
+ * (open-headunit #83, the one HeadlessUnit answers by restarting the session after the call). Past
+ * the window the rider has most likely moved on, and a session starting by itself then would be a
+ * surprise rather than a recovery.
+ */
+internal fun isPhoneOnlyRestartDue(droppedAtElapsed: Long, nowElapsed: Long): Boolean =
+    droppedAtElapsed > 0L && nowElapsed - droppedAtElapsed <= PHONE_ONLY_RESTART_WINDOW_MS
+
+internal const val PHONE_ONLY_RESTART_WINDOW_MS = 10 * 60_000L
+
 internal fun isAndroidAutoWatchdogStalled(
     nowElapsed: Long,
     lastProgressElapsed: Long,

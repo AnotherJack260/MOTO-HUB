@@ -14,4 +14,10 @@ package io.motohub.android.androidauto
 interface AndroidAutoPhoneOnlyBridge {
     fun start(onFailure: (String) -> Unit)
     fun stop()
+
+    /**
+     * True once for a session Android Auto dropped without the rider stopping it (a phone call,
+     * typically) while the drop is still recent enough to start again. Consumes the drop.
+     */
+    fun takeInterruptedSession(): Boolean
 }

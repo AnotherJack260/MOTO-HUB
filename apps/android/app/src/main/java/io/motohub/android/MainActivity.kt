@@ -1042,6 +1042,25 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                 }
+                // A call drops a phone-only session: the dialer covers the app and Android Auto
+                // closes its socket (open-headunit #83). Hanging up brings the rider back here, so
+                // the resume is when it starts again - once per drop, through the same permission
+                // checks a tap goes through, and with the preview left as the rider had it.
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME &&
+                            androidAutoPhoneOnlyBridge.takeInterruptedSession()
+                        ) {
+                            ProjectionEventLog.record(
+                                "ANDROID_AUTO",
+                                "Restarting Android Auto on this phone after it was interrupted (e.g. a call)."
+                            )
+                            continueAndroidAutoPhoneOnlyStart(showAndroidAutoPreview)
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
                 val overlayPermissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) {

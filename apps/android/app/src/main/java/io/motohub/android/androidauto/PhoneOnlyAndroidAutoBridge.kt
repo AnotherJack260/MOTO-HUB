@@ -4,6 +4,7 @@
 package io.motohub.android.androidauto
 
 import android.content.Context
+import android.os.SystemClock
 import android.view.Surface
 import io.motohub.android.aa.AaReceiver
 import io.motohub.android.aa.AaSelfMode
@@ -72,9 +73,14 @@ class PhoneOnlyAndroidAutoBridge(private val context: Context) :
     private var selfModeJob: Job? = null
     private var videoWidth = 0
     private var videoHeight = 0
+    // When Android Auto last ended a session the rider did not stop; 0 when there is nothing to
+    // start again. Cleared by start() and stop() - stop()'s own receiver.stop() reaches
+    // onSessionEnded with userExit=false too, and a Stop must never come back by itself.
+    @Volatile private var interruptedAtElapsed = 0L
 
     override fun start(onFailure: (String) -> Unit) {
         if (receiver != null) return
+        interruptedAtElapsed = 0L
         if (AndroidAutoRuntime.isActive()) {
             onFailure("Android Auto is already running.")
             return
@@ -132,6 +138,7 @@ class PhoneOnlyAndroidAutoBridge(private val context: Context) :
                 if (handlebarEnabled) mediaButtonBridge?.reassertCaptureAfterTransportReady()
             },
             onSessionEnded = { clean, userExit ->
+                if (!userExit) interruptedAtElapsed = SystemClock.elapsedRealtime()
                 AndroidAutoRuntime.publish(
                     AndroidAutoRuntimeState.Stopped(
                         when {
@@ -168,11 +175,18 @@ class PhoneOnlyAndroidAutoBridge(private val context: Context) :
         selfModeJob?.cancel()
         selfModeJob = null
         releaseSession()
+        interruptedAtElapsed = 0L
         AndroidAutoReceiverOwnership.release(this)
         AndroidAutoPreviewRuntime.clear(this)
         if (hadSession) {
             AndroidAutoRuntime.publish(AndroidAutoRuntimeState.Stopped("Stopped by the user."))
         }
+    }
+
+    override fun takeInterruptedSession(): Boolean {
+        val droppedAt = interruptedAtElapsed
+        interruptedAtElapsed = 0L
+        return isPhoneOnlyRestartDue(droppedAt, SystemClock.elapsedRealtime())
     }
 
     /**
