@@ -2979,4 +2979,7 @@
     <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Drücke der Bluetooth-Tastatur kommen erst an, wenn du die Bedienungshilfe einschaltest.</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Schalte die WLAN-Uhr nur aus, wenn das Display nach dem Verbinden noch ein falsches Datum zeigt.</string>
+    <!-- HubHomeScreen.kt -->
+    <string name="legacy_motorcycle_options_8e431f2f">Motorradoptionen</string>
+    <string name="legacy_motorcycle_details_35958ad3">Motorraddetails</string>
 </resources>

@@ -2402,4 +2402,7 @@
     <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">As pressões do teclado Bluetooth só são detetadas depois de o ativar.</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Desligue o relógio por Wi-Fi só se o painel ainda mostrar a data errada depois da ligação.</string>
+    <!-- HubHomeScreen.kt -->
+    <string name="legacy_motorcycle_options_8e431f2f">Opções da mota</string>
+    <string name="legacy_motorcycle_details_35958ad3">Detalhes da mota</string>
 </resources>

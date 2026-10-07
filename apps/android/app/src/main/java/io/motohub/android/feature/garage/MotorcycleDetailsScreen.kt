@@ -296,34 +296,12 @@ private fun MotorcycleDetailsMainList(
     }
 
     if (showPhotoSheet) {
-        // The same two picker rows as the QR import sheet, plus the camera and removal.
-        MhSheet(onDismiss = { showPhotoSheet = false }, title = motoHubText("Motorcycle photo")) { close ->
-            MhListRow(
-                title = motoHubText("Take a photo"),
-                icon = Icons.Rounded.PhotoCamera,
-                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.CAMERA) } }
-            )
-            MhListRow(
-                title = motoHubText("Choose from gallery"),
-                icon = Icons.Rounded.PhotoLibrary,
-                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.GALLERY) } }
-            )
-            MhListRow(
-                title = motoHubText("Browse files"),
-                subtitle = motoHubText("Downloads, cloud drives and other folders"),
-                icon = Icons.Rounded.FolderOpen,
-                onClick = { close { onChoosePhoto(MotorcyclePhotoSource.FILES) } }
-            )
-            if (profile.photoPath != null) {
-                MhListRow(
-                    title = motoHubText("Remove photo"),
-                    icon = Icons.Rounded.DeleteOutline,
-                    iconTint = MotoHubColors.Error,
-                    titleColor = MaterialTheme.colorScheme.error,
-                    onClick = { close(onRemovePhoto) }
-                )
-            }
-        }
+        MotorcyclePhotoSheet(
+            hasPhoto = profile.photoPath != null,
+            onDismiss = { showPhotoSheet = false },
+            onChoosePhoto = onChoosePhoto,
+            onRemovePhoto = onRemovePhoto
+        )
     }
 
     nameDraft?.let { draft ->
@@ -347,6 +325,47 @@ private fun MotorcycleDetailsMainList(
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(onDone = { close(save) })
+            )
+        }
+    }
+}
+
+/**
+ * Where a motorcycle's photo comes from: camera, gallery, files, and removal when there is one.
+ * The same two picker rows as the QR import sheet. Motorcycle details and the Ride hero's options
+ * both open it.
+ */
+@Composable
+internal fun MotorcyclePhotoSheet(
+    hasPhoto: Boolean,
+    onDismiss: () -> Unit,
+    onChoosePhoto: (MotorcyclePhotoSource) -> Unit,
+    onRemovePhoto: () -> Unit
+) {
+    MhSheet(onDismiss = onDismiss, title = motoHubText("Motorcycle photo")) { close ->
+        MhListRow(
+            title = motoHubText("Take a photo"),
+            icon = Icons.Rounded.PhotoCamera,
+            onClick = { close { onChoosePhoto(MotorcyclePhotoSource.CAMERA) } }
+        )
+        MhListRow(
+            title = motoHubText("Choose from gallery"),
+            icon = Icons.Rounded.PhotoLibrary,
+            onClick = { close { onChoosePhoto(MotorcyclePhotoSource.GALLERY) } }
+        )
+        MhListRow(
+            title = motoHubText("Browse files"),
+            subtitle = motoHubText("Downloads, cloud drives and other folders"),
+            icon = Icons.Rounded.FolderOpen,
+            onClick = { close { onChoosePhoto(MotorcyclePhotoSource.FILES) } }
+        )
+        if (hasPhoto) {
+            MhListRow(
+                title = motoHubText("Remove photo"),
+                icon = Icons.Rounded.DeleteOutline,
+                iconTint = MotoHubColors.Error,
+                titleColor = MaterialTheme.colorScheme.error,
+                onClick = { close(onRemovePhoto) }
             )
         }
     }

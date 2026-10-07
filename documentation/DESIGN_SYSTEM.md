@@ -104,8 +104,8 @@ compare character by character: SSID, support ID, version, hex.
 
 | Style | Size / line | Weight | Use |
 |---|---|---|---|
-| `displaySmall` | 32 / 38 | Bold, −0.5 | screen title (large, left-aligned, wraps; twice the row text) |
-| `headlineMedium` | 22 / 28 | Bold | sheet title, hero name |
+| `displaySmall` | 32 / 38 | Bold, −0.5 | screen title (large, left-aligned, wraps; twice the row text), the Ride hero name |
+| `headlineMedium` | 22 / 28 | Bold | sheet title |
 | `titleLarge` | 20 / 26 | SemiBold | card hero lines |
 | `titleMedium` | 16 / 22 | Medium | list row title (SemiBold for the compact title in the top bar) |
 | `titleSmall` | 15 / 20 | SemiBold | snackbar text, small titles |
@@ -138,7 +138,7 @@ Rules:
   - `extraLarge` 28: sheet top corners
   - Buttons and status chips are full pills: 56 dp, or 40 dp for a compact
     secondary pill.
-  - Icon containers are circles: 40 dp in rows, 56 dp in heroes.
+  - Icon containers are circles: 40 dp in rows, 56 dp in an empty state.
 - **Spacing.** 4 dp grid.
   - Screen gutter 16. Title, headers and footnotes sit on it too, not 4 dp in.
   - Card padding 16.
@@ -161,7 +161,7 @@ Rules:
 | `MhSecondaryButton` | `Fill` pill, 56 dp, full width (`fillWidth = false` to wrap), light text. `destructive = true` gives red text. `size = MhButtonSize.COMPACT` draws 40 dp in a 48 dp target, 16 dp side padding, 15 sp label, and wraps its label by default: the action inside a banner, or a row's `trailing` action ("Use"). Never compact for a screen's or a sheet's own actions. |
 | `MhTextButton` | Text only, 48 dp target, for "Cancel", "Skip", "Not now". Never for back or close. |
 | `MhIconButton` | 48 dp icon-only button with a plain 24 dp glyph. |
-| `MhIconCircle` | Neutral icon in a `Fill` circle, 40 dp in rows, 56 dp in heroes. |
+| `MhIconCircle` | Neutral icon in a `Fill` circle, 40 dp in rows, 56 dp in an empty state. |
 | `MhListGroup` | Rounded `surface` card holding rows, no dividers. |
 | `MhListRow` | Leading icon circle (optional), title, subtitle (never truncated), trailing value, chevron, or a control (a compact `MhSecondaryButton` fits). `leading` draws instead of the icon circle, for a 40 dp avatar (a motorcycle's photo). The value is one short word or number, never a compound like "A · B": the column is 140 dp and two lines, and a translation breaks at the separator. A compound state belongs on the screen the row opens. A trailing slot holds one thing too; a status ("Pre-release") goes in the subtitle, not a chip beside the value. `subtitleColor = MotoHubColors.Warning` (with no value) flags a parent row whose screen has a broken prerequisite ("Accessibility service is off"). The chevron means "opens a screen": `showChevron` defaults to `!LocalMhInSheet.current`, so rows on a sheet have none. |
 | `MhSwitchRow` / `MhSwitch` | An on/off setting. The whole row toggles and is the one control TalkBack announces, with its state. On: black thumb on lime. Off: full-size white thumb on `Fill` (Material's small grey dot read as disabled). |
@@ -183,7 +183,7 @@ Rules:
 | `Modifier.reserveSnackbarClearance()` / `MotoHubSnackbar.bottomClearance` | A pinned bottom action reports its height (inside the navigation-bar and keyboard insets) while it is on screen; `bottomClearance` is the tallest one, or 0. `MhScreen`'s `bottomBar` already does it; Ride's pinned slot applies the modifier itself. |
 | `MhStatusChip` | Pill with a dot: Live (lime), Connecting (pulsing), Offline (grey), Action needed (warning). Only Connecting pulses; with animations off the dot rests fully lit. A change sweeps the colours, crossfades the word and lets the width follow, on the 220 ms clock. |
 | `MhMotion` | The motion tokens (see Motion) and `fadeThrough(animateHeight)`, `foldIn` / `foldOut`. |
-| `Modifier.mhPressable(shape, enabled, role, onClick)` | Clickable, ripple and the 98% dip, clipped to `shape`: a custom card that acts like a pill (the Garage card, the Ride name). First in the chain, before the background. |
+| `Modifier.mhPressable(shape, enabled, role, onClick)` | Clickable, ripple and the 98% dip, clipped to `shape`: a custom card that acts like a pill (the Garage card, the Ride hero). First in the chain, before the background. |
 | `MhPop(visible) { }` | A confirmation glyph that pops in (0.8 to 1 on `pop()`, with a fade) when `visible` turns true, and fades out. No pop on first composition. Give it a fixed-size parent. |
 | `ScreenCrossfade` | Swaps a screen's content with `MhMotion.fadeThrough`, keeping each one's saved state. `animateHeight = true` makes the height follow on the same clock (Ride's states, Garage); leave it off for full-screen swaps (the tabs). `ScreenSlideTransition` / `HubScreenTransition` are the navigation slides. |
 | `MhBanner` | Inline card for a failure or caution: icon, one-line title, one or two lines of body, one action (a compact pill, so the banner never outweighs the screen's lime button), "Details" for the rest. A plain `surface` card like the groups around it (`Fill` on a sheet or dialog); the colour is only on its filled 22 dp glyph: Error red, Warning amber, Info grey. No tinted slab. "Details" is plain text in a 48 dp target that starts on the body's line. The action row is a `FlowRow`: "Details" sits 20 dp after the pill and drops under it, onto the body's line, when the two don't fit; it never wraps. An action label is at most 26 characters in every language, so the pill stays one line; a translation may use a noun phrase ("Battery settings") to fit. An action inside "Details" is compact too, never a 56 dp pill. `onDismiss` adds a 48 dp close icon in the title row. |
@@ -311,7 +311,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
     equality, so it never changes) to a presentation type.
   - Every failure and caution is an `MhBanner` (P5): a title from the glossary,
     one helpful line, and one action that fixes it, as a compact pill. On Ride that action is
-    never "Try again", because the hero button is the retry.
+    never "Try again", because the pinned lime button is the retry.
   - The raw message sits behind "Details".
   - `MotoHubNotice` is only for the long Android Auto instructions.
 - **Destructive confirm (P2).** A sheet titled "<Verb> <thing>?" that names the
@@ -358,14 +358,40 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - **Fields.** An empty field that stands for a default (an unnamed motorcycle is
   "My motorcycle") shows that default as `placeholder`, never a bare label.
 - **Motorcycle photos.** `MotorcyclePhoto` crops the photo to its shape.
-  - Without a photo, an avatar (40 dp in a row or the Switch motorcycle sheet,
-    56 dp in the Ride hero) shows `TwoWheeler` on `Fill` at the icon circle's
-    0.55 glyph ratio, the same motorcycle everywhere.
+  - Without a photo, an avatar (40 dp in a row or the Switch motorcycle sheet)
+    shows `TwoWheeler` on `Fill` at the icon circle's 0.55 glyph ratio, the
+    same motorcycle everywhere.
   - `AddAPhoto` appears only where a tap adds a photo: the "Add photo" row in
-    Motorcycle details, which then opens the photo sheet.
-  - The Ride hero starts the name on the 16 dp gutter, like every large title,
-    and puts the 56 dp avatar at the end, so the title doesn't jump sideways
-    between tabs.
+    Motorcycle details and in the Ride hero's "Motorcycle options" sheet. Both
+    open the same photo sheet (`MotorcyclePhotoSheet`).
+- **Ride.** One composition in every state: hero card, then the state's content,
+  then the pinned action slot above the dock.
+  - The hero is a 208 dp card (it grows only for a name that wraps) in the 16 dp
+    gutter, 20 dp corners. With a photo: the photo edge to edge, cropped, under a
+    vertical black scrim from 15% to 75%. Without one: a tonal gradient from
+    `SurfaceHigh` (top-left) to `background` and a 120 dp `TwoWheeler`
+    watermark at 8% white bleeding off the end. A restrained lime radial bloom
+    is added only while connected or live; offline stays neutral, so lime never
+    claims a link that isn't there. Bottom-left, 16 dp in: the name in
+    `displaySmall` (wraps, never cut), then the status chip and the monospaced
+    Wi-Fi name. With no motorcycle the same card says "Connect your
+    motorcycle" and one line of guidance, with no chip.
+  - At rest and when connected the hero is a button (`mhPressable`, a "more"
+    glyph top-right) that opens the "Motorcycle options" sheet (P1): "Switch
+    motorcycle" (only with two or more saved), "Add photo" / "Change photo"
+    (the photo sheet) and "Motorcycle details". Connecting or streaming it does
+    nothing and the glyph fades out.
+  - Between the hero and the slot: the failure banner right under the hero,
+    the delivery warning, the system-kill notice (at rest only), then the
+    state's content (the two setup rows with no motorcycle, the timeline, the
+    mode rows, the session controls) and the promo (rest only, P12).
+  - The pinned slot keeps one place for the thing to press, with snackbar
+    clearance and the 400 ms tap guard: lime "Scan QR code" with no
+    motorcycle; at rest and after a failure lime "Connect" / "Try again" with
+    a neutral "Connection options" pill directly under it (the P7 sheet);
+    "Cancel" while connecting, "Disconnect" in mode selection, "Stop
+    streaming" (red text) while live. The slot's height follows its content on
+    the 220 ms clock.
 - **Settings.**
   - Every choice is a row in a group. Exclusive choices show a trailing
     checkmark in one group.
@@ -393,13 +419,13 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 
 | # | Situation | Pattern |
 |---|---|---|
-| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title, with no chevron. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Ride options, connection type, import QR, motorcycle photo, the action picker, timing and the teach prerequisite. |
+| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title, with no chevron. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Connection options, Motorcycle options, connection type, import QR, motorcycle photo, the action picker, timing and the teach prerequisite. |
 | P2 | Destructive confirm | An `MhSheet` titled "<Verb> <thing>?" that names the thing, with a one-line consequence. The primary uses `primaryStyle = DESTRUCTIVE` (red text on a red-tinted pill, heavier than the grey Cancel) and fires the haptic itself. The secondary is "Cancel". On success, a past-tense snackbar. This covers Remove motorcycle, Reset actions and Clear the log. "Remove photo" is a red row that acts at once with a snackbar, because it is already inside a sheet. |
 | P3 | Blocking | Only three things block. Safety is a full-screen page. Crash consent and the unverified QR use `MhDialog`. Everything else is a sheet, a snackbar or inline. |
 | P4 | Consent, trust and data answers | **No lime**: two equal neutral pills. This covers crash consent, the report notice, the unverified QR and the wire verdict. |
-| P5 | Inline problem | `MhBanner`: a title from the glossary, one body line, one compact action (the fix, never "Try again" on Ride, where the hero button is the retry), then "Details". The raw text is shown as is. |
+| P5 | Inline problem | `MhBanner`: a title from the glossary, one body line, one compact action (the fix, never "Try again" on Ride, where the pinned lime button is the retry), then "Details". The raw text is shown as is. |
 | P6 | Lime | One lime-filled **action** per layer. A sheet or dialog is its own layer, and the scrimmed screen behind it does not count. Lime as *state* is allowed: switch on, check mark, live dot, progress, success icon. The selected tab is white. The snackbar action is not lime. |
-| P7 | Setup entry points | The same three rows with the same strings and icons in Ride PAIRING, the Ride options sheet and Garage. Pairing success returns to the tab it was launched from and does not auto-connect. Every save path ends with "Motorcycle saved". |
+| P7 | Setup entry points | The same three rows with the same strings and icons in Ride PAIRING (lime "Scan QR code" plus two rows), the Ride "Connection options" sheet (the neutral pill under Connect) and Garage. Pairing success returns to the tab it was launched from and does not auto-connect. Every save path ends with "Motorcycle saved". |
 | P8 | Developer reach | App-wide tools live in Settings › Developer tools (the last group, no header). Per-motorcycle tools live in Motorcycle details › Advanced. The simulator profile stays in a "Developer" group at the end of Dashboard profile, reachable in every build (owner decision: dev tools stay reachable). Application logs live in Diagnostics › Support. |
 | P9 | Back | System back always does what the back icon does. Nested Settings states go to their parent. Sheets and full-screen pages dismiss. Scanner and wizard exit through their cleanup callback. |
 | P10 | Feedback order | A snackbar is emitted only after the sheet that caused it has closed. An error while a sheet stays open goes inline in the sheet. |
@@ -445,7 +471,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | Import QR code · From a photo or screenshot (icon Image) | Ride ×2 · Garage · import sheet title | Import QR, Import QR from a photo, Import QR from an image |
 | Enter details manually · Wi-Fi name and password (icon Keyboard) | Ride ×2 · Garage · scanner button · manual screen title | Connect manually, No QR? Manual setup, No QR code? Type… |
 | Take a photo · Choose from gallery · Browse files (Downloads, cloud drives and other folders) · Remove photo | photo sheet; import sheet (minus camera and remove) | "Pick one of your photos." subtitle |
-| Android Auto on this phone · No motorcycle needed | Ride options · Controls prerequisite | Start on this phone (no T-Box), No bike needed. Runs on this screen. |
+| Android Auto on this phone · No motorcycle needed | Connection options · Controls prerequisite | Start on this phone (no T-Box), No bike needed. Runs on this screen. |
 | Connect · Connect to %1$s · Connection options · Disconnect · Stop streaming | Ride, Controls | |
 | Try again | Ride lime label in ERROR · snackbar action | Retry, Retry connection, Try another image |
 | Show me how | opens "Android Auto won't start" | How to start Android Auto |
@@ -550,7 +576,7 @@ A row's title is always the title of the screen it opens.
 | Area | Names |
 |---|---|
 | Tabs | Ride · Garage · Settings |
-| Ride | Connect your motorcycle · Show on the dashboard · Connection options · Switch motorcycle (sheet) · Allow notifications / Allow the microphone / Allow notifications and the microphone (permission sheet before the first stream, rows "Notifications · Keep streaming visible and let you stop it" and "Microphone · For Google Assistant and calls") |
+| Ride | Connect your motorcycle · Show on the dashboard · Connection options · Motorcycle options (sheet: Switch motorcycle · Add photo / Change photo · Motorcycle details) · Switch motorcycle (sheet) · Allow notifications / Allow the microphone / Allow notifications and the microphone (permission sheet before the first stream, rows "Notifications · Keep streaming visible and let you stop it" and "Microphone · For Google Assistant and calls") |
 | Garage | Garage · Current motorcycle · Other motorcycles · Add a motorcycle |
 | Motorcycle details | Name (row and its sheet) · Android Auto · Connection · Advanced · Display fit · Screen margins · Dashboard profile · Dashboard capabilities |
 | Settings headers | On the motorcycle · Connection · Help · App |

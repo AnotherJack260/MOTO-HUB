@@ -2973,4 +2973,7 @@
     <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">켜기 전에는 Bluetooth 키보드 입력이 감지되지 않습니다.</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">연결한 뒤에도 계기판 날짜가 틀리게 표시될 때만 Wi-Fi 시계를 끄세요.</string>
+    <!-- HubHomeScreen.kt -->
+    <string name="legacy_motorcycle_options_8e431f2f">오토바이 옵션</string>
+    <string name="legacy_motorcycle_details_35958ad3">오토바이 세부정보</string>
 </resources>

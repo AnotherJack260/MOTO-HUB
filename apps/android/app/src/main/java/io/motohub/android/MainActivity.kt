@@ -624,6 +624,33 @@ class MainActivity : ComponentActivity() {
                         allowInAppSettings(motoHubText("Allow the camera to take a photo"))
                     }
                 }
+                // Motorcycle details and the Ride hero's options: one photo flow behind both.
+                fun chooseMotorcyclePhoto(profile: MotorcycleProfile, source: MotorcyclePhotoSource) {
+                    photoTargetProfileId = profile.id
+                    ProjectionEventLog.record("GARAGE", "Photo source chosen for ${profile.ssid}: $source.")
+                    when (source) {
+                        MotorcyclePhotoSource.GALLERY -> motorcyclePhotoLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                        MotorcyclePhotoSource.FILES -> motorcyclePhotoFileLauncher.launch(arrayOf("image/*"))
+                        MotorcyclePhotoSource.CAMERA ->
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                                PackageManager.PERMISSION_GRANTED
+                            ) {
+                                launchMotorcycleCamera()
+                            } else {
+                                motorcyclePhotoCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                    }
+                }
+                fun removeMotorcyclePhoto(profile: MotorcycleProfile) {
+                    val oldPath = profile.photoPath
+                    if (viewModel.updateMotorcycle(profile.copy(photoPath = null))) {
+                        motorcyclePhotoStore.delete(oldPath)
+                        ProjectionEventLog.record("GARAGE", "Photo removed for motorcycle ${profile.ssid}.")
+                        MotoHubSnackbar.success(context, motoHubText("Photo removed"))
+                    }
+                }
                 // The consent result can arrive before the activity is resumed, and some ROMs
                 // refuse the foreground start in that window (WB-27). The consent is then held and
                 // tried once more on the next resume; a second refusal ends it as a cancellation.
@@ -1280,6 +1307,16 @@ class MainActivity : ComponentActivity() {
                             MotoHubSnackbar.error(context, motoHubText("Couldn't switch motorcycles"))
                     }
                 }
+                // Garage's card and row, and the Ride hero's options.
+                fun openMotorcycleDetails(profileId: String) {
+                    val profile = state.motorcycles.firstOrNull { it.id == profileId } ?: return
+                    motorcycleDetailsDisplayMode = displayModeStore.load(profile)
+                    motorcycleDetailsScreenMargins = screenMarginsStore.load(
+                        profile,
+                        TBoxModelProfile.fromModelId(profile.modelId).defaultScreenMargins
+                    )
+                    editorProfileId = profileId
+                }
                 // "Import QR code" from any tab: Ride and Garage both open the same sheet.
                 val importQrPhoto: () -> Unit = {
                     ProjectionEventLog.record("UI", "User requested QR decoding from a photo.")
@@ -1457,10 +1494,8 @@ class MainActivity : ComponentActivity() {
                            profile = profile,
                            displayMode = motorcycleDetailsDisplayMode,
                             screenMargins = motorcycleDetailsScreenMargins,
-                           onBack = {
-                                editorProfileId = null
-                                selectedTab = HubTab.GARAGE
-                            },
+                            // Back to the tab it was opened from: Garage, or the Ride hero's options.
+                            onBack = { editorProfileId = null },
                             onSave = { updatedProfile -> viewModel.updateMotorcycle(updatedProfile) },
                             onOpenCapabilities = {
                                 capabilityProfileId = profile.id
@@ -1484,32 +1519,8 @@ class MainActivity : ComponentActivity() {
                                 screenMarginsStore.save(profile, margins)
                                 ProjectionEventLog.record("ANDROID_AUTO", "TFT screen margins changed for ${profile.ssid}: $margins.")
                             },
-                           onChoosePhoto = { source ->
-                                photoTargetProfileId = profile.id
-                                ProjectionEventLog.record("GARAGE", "Photo source chosen for ${profile.ssid}: $source.")
-                                when (source) {
-                                    MotorcyclePhotoSource.GALLERY -> motorcyclePhotoLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                    MotorcyclePhotoSource.FILES -> motorcyclePhotoFileLauncher.launch(arrayOf("image/*"))
-                                    MotorcyclePhotoSource.CAMERA ->
-                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                                            PackageManager.PERMISSION_GRANTED
-                                        ) {
-                                            launchMotorcycleCamera()
-                                        } else {
-                                            motorcyclePhotoCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                        }
-                                }
-                            },
-                            onRemovePhoto = {
-                                val oldPath = profile.photoPath
-                                if (viewModel.updateMotorcycle(profile.copy(photoPath = null))) {
-                                    motorcyclePhotoStore.delete(oldPath)
-                                    ProjectionEventLog.record("GARAGE", "Photo removed for motorcycle ${profile.ssid}.")
-                                    MotoHubSnackbar.success(context, motoHubText("Photo removed"))
-                                }
-                            },
+                            onChoosePhoto = { source -> chooseMotorcyclePhoto(profile, source) },
+                            onRemovePhoto = { removeMotorcyclePhoto(profile) },
                             onDelete = {
                                 when (viewModel.deleteMotorcycle(profile.id)) {
                                     HubViewModel.GarageResult.DONE -> {
@@ -1627,6 +1638,16 @@ class MainActivity : ComponentActivity() {
                         onSwitchMotorcycle = {
                             ProjectionEventLog.record("UI", "Switch motorcycle sheet opened.")
                             showMotorcycleSwitcher = true
+                        },
+                        onOpenMotorcycleDetails = { state.session.motorcycle?.id?.let(::openMotorcycleDetails) },
+                        // The saved profile, not the session's copy: the photo is written back to it.
+                        onChooseMotorcyclePhoto = { source ->
+                            state.motorcycles.firstOrNull { it.id == state.session.motorcycle?.id }
+                                ?.let { chooseMotorcyclePhoto(it, source) }
+                        },
+                        onRemoveMotorcyclePhoto = {
+                            state.motorcycles.firstOrNull { it.id == state.session.motorcycle?.id }
+                                ?.let(::removeMotorcyclePhoto)
                         },
                         onScanQr = {
                             ProjectionEventLog.record("UI", "User requested live QR scanning.")
@@ -1809,17 +1830,7 @@ class MainActivity : ComponentActivity() {
                                     showManualPairing = true
                                 },
                                 onSelectMotorcycle = ::selectMotorcycle,
-                                onOpenDetails = { profileId ->
-                                    val profile = state.motorcycles.firstOrNull { it.id == profileId }
-                                    if (profile != null) {
-                                       motorcycleDetailsDisplayMode = displayModeStore.load(profile)
-                                        motorcycleDetailsScreenMargins = screenMarginsStore.load(
-                                            profile,
-                                            TBoxModelProfile.fromModelId(profile.modelId).defaultScreenMargins
-                                        )
-                                       editorProfileId = profileId
-                                    }
-                                }
+                                onOpenDetails = ::openMotorcycleDetails
                             )
                         },
                         settingsContent = {

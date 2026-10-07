@@ -15,41 +15,45 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ScreenShare
+import androidx.compose.material.icons.rounded.AddAPhoto
 import androidx.compose.material.icons.rounded.Brightness4
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Keyboard
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.material.icons.rounded.Usb
@@ -66,9 +70,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -83,6 +92,8 @@ import io.motohub.android.BuildConfig
 import io.motohub.android.androidauto.AndroidAutoRuntime
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.feature.garage.MotorcyclePhoto
+import io.motohub.android.feature.garage.MotorcyclePhotoSheet
+import io.motohub.android.feature.garage.MotorcyclePhotoSource
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.SessionPhase
 import io.motohub.android.session.TBoxConnectionMode
@@ -106,7 +117,6 @@ import io.motohub.android.ui.components.MhSheet
 import io.motohub.android.ui.components.MhStatusChip
 import io.motohub.android.ui.components.MhSwitchRow
 import io.motohub.android.ui.components.MhTone
-import io.motohub.android.ui.components.MhTopBar
 import io.motohub.android.ui.components.MotoHubBackground
 import io.motohub.android.ui.components.MotoHubNotice
 import io.motohub.android.ui.components.MotoHubSnackbar
@@ -157,8 +167,12 @@ fun HubHomeScreen(
     onDiscardTrialledProfile: () -> Unit = {},
     diagnosticsOffer: DiagnosticsOffer? = null,
     onOpenAdvancedPromo: () -> Unit = {},
-    // A tap on the motorcycle's name: MainActivity opens the "Switch motorcycle" sheet.
+    // The hero's options sheet: "Switch motorcycle" (MainActivity's switcher sheet), the photo
+    // (the same flow as Motorcycle details) and Motorcycle details itself.
     onSwitchMotorcycle: () -> Unit = { onTabSelected(HubTab.GARAGE) },
+    onChooseMotorcyclePhoto: (MotorcyclePhotoSource) -> Unit = {},
+    onRemoveMotorcyclePhoto: () -> Unit = {},
+    onOpenMotorcycleDetails: () -> Unit = {},
     // The dock shows only on the tab roots; a Settings sub-screen covers it like any pushed screen.
     showDock: Boolean = true
 ) {
@@ -266,9 +280,9 @@ fun HubHomeScreen(
                             // Once per attempt: a new attempt clears the failure.
                             HapticOnChange(failure != null, HapticFeedbackConstants.REJECT) { from, to -> !from && to }
 
-                            // Connect and Cancel now share one spot, so a glove that lands twice
-                            // must not cancel the connection it just started: the slot ignores
-                            // taps for a moment after every change of state. Not drawn disabled.
+                            // Connect and Cancel share the pinned slot, so a glove that lands twice
+                            // must not cancel the connection it just started: the slot ignores taps
+                            // for a moment after every change of state. Not drawn disabled.
                             val armedAt = remember(destination) { SystemClock.uptimeMillis() }
                             val guarded: (() -> Unit) -> () -> Unit = { action ->
                                 { if (SystemClock.uptimeMillis() - armedAt >= ACTION_ARM_MILLIS) action() }
@@ -277,10 +291,26 @@ fun HubHomeScreen(
                             val motorcycle = session.motorcycle
                             val shownFailure = rememberLast(failure)
 
+                            // The hero's options, at rest and when connected only: connecting or
+                            // streaming, the motorcycle is busy. Not saveable, and closed the moment
+                            // a connection starts, so no sheet acts on a motorcycle in use.
+                            val heroEnabled = destination == HubDestination.CONNECTION ||
+                                destination == HubDestination.MODE_SELECTION
+                            var showHeroOptions by remember { mutableStateOf(false) }
+                            var showPhotoSheet by remember { mutableStateOf(false) }
+                            LaunchedEffect(heroEnabled) {
+                                if (!heroEnabled) {
+                                    showHeroOptions = false
+                                    showPhotoSheet = false
+                                }
+                            }
+
                             RidePage(
                                 action = {
-                                    // One 56 dp action per state, swapped in place.
-                                    ScreenCrossfade(screen = destination, label = "ride-action") { shown ->
+                                    // One action per state, swapped in place; at rest the
+                                    // connection options sit under it. The height follows on the
+                                    // same clock, so the page above glides.
+                                    ScreenCrossfade(screen = destination, label = "ride-action", animateHeight = true) { shown ->
                                         when (shown) {
                                             HubDestination.PAIRING -> MhPrimaryButton(
                                                 motoHubText("Scan QR code"),
@@ -292,15 +322,20 @@ fun HubHomeScreen(
                                             // the banner above carries the fix. A port conflict's
                                             // retry is the companion-app one: it waits for the
                                             // rider to come back from force-stopping it.
-                                            HubDestination.CONNECTION -> MhPrimaryButton(
-                                                if (failure != null) motoHubText("Try again") else motoHubText("Connect"),
-                                                guarded(
+                                            HubDestination.CONNECTION -> ConnectionActions(
+                                                connectLabel = if (failure != null) motoHubText("Try again") else motoHubText("Connect"),
+                                                onConnect = guarded(
                                                     if (failure?.kind == RideFailureKind.PORT_CONFLICT) {
                                                         onCloseCompanionAppAndRetry
                                                     } else {
                                                         onConnectAndDiscover
                                                     }
-                                                )
+                                                ),
+                                                guarded = guarded,
+                                                onScanQr = onScanQr,
+                                                onImportQrPhoto = onImportQrPhoto,
+                                                onManualPairing = onManualPairing,
+                                                onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto
                                             )
                                             HubDestination.CONNECTING ->
                                                 MhSecondaryButton(motoHubText("Cancel"), guarded(onCancelConnection))
@@ -328,20 +363,41 @@ fun HubHomeScreen(
                                 }
                             ) {
                                 if (motorcycle == null) {
-                                    PairingTitle()
+                                    RideHero(title = motoHubText("Connect your motorcycle"), photo = null, glow = false) {
+                                        Text(
+                                            motoHubText("Scan the QR code on your dashboard to save its Wi-Fi details."),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 } else {
+                                    val chip = rideChip(destination, ready, riderStep != null)
                                     RideHero(
-                                        motorcycle = motorcycle,
-                                        chip = rideChip(destination, ready, riderStep != null),
-                                        // At rest only: connecting or riding, the hero is the name
-                                        // and the chip, and nothing else moves.
-                                        showPhoto = destination == HubDestination.CONNECTION ||
-                                            destination == HubDestination.MODE_SELECTION,
-                                        // The chevron promises a choice; with one motorcycle there
-                                        // is none.
-                                        showChevron = state.motorcycles.size >= 2,
-                                        onSwitch = onSwitchMotorcycle
-                                    )
+                                        title = motorcycle.displayName?.takeIf(String::isNotBlank)
+                                            ?: motoHubText("My motorcycle"),
+                                        photo = motorcycle.photoPath?.takeIf(String::isNotBlank),
+                                        // Lime only once the motorcycle has answered: offline stays
+                                        // neutral, so the hero never claims a link it does not have.
+                                        glow = destination == HubDestination.MODE_SELECTION ||
+                                            destination == HubDestination.ACTIVE_SESSION,
+                                        enabled = heroEnabled,
+                                        onClick = { showHeroOptions = true }
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            MhStatusChip(chip.first, chip.second)
+                                            Text(
+                                                motorcycle.ssid,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
                                 }
 
                                 // The live failure first, and alone: an error screen shows one
@@ -392,13 +448,7 @@ fun HubHomeScreen(
                                             onImportQrPhoto = onImportQrPhoto,
                                             onManualPairing = onManualPairing
                                         )
-                                        HubDestination.CONNECTION -> ConnectionContent(
-                                            promo = promo,
-                                            onScanQr = onScanQr,
-                                            onImportQrPhoto = onImportQrPhoto,
-                                            onManualPairing = onManualPairing,
-                                            onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto
-                                        )
+                                        HubDestination.CONNECTION -> promo()
                                         // ?.let, not checkNotNull: a fading-out state is drawn with
                                         // the current session, which may have lost its motorcycle.
                                         HubDestination.CONNECTING -> motorcycle?.let {
@@ -424,6 +474,42 @@ fun HubHomeScreen(
                                     }
                                 }
                             }
+
+                            if (showHeroOptions) {
+                                val photo = motorcycle?.photoPath?.takeIf(String::isNotBlank)
+                                // P1: rows straight on the sheet; each runs once it has gone (P10).
+                                MhSheet(
+                                    onDismiss = { showHeroOptions = false },
+                                    title = motoHubText("Motorcycle options")
+                                ) { close ->
+                                    // A choice only exists with a second motorcycle.
+                                    if (state.motorcycles.size >= 2) {
+                                        MhListRow(
+                                            title = motoHubText("Switch motorcycle"),
+                                            icon = Icons.Rounded.SwapHoriz,
+                                            onClick = { close(onSwitchMotorcycle) }
+                                        )
+                                    }
+                                    MhListRow(
+                                        title = if (photo == null) motoHubText("Add photo") else motoHubText("Change photo"),
+                                        icon = if (photo == null) Icons.Rounded.AddAPhoto else Icons.Rounded.PhotoCamera,
+                                        onClick = { close { showPhotoSheet = true } }
+                                    )
+                                    MhListRow(
+                                        title = motoHubText("Motorcycle details"),
+                                        icon = Icons.Rounded.Tune,
+                                        onClick = { close(onOpenMotorcycleDetails) }
+                                    )
+                                }
+                            }
+                            if (showPhotoSheet) {
+                                MotorcyclePhotoSheet(
+                                    hasPhoto = motorcycle?.photoPath?.isNotBlank() == true,
+                                    onDismiss = { showPhotoSheet = false },
+                                    onChoosePhoto = onChooseMotorcyclePhoto,
+                                    onRemovePhoto = onRemoveMotorcyclePhoto
+                                )
+                            }
                         }
                         HubTab.GARAGE -> garageContent()
                         HubTab.SETTINGS -> settingsContent()
@@ -445,42 +531,6 @@ fun HubHomeScreen(
 
 /** How long the action slot ignores taps after the state under it changed. */
 private const val ACTION_ARM_MILLIS = 400L
-
-/**
- * MhTabPage's frame - the same empty bar and gutter, so the title here lines up with Garage's and
- * Settings' - but with the title left to the content: on Ride it is the motorcycle's name, and
- * that name is a button. Below the scroll, the state's one [action], pinned above the dock, so the
- * thing to press is in the same place at rest, after a failure and while connecting.
- */
-// ponytail: MhTabPage takes its title as a String; a title slot in the kit would replace this.
-// No gradient over the slot as MhScreen draws: the scroll ends above it, so it would fade the
-// background into itself.
-@Composable
-private fun RidePage(action: @Composable () -> Unit, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize()) {
-        MhTopBar(onBack = null)
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-        ) {
-            content()
-            Spacer(Modifier.height(16.dp))
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                // The dock under it already took the navigation bar, so there is no inset to be
-                // inside of: a snackbar lands above this, never on it.
-                .reserveSnackbarClearance()
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
-        ) {
-            action()
-        }
-    }
-}
 
 /**
  * Something that folds open under what is above it, 16 dp below it, and folds away again: the gap
@@ -522,27 +572,6 @@ private fun <T> HapticOnChange(value: T, feedback: Int, fires: (from: T, to: T) 
     }
 }
 
-@Composable
-private fun PairingTitle() {
-    // The large-title position and metrics, so it sits where every other tab's title does.
-    Column(
-        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text(
-            motoHubText("Connect your motorcycle"),
-            modifier = Modifier.semantics { heading() },
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            motoHubText("Scan the QR code on your dashboard to save its Wi-Fi details."),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
 private fun rideChip(destination: HubDestination, ready: Boolean, actionNeeded: Boolean): Pair<String, MhTone> =
     when (destination) {
         HubDestination.CONNECTING -> motoHubText("Connecting") to MhTone.PROGRESS
@@ -580,85 +609,133 @@ internal fun rideDuration(millis: Long): String {
     }
 }
 
+private val HeroShape = RoundedCornerShape(20.dp)
+
 /**
- * Which motorcycle, and how it is doing: its picture (or the motorcycle glyph), the name in the
- * large-title position, the status chip and the SSID - the line a rider checks against what the
- * dashboard shows. The whole row is the switcher. The big photo is there only at rest, and only if
- * the rider took one.
+ * The top of Ride: which motorcycle, and how it is doing. A 208 dp card - the rider's photo
+ * edge to edge under a scrim, or a tonal card with the motorcycle as a watermark - with the name
+ * in the large-title style on its lower edge and [footer] (the chip and the Wi-Fi name, the line a
+ * rider checks against the dashboard) under it. A long name wraps and the card grows.
+ *
+ * With [onClick] the card is a button (the motorcycle's options) and shows a "more" glyph while
+ * [enabled]. [glow] adds a restrained lime bloom to a card without a photo, and only once the
+ * motorcycle has answered.
  */
 @Composable
 private fun RideHero(
-    motorcycle: MotorcycleProfile,
-    chip: Pair<String, MhTone>,
-    showPhoto: Boolean,
-    showChevron: Boolean,
-    onSwitch: () -> Unit
+    title: String,
+    photo: String?,
+    glow: Boolean,
+    enabled: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    footer: @Composable () -> Unit
 ) {
-    val photo = motorcycle.photoPath?.takeIf(String::isNotBlank)
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .mhPressable(MaterialTheme.shapes.medium, onClick = onSwitch)
-                // LargeTitle's metrics, so the name sits where Garage's and Settings' titles do.
-                .padding(top = 4.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (photo == null) {
-                MhIconCircle(Icons.Rounded.TwoWheeler, size = 56.dp)
-            } else {
-                MotorcyclePhoto(path = photo, modifier = Modifier.size(56.dp), shape = CircleShape)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // No maxLines: a long name wraps rather than losing its end.
-                    Text(
-                        motorcycle.displayName?.takeIf(String::isNotBlank) ?: motoHubText("My motorcycle"),
-                        modifier = Modifier.weight(1f, fill = false).semantics { heading() },
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    if (showChevron) {
-                        Icon(
-                            Icons.Rounded.KeyboardArrowDown,
-                            contentDescription = motoHubText("Switch motorcycle"),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+    // Raised at the top-left, sinking towards the page's own black at the bottom-right.
+    val tone = listOf(MotoHubColors.SurfaceHigh, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
+    val lime = MaterialTheme.colorScheme.primary
+    // Read where they draw, so a state change repaints the card without recomposing it.
+    val bloom = animateFloatAsState(
+        if (glow && photo == null) 1f else 0f,
+        tween(MhMotion.BASE, easing = MhMotion.Standard),
+        label = "hero-bloom"
+    )
+    val more = animateFloatAsState(if (enabled) 1f else 0f, tween(MhMotion.BASE, easing = MhMotion.Standard), label = "hero-more")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 208.dp)
+            .then(
+                if (onClick != null) {
+                    Modifier.mhPressable(HeroShape, enabled = enabled, onClick = onClick)
+                } else {
+                    Modifier.clip(HeroShape)
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    MhStatusChip(chip.first, chip.second)
-                    Text(
-                        motorcycle.ssid,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-        // Folds from its top edge on the shared clock, so it moves as one with the state swap below.
-        AnimatedVisibility(visible = showPhoto && photo != null, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
-            MotorcyclePhoto(
-                path = motorcycle.photoPath,
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .fillMaxWidth()
-                    .heightIn(max = 200.dp)
-                    .aspectRatio(16f / 9f),
-                // MotorcyclePhoto types this as RoundedCornerShape, so it cannot take the theme's
-                // Shapes directly; kept in step with shapes.large by hand.
-                shape = RoundedCornerShape(20.dp)
             )
+            .drawBehind {
+                drawRect(Brush.linearGradient(tone, start = Offset.Zero, end = Offset(size.width, size.height * 1.6f)))
+                if (bloom.value > 0f) {
+                    drawRect(
+                        Brush.radialGradient(
+                            listOf(lime.copy(alpha = 0.2f * bloom.value), Color.Transparent),
+                            center = Offset(size.width, 0f),
+                            radius = size.width * 0.8f
+                        )
+                    )
+                }
+            },
+        contentAlignment = Alignment.BottomStart
+    ) {
+        if (photo != null) {
+            MotorcyclePhoto(path = photo, modifier = Modifier.matchParentSize(), shape = RectangleShape)
+            // So the name and the chip read on any picture. Draw-only: taps reach the card.
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.75f))))
+            )
+        } else {
+            Icon(
+                Icons.Rounded.TwoWheeler,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.08f),
+                modifier = Modifier.align(Alignment.CenterEnd).offset(x = 20.dp, y = 24.dp).size(120.dp)
+            )
+        }
+        if (onClick != null) {
+            MhIconCircle(
+                Icons.Rounded.MoreHoriz,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .graphicsLayer { alpha = more.value },
+                container = if (photo != null) Color.Black.copy(alpha = 0.4f) else MotoHubColors.Fill
+            )
+        }
+        // 64 dp clear of the top, so a name long enough to grow the card never runs under the glyph.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 64.dp, end = 16.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                title,
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            footer()
+        }
+    }
+}
+
+/**
+ * Ride's frame: the hero and the state's content scroll; below them the state's [action], pinned
+ * above the dock, so the thing to press is in the same place at rest, after a failure and while
+ * connecting.
+ */
+// No gradient over the slot as MhScreen draws: the scroll ends above it, so it would fade the
+// background into itself.
+@Composable
+private fun RidePage(action: @Composable () -> Unit, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, top = 8.dp, end = 16.dp)
+        ) {
+            content()
+            Spacer(Modifier.height(16.dp))
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                // The dock under it already took the navigation bar, so there is no inset to be
+                // inside of: a snackbar lands above this, never on it.
+                .reserveSnackbarClearance()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+        ) {
+            action()
         }
     }
 }
@@ -688,9 +765,16 @@ private fun PairingContent(
     }
 }
 
+/**
+ * The pinned slot at rest and after a failure: Connect (or Try again) and, directly under it,
+ * "Connection options" - the other ways to set up a motorcycle, in one sheet (P7). Both go
+ * through [guard]: Cancel lands where "Connection options" is the moment a connection ends.
+ */
 @Composable
-private fun ConnectionContent(
-    promo: @Composable () -> Unit,
+private fun ConnectionActions(
+    connectLabel: String,
+    onConnect: () -> Unit,
+    guarded: (() -> Unit) -> () -> Unit,
     onScanQr: () -> Unit,
     onImportQrPhoto: () -> Unit,
     onManualPairing: () -> Unit,
@@ -700,15 +784,9 @@ private fun ConnectionContent(
     // say) takes the sheet with it, and ScreenCrossfade's state holder would otherwise reopen it
     // the next time the rider lands back here.
     var showOptions by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        MhListGroup {
-            MhListRow(
-                title = motoHubText("Connection options"),
-                icon = Icons.Rounded.Tune,
-                onClick = { showOptions = true }
-            )
-        }
-        promo()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        MhPrimaryButton(connectLabel, onConnect)
+        MhSecondaryButton(motoHubText("Connection options"), guarded { showOptions = true })
     }
     if (showOptions) {
         MhSheet(onDismiss = { showOptions = false }, title = motoHubText("Connection options")) { close ->

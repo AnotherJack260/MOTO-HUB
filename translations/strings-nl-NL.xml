@@ -2979,4 +2979,7 @@
     <string name="legacy_bluetooth_keyboard_presses_aren_t_seen_until_you_52d6e5b8">Drukken op een Bluetooth-toetsenbord worden pas gezien als je de service aanzet.</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_turn_off_the_wi_fi_clock_only_if_the_dashboard_s_e440a505">Zet de wifiklok alleen uit als het dashboard na het verbinden nog steeds de verkeerde datum toont.</string>
+    <!-- HubHomeScreen.kt -->
+    <string name="legacy_motorcycle_options_8e431f2f">Motoropties</string>
+    <string name="legacy_motorcycle_details_35958ad3">Motorgegevens</string>
 </resources>
