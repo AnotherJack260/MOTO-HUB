@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -405,6 +406,8 @@ fun MhListGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.
  * [subtitleColor] is for a parent row whose screen has a broken prerequisite: the subtitle says
  * what is off ("Accessibility service is off") in `MotoHubColors.Warning`, so the rider sees it
  * without drilling in.
+ *
+ * [leading] draws instead of the icon circle, for a 40 dp avatar such as a motorcycle's photo.
  */
 @Composable
 fun MhListRow(
@@ -420,6 +423,7 @@ fun MhListRow(
     enabled: Boolean = true,
     showChevron: Boolean = !LocalMhInSheet.current,
     role: Role = Role.Button,
+    leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
@@ -433,7 +437,7 @@ fun MhListRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (icon != null) MhIconCircle(icon, tint = iconTint, container = iconContainer)
+        if (leading != null) leading() else if (icon != null) MhIconCircle(icon, tint = iconTint, container = iconContainer)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = titleColor)
             if (subtitle != null) {
@@ -526,12 +530,14 @@ fun MhChoiceRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    leading: (@Composable () -> Unit)? = null
 ) {
     MhListRow(
         title = title,
         subtitle = subtitle,
         icon = icon,
+        leading = leading,
         modifier = modifier.selectable(selected, onClick = onClick, role = Role.RadioButton),
         trailing = {
             // The pop is the only sign an in-place list (Video quality, Language) took the choice.
@@ -661,10 +667,13 @@ fun MhBanner(
             }
         }
         if (hasAction || details != null) {
-            Row(
+            // A flow, not a row: a long translated action ("Apri le impostazioni della batteria")
+            // squeezed a plain Row's "Details" to a letter or two per line. Now "Details" drops
+            // under the pill, onto the body's line, when the two don't fit side by side.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(start = 34.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if (actionLabel != null && onAction != null) {
                     // Compact: a full-size pill here outweighed the screen's own lime button.
@@ -673,17 +682,19 @@ fun MhBanner(
                 if (details != null) {
                     // Plain text, not MhTextButton: a TextButton pads its label 12 dp and centres
                     // it in a 58 dp minimum, so alone in the row it never lined up with the body.
-                    // Here it starts on the body's line; after a pill the padding keeps the gap
-                    // inside the target.
+                    // Here it starts on the body's line, and it never wraps.
                     Text(
                         if (expanded) motoHubText("Hide details") else motoHubText("Details"),
                         modifier = Modifier
+                            .align(Alignment.CenterVertically)
                             .clip(MaterialTheme.shapes.small)
                             .clickable(role = Role.Button) { expanded = !expanded }
                             .minimumInteractiveComponentSize()
-                            .padding(start = if (hasAction) 12.dp else 0.dp, end = 12.dp),
+                            .padding(end = 12.dp),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

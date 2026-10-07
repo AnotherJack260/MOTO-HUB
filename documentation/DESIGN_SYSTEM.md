@@ -122,6 +122,11 @@ Rules:
 - The screen title, section headers and footnotes start on the card edge (the
   16 dp gutter), with no extra inset, and never truncate: a long translation
   wraps.
+- Titles hyphenate. `displaySmall` and `headlineMedium` carry
+  `hyphens = Hyphens.Auto` and `lineBreak = LineBreak.Heading` in the theme, so
+  every screen title, hero name and sheet title breaks a long word (nl
+  "Dashboardmogelijkheden", a rider's own motorcycle name) with a hyphen and
+  balances its lines. Don't override either on a copy of those styles.
 - No trailing full stops on titles.
 
 ### Shape, spacing, elevation
@@ -158,14 +163,14 @@ Rules:
 | `MhIconButton` | 48 dp icon-only button with a plain 24 dp glyph. |
 | `MhIconCircle` | Neutral icon in a `Fill` circle, 40 dp in rows, 56 dp in heroes. |
 | `MhListGroup` | Rounded `surface` card holding rows, no dividers. |
-| `MhListRow` | Leading icon circle (optional), title, subtitle (never truncated), trailing value, chevron, or a control (a compact `MhSecondaryButton` fits). `subtitleColor = MotoHubColors.Warning` (with no value) flags a parent row whose screen has a broken prerequisite ("Accessibility service is off"). The chevron means "opens a screen": `showChevron` defaults to `!LocalMhInSheet.current`, so rows on a sheet have none. |
+| `MhListRow` | Leading icon circle (optional), title, subtitle (never truncated), trailing value, chevron, or a control (a compact `MhSecondaryButton` fits). `leading` draws instead of the icon circle, for a 40 dp avatar (a motorcycle's photo). The value is one short word or number, never a compound like "A · B": the column is 140 dp and two lines, and a translation breaks at the separator. A compound state belongs on the screen the row opens. A trailing slot holds one thing too; a status ("Pre-release") goes in the subtitle, not a chip beside the value. `subtitleColor = MotoHubColors.Warning` (with no value) flags a parent row whose screen has a broken prerequisite ("Accessibility service is off"). The chevron means "opens a screen": `showChevron` defaults to `!LocalMhInSheet.current`, so rows on a sheet have none. |
 | `MhSwitchRow` / `MhSwitch` | An on/off setting. The whole row toggles and is the one control TalkBack announces, with its state. On: black thumb on lime. Off: full-size white thumb on `Fill` (Material's small grey dot read as disabled). |
-| `MhChoiceRow` | One of several exclusive choices; a lime check marks the chosen one and pops in (`MhPop`) when it moves. Put all the choices in one group, or directly on a sheet. |
+| `MhChoiceRow` | One of several exclusive choices; a lime check marks the chosen one and pops in (`MhPop`) when it moves. Put all the choices in one group, or directly on a sheet. Takes `leading` like `MhListRow` (the Switch motorcycle sheet shows each photo). |
 | `MhSectionHeader` | Sentence-case, white, 17 sp SemiBold above a group, on the card edge. A heading for TalkBack. |
 | `MhFootnote` | The standard info line under a group, on the card edge: the one sentence a setting needs and its row has no room for. |
 | `MhTopBar` | The 56 dp bar of every screen: back or close top-left (none on a tab page), an optional compact centred title, trailing `MhTopBarAction`s. Pads the status bar itself. Use it alone where `MhScreen` can't be used (camera scanner, Android Auto preview); it only draws, so pair it with a `BackHandler`. |
 | `MhTopBarAction` | A trailing top-bar action: icon in a 40 dp `Fill` circle, 48 dp target. |
-| `MhScreen` | Sub-screen scaffold: `MhTopBar`, large title, scrolling content, optional sticky bottom action that rides above the keyboard. The title collapses into the bar as it scrolls (see Navigation chrome). System back calls `onBack`. Without a bottom action, the scroll ends clear of the navigation bar and the keyboard. `scrollable = false` gives the content the remaining height instead, for a LazyColumn. `header` replaces the large title with something full-bleed (a photo) that starts at the top of the window under a floating bar: back sits in a 40 dp `Fill` circle over a dark wash, the header fades as it scrolls, and the bar turns solid as the compact `title` fades in. Draw the screen's name inside the header as a heading; `subtitle` isn't shown. The `bottomBar` reserves snackbar clearance. |
+| `MhScreen` | Sub-screen scaffold: `MhTopBar`, large title, scrolling content, optional sticky bottom action that rides above the keyboard. The title collapses into the bar as it scrolls (see Navigation chrome). System back calls `onBack`. Without a bottom action, the scroll ends clear of the navigation bar and the keyboard. `scrollable = false` gives the content the remaining height instead, for a LazyColumn. `header` replaces the large title with something full-bleed (a photo) that starts at the top of the window under a floating bar: back sits in a 40 dp `Fill` circle over a dark wash, the header fades as it scrolls, and the bar turns solid as the compact `title` fades in. Draw the screen's name inside the header as a heading; `subtitle` isn't shown. Pass a `header` only when there is a real photo: never an empty media slab, so without one the screen keeps the standard large title, collapse and back glyph. The `bottomBar` reserves snackbar clearance. |
 | `MhTabPage` | A tab's own page: the same bar slot (actions only, no back) and large title as `MhScreen`, so titles line up. Its title collapses into the bar the same way, so a scrolled Settings still says "Settings". |
 | `HubBottomNavigation` | The dock. See Navigation chrome. `rideLive` puts a lime dot on Ride. |
 | `MhSheet` | `ModalBottomSheet` with grabber, title, short body, optional content, then primary and secondary pills stacked. `primaryStyle` is LIME, NEUTRAL or DESTRUCTIVE. Provides `LocalMhInSheet = true` to its content. See Sheets below. |
@@ -181,7 +186,7 @@ Rules:
 | `Modifier.mhPressable(shape, enabled, role, onClick)` | Clickable, ripple and the 98% dip, clipped to `shape`: a custom card that acts like a pill (the Garage card, the Ride name). First in the chain, before the background. |
 | `MhPop(visible) { }` | A confirmation glyph that pops in (0.8 to 1 on `pop()`, with a fade) when `visible` turns true, and fades out. No pop on first composition. Give it a fixed-size parent. |
 | `ScreenCrossfade` | Swaps a screen's content with `MhMotion.fadeThrough`, keeping each one's saved state. `animateHeight = true` makes the height follow on the same clock (Ride's states, Garage); leave it off for full-screen swaps (the tabs). `ScreenSlideTransition` / `HubScreenTransition` are the navigation slides. |
-| `MhBanner` | Inline card for a failure or caution: icon, one-line title, one or two lines of body, one action (a compact pill, so the banner never outweighs the screen's lime button), "Details" for the rest. A plain `surface` card like the groups around it (`Fill` on a sheet or dialog); the colour is only on its filled 22 dp glyph: Error red, Warning amber, Info grey. No tinted slab. "Details" is plain text in a 48 dp target that starts on the body's line. `onDismiss` adds a 48 dp close icon in the title row. |
+| `MhBanner` | Inline card for a failure or caution: icon, one-line title, one or two lines of body, one action (a compact pill, so the banner never outweighs the screen's lime button), "Details" for the rest. A plain `surface` card like the groups around it (`Fill` on a sheet or dialog); the colour is only on its filled 22 dp glyph: Error red, Warning amber, Info grey. No tinted slab. "Details" is plain text in a 48 dp target that starts on the body's line. The action row is a `FlowRow`: "Details" sits 20 dp after the pill and drops under it, onto the body's line, when the two don't fit; it never wraps. An action label is at most 26 characters in every language, so the pill stays one line; a translation may use a noun phrase ("Battery settings") to fit. An action inside "Details" is compact too, never a 56 dp pill. `onDismiss` adds a 48 dp close icon in the title row. |
 | `MotoHubNotice` | Only for long runtime instructions (the Android Auto failure steps) until the Ride slice folds it into `MhBanner`. A plain `surface` card in every tone; the tone is the label's colour. |
 | `MhTextField` | Filled field on `Fill`, 12 dp corners, label, helper or error line (read by TalkBack), password visibility toggle. `monospace` also turns off autocorrect and capitalisation. `placeholder` is what an empty field stands for ("My motorcycle"): grey under the label, focused or not, while the value stays empty. While focused with text, a clear (×) button empties it; a password field keeps its eye instead. |
 | `MhEmptyState` | Icon circle, title, one line, one action (with `actionIcon`, so it matches the same action elsewhere). |
@@ -352,6 +357,15 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
   trust answers use `primaryStyle = NEUTRAL`: two equal pills, no lime (P4).
 - **Fields.** An empty field that stands for a default (an unnamed motorcycle is
   "My motorcycle") shows that default as `placeholder`, never a bare label.
+- **Motorcycle photos.** `MotorcyclePhoto` crops the photo to its shape.
+  - Without a photo, an avatar (40 dp in a row or the Switch motorcycle sheet,
+    56 dp in the Ride hero) shows `TwoWheeler` on `Fill` at the icon circle's
+    0.55 glyph ratio, the same motorcycle everywhere.
+  - `AddAPhoto` appears only where a tap adds a photo: the "Add photo" row in
+    Motorcycle details, which then opens the photo sheet.
+  - The Ride hero starts the name on the 16 dp gutter, like every large title,
+    and puts the 56 dp avatar at the end, so the title doesn't jump sideways
+    between tabs.
 - **Settings.**
   - Every choice is a row in a group. Exclusive choices show a trailing
     checkmark in one group.
@@ -386,7 +400,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | P5 | Inline problem | `MhBanner`: a title from the glossary, one body line, one compact action (the fix, never "Try again" on Ride, where the hero button is the retry), then "Details". The raw text is shown as is. |
 | P6 | Lime | One lime-filled **action** per layer. A sheet or dialog is its own layer, and the scrimmed screen behind it does not count. Lime as *state* is allowed: switch on, check mark, live dot, progress, success icon. The selected tab is white. The snackbar action is not lime. |
 | P7 | Setup entry points | The same three rows with the same strings and icons in Ride PAIRING, the Ride options sheet and Garage. Pairing success returns to the tab it was launched from and does not auto-connect. Every save path ends with "Motorcycle saved". |
-| P8 | Developer reach | App-wide tools live in Settings › Developer tools (the last group, no header). Per-motorcycle tools live in Motorcycle details › Advanced. The simulator profile stays in a "Developer" group at the end of Dashboard profile. Application logs live in Diagnostics › Support. |
+| P8 | Developer reach | App-wide tools live in Settings › Developer tools (the last group, no header). Per-motorcycle tools live in Motorcycle details › Advanced. The simulator profile stays in a "Developer" group at the end of Dashboard profile, in debug builds only (a rider can't pick it on a motorcycle). Application logs live in Diagnostics › Support. |
 | P9 | Back | System back always does what the back icon does. Nested Settings states go to their parent. Sheets and full-screen pages dismiss. Scanner and wizard exit through their cleanup callback. |
 | P10 | Feedback order | A snackbar is emitted only after the sheet that caused it has closed. An error while a sheet stays open goes inline in the sheet. |
 | P11 | Motion | 220 ms on one clock, heights included. State swaps fade through (`ScreenCrossfade`, `MhMotion.fadeThrough`); navigation slides. Pills and cards dip on press. Haptics: CONFIRM = it worked (connected, picture on the dashboard, Stop, destructive confirmed, QR read, press captured); REJECT = it failed (connection failed, wrong QR, wrong press). Nothing else vibrates. See Motion. |
@@ -421,6 +435,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 - Progress text uses the single character "…".
 - Curly quotes “ ” go only around a typed or unknown name, or a setting's name, inside a sentence.
 - Placeholders are `%1$s` / `%1$d`. Never build a sentence from fragments.
+- The Language list names each language in its own script with no region: "한국어", not "한국어 (대한민국)".
 
 ### Shared actions
 | String | Where | Replaces |
@@ -496,7 +511,6 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | Stopped (Android Auto preview) | NEUTRAL |
 | Failed | ERROR |
 | Installed | NEUTRAL |
-| Pre-release | NEUTRAL |
 | Listening | PROGRESS |
 | Got it | LIVE |
 | Passed / Failed / Running / Skipped / Not run (labs) | LIVE / ERROR / PROGRESS / NEUTRAL / NEUTRAL |
@@ -541,6 +555,7 @@ A row's title is always the title of the screen it opens.
 | Settings headers | On the motorcycle · Connection · Help · App |
 | Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · Check for updates on launch · About MOTO-HUB · MOTO-HUB ADV-SOLO · Developer tools |
 | Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs · Legal (About) |
+| Video quality choices | Picture: Lighter · Balanced · Sharper (not "Smoother": a frame-rate subtitle already says "Smoothest"). Frame rate: Auto · 30 fps · 24 fps · 20 fps |
 | Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.

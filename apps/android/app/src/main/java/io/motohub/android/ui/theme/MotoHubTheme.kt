@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -119,13 +121,17 @@ private fun sans(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.
     letterSpacing = tracking.sp
 )
 
+// Titles hyphenate and balance their lines: at 32 sp only about 19 characters fit a 360 dp phone,
+// so a long word (nl "Dashboardmogelijkheden", a rider's own motorcycle name) broke mid-word.
+private fun TextStyle.title() = copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Heading)
+
 private val MotoHubTypography = Typography(
     displayLarge = sans(40, 46, FontWeight.Bold, -0.8),
     displayMedium = sans(34, 40, FontWeight.Bold, -0.6),
     // The screen title: 32, double the row text, the step Revolut's ladder has (28 was 1.75x).
-    displaySmall = sans(32, 38, FontWeight.Bold, -0.5),
+    displaySmall = sans(32, 38, FontWeight.Bold, -0.5).title(),
     headlineLarge = sans(26, 32, FontWeight.Bold, -0.3),
-    headlineMedium = sans(22, 28, FontWeight.Bold, -0.2),
+    headlineMedium = sans(22, 28, FontWeight.Bold, -0.2).title(),
     headlineSmall = sans(20, 26, FontWeight.Bold, -0.1),
     titleLarge = sans(20, 26, FontWeight.SemiBold, -0.1),
     // Medium, not SemiBold: titles, headers and buttons all at 600 flattened the hierarchy, and

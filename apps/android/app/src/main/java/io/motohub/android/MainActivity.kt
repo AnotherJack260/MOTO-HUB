@@ -40,6 +40,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -94,6 +96,7 @@ import io.motohub.android.feature.about.MOTO_HUB_DISCORD_URL
 import io.motohub.android.feature.about.MOTO_HUB_GITHUB_URL
 import io.motohub.android.feature.garage.GarageTabContent
 import io.motohub.android.feature.garage.MotorcycleDetailsScreen
+import io.motohub.android.feature.garage.MotorcyclePhoto
 import io.motohub.android.feature.garage.MotorcyclePhotoSource
 import io.motohub.android.feature.garage.TBoxCapabilityScreen
 import io.motohub.android.feature.garage.shownName
@@ -1986,10 +1989,16 @@ class MainActivity : ComponentActivity() {
                     ) { close ->
                         val currentId = state.session.motorcycle?.id
                         state.motorcycles.forEach { profile ->
+                            // Its photo where it has one, as on Garage and the Ride hero: this is
+                            // where telling two motorcycles apart matters most.
+                            val photo = profile.photoPath?.takeIf(String::isNotBlank)
                             MhChoiceRow(
                                 title = profile.shownName(),
                                 subtitle = profile.ssid,
                                 icon = Icons.Rounded.TwoWheeler,
+                                leading = if (photo == null) null else {
+                                    { MotorcyclePhoto(photo, Modifier.size(40.dp), CircleShape) }
+                                },
                                 selected = profile.id == currentId,
                                 onClick = { close { if (profile.id != currentId) selectMotorcycle(profile.id) } }
                             )
