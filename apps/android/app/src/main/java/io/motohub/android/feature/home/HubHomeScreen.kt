@@ -22,6 +22,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -55,7 +55,6 @@ import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Icon
@@ -73,13 +72,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -88,6 +88,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.motohub.android.R
 import io.motohub.android.androidauto.AndroidAutoRuntime
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.feature.garage.MotorcyclePhoto
@@ -361,7 +362,7 @@ fun HubHomeScreen(
                                 }
                             ) {
                                 if (motorcycle == null) {
-                                    RideHero(title = motoHubText("Connect your motorcycle"), photo = null, glow = false) {
+                                    RideHero(title = motoHubText("Connect your motorcycle"), photo = null) {
                                         Text(
                                             motoHubText("Scan the QR code on your dashboard to save its Wi-Fi details."),
                                             style = MaterialTheme.typography.bodyLarge,
@@ -374,10 +375,6 @@ fun HubHomeScreen(
                                         title = motorcycle.displayName?.takeIf(String::isNotBlank)
                                             ?: motoHubText("My motorcycle"),
                                         photo = motorcycle.photoPath?.takeIf(String::isNotBlank),
-                                        // Lime only once the motorcycle has answered: offline stays
-                                        // neutral, so the hero never claims a link it does not have.
-                                        glow = destination == HubDestination.MODE_SELECTION ||
-                                            destination == HubDestination.ACTIVE_SESSION,
                                         enabled = heroEnabled,
                                         onClick = { showHeroOptions = true }
                                     ) {
@@ -602,33 +599,23 @@ internal fun rideDuration(millis: Long): String {
 private val HeroShape = RoundedCornerShape(20.dp)
 
 /**
- * The top of Ride: which motorcycle, and how it is doing. A 208 dp card - the rider's photo
- * edge to edge under a scrim, or a tonal card with the motorcycle as a watermark - with the name
- * in the large-title style on its lower edge and [footer] (the chip and the Wi-Fi name, the line a
- * rider checks against the dashboard) under it. A long name wraps and the card grows.
+ * The top of Ride: which motorcycle, and how it is doing. A 208 dp card - the rider's photo, or
+ * the default cover (`ride_hero_default`) when there is none, edge to edge under a scrim - with
+ * the name in the large-title style on its lower edge and [footer] (the chip and the Wi-Fi name,
+ * the line a rider checks against the dashboard) under it. A long name wraps and the card grows.
  *
  * With [onClick] the card is a button (the motorcycle's options) and shows a "more" glyph while
- * [enabled]. [glow] adds a restrained lime bloom to a card without a photo, and only once the
- * motorcycle has answered.
+ * [enabled].
  */
 @Composable
 private fun RideHero(
     title: String,
     photo: String?,
-    glow: Boolean,
     enabled: Boolean = false,
     onClick: (() -> Unit)? = null,
     footer: @Composable () -> Unit
 ) {
-    // Raised at the top-left, sinking towards the page's own black at the bottom-right.
-    val tone = listOf(MotoHubColors.SurfaceHigh, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
-    val lime = MaterialTheme.colorScheme.primary
-    // Read where they draw, so a state change repaints the card without recomposing it.
-    val bloom = animateFloatAsState(
-        if (glow && photo == null) 1f else 0f,
-        tween(MhMotion.BASE, easing = MhMotion.Standard),
-        label = "hero-bloom"
-    )
+    // Read where it draws, so a state change repaints the glyph without recomposing it.
     val more = animateFloatAsState(if (enabled) 1f else 0f, tween(MhMotion.BASE, easing = MhMotion.Standard), label = "hero-more")
     Box(
         modifier = Modifier
@@ -640,37 +627,26 @@ private fun RideHero(
                 } else {
                     Modifier.clip(HeroShape)
                 }
-            )
-            .drawBehind {
-                drawRect(Brush.linearGradient(tone, start = Offset.Zero, end = Offset(size.width, size.height * 1.6f)))
-                if (bloom.value > 0f) {
-                    drawRect(
-                        Brush.radialGradient(
-                            listOf(lime.copy(alpha = 0.2f * bloom.value), Color.Transparent),
-                            center = Offset(size.width, 0f),
-                            radius = size.width * 0.8f
-                        )
-                    )
-                }
-            },
+            ),
         contentAlignment = Alignment.BottomStart
     ) {
         if (photo != null) {
             MotorcyclePhoto(path = photo, modifier = Modifier.matchParentSize(), shape = RectangleShape)
-            // So the name and the chip read on any picture. Draw-only: taps reach the card.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.75f))))
-            )
         } else {
-            Icon(
-                Icons.Rounded.TwoWheeler,
+            // Decorative: the name is text on top.
+            Image(
+                painterResource(R.drawable.ride_hero_default),
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.08f),
-                modifier = Modifier.align(Alignment.CenterEnd).offset(x = 20.dp, y = 24.dp).size(120.dp)
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop
             )
         }
+        // So the name and the chip read on any picture. Draw-only: taps reach the card.
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.75f))))
+        )
         if (onClick != null) {
             MhIconCircle(
                 Icons.Rounded.MoreHoriz,
@@ -678,7 +654,7 @@ private fun RideHero(
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
                     .graphicsLayer { alpha = more.value },
-                container = if (photo != null) Color.Black.copy(alpha = 0.4f) else MotoHubColors.Fill
+                container = Color.Black.copy(alpha = 0.4f)
             )
         }
         // 64 dp clear of the top, so a name long enough to grow the card never runs under the glyph.
