@@ -140,6 +140,8 @@ class ProjectionSessionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                // Only the rider sends this: the notification's Stop, or Ride's through stop().
+                ProjectionRuntime.riderStopped = true
                 stopSession(stopProjection = true, reason = "Streaming stopped by the user.")
                 return START_NOT_STICKY
             }

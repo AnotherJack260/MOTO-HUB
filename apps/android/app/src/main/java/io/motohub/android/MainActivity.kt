@@ -447,7 +447,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 var seamlessResumePermissionPending by remember { mutableStateOf(false) }
-                val reconnectScope = rememberCoroutineScope()
                 val displayModeStore = remember(context) { AndroidAutoDisplayModeStore(context) }
                val displayGeometryStore = remember(context) { TBoxDisplayGeometryStore(context) }
                 val screenMarginsStore = remember(context) { TBoxScreenMarginsStore(context) }
@@ -872,55 +871,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                fun reconnectAfterModeStop(mode: String) {
-                    if (!MotoHubSettings.autoConnect(context)) {
-                        ProjectionEventLog.debug(
-                            "AUTO_CONNECT",
-                            "Auto-connect after $mode stop skipped because the setting is disabled."
-                        )
-                        return
-                    }
-                    reconnectScope.launch {
-                        delay(AUTO_CONNECT_AFTER_STOP_DELAY_MS)
-                        if (!MotoHubSettings.autoConnect(context)) return@launch
-                        var waitAttempts = 0
-                        while (
-                            waitAttempts < AUTO_CONNECT_AFTER_STOP_MAX_ATTEMPTS &&
-                            (ProjectionRuntime.isActive() ||
-                                AndroidAutoRuntime.isActive() ||
-                                viewModel.uiState.value.session.phase != SessionPhase.NETWORK_SETUP_REQUIRED &&
-                                viewModel.uiState.value.session.phase != SessionPhase.ERROR)
-                        ) {
-                            delay(AUTO_CONNECT_AFTER_STOP_POLL_MS)
-                            waitAttempts++
-                        }
-                        if (viewModel.uiState.value.session.motorcycle == null) {
-                            ProjectionEventLog.debug(
-                                "AUTO_CONNECT",
-                                "Auto-connect after $mode stop skipped because no motorcycle is selected."
-                            )
-                            return@launch
-                        }
-                        ProjectionEventLog.record(
-                            "AUTO_CONNECT",
-                            "Reconnecting automatically after $mode stop."
-                        )
-                        val permissions =
-                            tboxConnectPermissions(context, viewModel.uiState.value.session.motorcycle)
-                        if (permissions.all { permission ->
-                                ContextCompat.checkSelfPermission(context, permission) ==
-                                    PackageManager.PERMISSION_GRANTED
-                            }
-                        ) {
-                            connectWhenAndroidAccepts("after the $mode stop")
-                        } else {
-                            wifiPermissionLauncher.launch(permissions)
-                        }
-                    }
-                }
                 suspend fun attemptAutoConnect() {
                     if (!MotoHubSettings.autoConnect(context)) {
                         ProjectionEventLog.debug("AUTO_CONNECT", "Auto-connect on launch is disabled.")
+                        return
+                    }
+                    if (ProjectionRuntime.riderStopped) {
+                        ProjectionEventLog.debug("AUTO_CONNECT", "Auto-connect skipped: the rider stopped manually.")
                         return
                     }
                     // Read from the ViewModel, not from the composition's `state`: below STARTED
@@ -1040,9 +997,9 @@ class MainActivity : ComponentActivity() {
                 // ── Autostart on connect ────────────────────────────────────────────────────
                 //
                 // Fires at most once per app launch, the first time a T-Box link comes up (phase
-                // READY - the "what should I show?" screen). One-shot on purpose: stopping a mode
-                // reconnects by itself when auto-connect is on, and re-arming there would restart
-                // the very screen the rider just stopped, leaving no way back to the picker.
+                // READY - the "what should I show?" screen). One-shot on purpose: re-arming would
+                // restart the very screen the rider just stopped as soon as they connect again,
+                // leaving no way back to the picker.
                 var autostartArmed by rememberSaveable { mutableStateOf(true) }
                 // Collected from the ViewModel rather than keyed on the composition's snapshot,
                 // for the reason attemptAutoConnect reads it there too: an attempt in flight when
@@ -1073,6 +1030,11 @@ class MainActivity : ComponentActivity() {
                             // Let the mode screen settle before a system consent dialog lands on
                             // top of it.
                             delay(AUTOSTART_ON_CONNECT_DELAY_MS)
+                            // Disconnect or Cancel can land inside that delay.
+                            if (ProjectionRuntime.riderStopped) {
+                                ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the rider stopped manually.")
+                                return@collect
+                            }
                             when (service) {
                                 AutostartService.MIRRORING -> startMirroring()
                                 AutostartService.ANDROID_AUTO -> startAndroidAutoWithWarning()
@@ -1599,16 +1561,16 @@ class MainActivity : ComponentActivity() {
                         onStopAndroidAuto = {
                             ProjectionEventLog.record("ANDROID_AUTO", "User requested Android Auto stop.")
                             if (androidAutoPreviewIsPhoneOnly) {
-                                // No T-Box link to reconnect for a phone-only session -
-                                // reconnectAfterModeStop is specifically for the real T-Box path.
                                 androidAutoPhoneOnlyBridge.stop()
                                 androidAutoPreviewIsPhoneOnly = false
                             } else {
+                                // A manual stop wins: nothing reconnects or restarts by itself
+                                // until the rider taps Connect (or the app starts cold).
+                                ProjectionRuntime.riderStopped = true
                                 AndroidAutoSessionService.stop(
                                     context,
                                     "Android Auto stopped by the user."
                                 )
-                                reconnectAfterModeStop("Android Auto")
                             }
                         },
                         onOpenAndroidAutoPreview = {
@@ -1642,8 +1604,8 @@ class MainActivity : ComponentActivity() {
                         },
                         onStopProjection = {
                             ProjectionEventLog.record("MIRROR", "User requested mirroring stop.")
+                            // Latches the rider's stop in the service, which the notification shares.
                             ProjectionSessionService.stop(context)
-                            reconnectAfterModeStop("mirroring")
                         },
                         // ── External display (USB AOA) ──
                         aoaAccessoryConnected = aoaAccessoryConnected,
@@ -2174,9 +2136,6 @@ class MainActivity : ComponentActivity() {
          */
         const val AUTO_CONNECT_WATCH_INTERVAL_MS = 15_000L
         const val AUTO_CONNECT_WATCH_MAX_INTERVAL_MS = 120_000L
-        const val AUTO_CONNECT_AFTER_STOP_DELAY_MS = 900L
-        const val AUTO_CONNECT_AFTER_STOP_POLL_MS = 200L
-        const val AUTO_CONNECT_AFTER_STOP_MAX_ATTEMPTS = 25
         const val AUTOSTART_ON_CONNECT_DELAY_MS = 800L
         const val OFFICIAL_APP_CLOSE_RETRY_DELAY_MS = 1_500L
         const val FOREGROUND_SETTLE_TIMEOUT_MS = 1_000L

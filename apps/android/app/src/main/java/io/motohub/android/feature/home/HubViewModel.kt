@@ -566,11 +566,14 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             )
             return
         }
-        // A connection is genuinely starting - manual Connect, the permission-grant retry, the
-        // reconnect after a mode stops, or an auto-connect the policy did let through. Whichever
-        // it was, the earlier cancel has been answered and must not keep suppressing anything.
+        // A connection is genuinely starting - manual Connect, the permission-grant retry, or an
+        // auto-connect the policy did let through. Whichever it was, the earlier cancel has been
+        // answered and must not keep suppressing anything. The rider's manual stop is cleared
+        // here too: every automatic path checks it before getting this far, so with it set only
+        // the rider's own Connect / Try again arrives.
         riderCancelledConnect = false
         cancelledWithDashInReach = false
+        ProjectionRuntime.riderStopped = false
         // "Is Wi-Fi on" is the wrong question for a dash that joins a network the phone hosts:
         // tethering turns the station radio off, so that check reports false for the whole life
         // of a working PHONE_HOTSPOT session and used to block every connect through here -
@@ -836,6 +839,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             state.session.motorcycle?.ssid != ssid ->
                 "the active motorcycle is ${state.session.motorcycle?.ssid ?: "none"}"
             riderCancelledConnect -> "the rider cancelled this connection"
+            ProjectionRuntime.riderStopped -> "the rider stopped manually"
             connectJob?.isActive == true -> "a connection attempt is already running"
             phase != SessionPhase.NETWORK_SETUP_REQUIRED && phase != SessionPhase.ERROR ->
                 "the session has moved on to $phase"
@@ -863,6 +867,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         }
         ProjectionEventLog.record("CONNECTION", "User cancelled the connection attempt.")
         riderCancelledConnect = true
+        ProjectionRuntime.riderStopped = true
         // The "before" the retry is compared against. Sampled here, and retired by
         // dashReachableWhenCancelled() the first time the dash is seen out of reach.
         cancelledWithDashInReach = dashReachable(isDashBroadcasting(), isAssociatedToDash())
@@ -979,6 +984,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
 
     fun disconnect() {
         ProjectionEventLog.record("CONNECTION", "User disconnected from the T-Box.")
+        ProjectionRuntime.riderStopped = true
         viewModelScope.launch {
             transport.stop()
             TBoxSessionRegistry.clear()

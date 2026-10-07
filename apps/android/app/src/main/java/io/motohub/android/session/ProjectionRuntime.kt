@@ -28,4 +28,13 @@ object ProjectionRuntime {
     }
 
     fun isActive(): Boolean = active.get()
+
+    /**
+     * The rider stopped streaming, disconnected or cancelled by hand, so nothing automatic
+     * (auto-connect, autostart) may start a connection or a mode until they connect again
+     * ([io.motohub.android.feature.home.HubViewModel.connectAndDiscover] clears it). In memory
+     * on purpose: a cold launch is a new ride. Recovery the rider did not cause never sets it.
+     */
+    @Volatile
+    var riderStopped: Boolean = false
 }

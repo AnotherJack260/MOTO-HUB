@@ -155,8 +155,10 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         if (intent?.action == ACTION_STOP) {
             // Reached either from the notification's Stop action, which sets no reason of its
             // own, or as [stop]'s fallback when the service was still starting up - there the
-            // caller's reason is waiting for us.
-            stopSession(AndroidAutoStopReason.take() ?: "Android Auto stopped by the user.")
+            // caller's reason is waiting for us. No reason means the notification: the rider.
+            val reason = AndroidAutoStopReason.take()
+            if (reason == null) ProjectionRuntime.riderStopped = true
+            stopSession(reason ?: "Android Auto stopped by the user.")
             return START_NOT_STICKY
         }
         // A stop that never reached a running service must not name the session about to start.
