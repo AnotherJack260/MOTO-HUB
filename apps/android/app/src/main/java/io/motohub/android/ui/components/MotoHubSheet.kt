@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -45,6 +47,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,10 +56,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -84,8 +91,9 @@ internal fun CountAsModal() {
 }
 
 /**
- * True inside an [MhSheet]'s content. A row on a sheet acts - picks, imports, removes - and never
- * navigates, so [MhListRow] leaves out its chevron there unless a caller asks for it.
+ * True inside an [MhSheet]'s or [MhDialog]'s content. A row on a sheet acts - picks, imports,
+ * removes - and never navigates, so [MhListRow] leaves out its chevron there unless a caller asks
+ * for it; an [MhBanner] there is Fill, one step above the sheet, instead of the screen's surface.
  */
 val LocalMhInSheet = staticCompositionLocalOf { false }
 
@@ -214,6 +222,10 @@ enum class MhSnackTone { SUCCESS, INFO, ERROR }
  * that floats above the tab bar and goes away on its own. Callable from anywhere, including
  * callbacks with no composition in reach. While no host is on screen - the app is in the
  * background - it falls back to a system toast so the message is not lost.
+ *
+ * It is a content-width pill, centred, so it never reads as one more card. It never covers the
+ * screen's pinned action: whatever is pinned at the bottom reports its height with
+ * [reserveSnackbarClearance], and [Host] keeps every message above [bottomClearance].
  */
 object MotoHubSnackbar {
     data class Message(
@@ -224,6 +236,26 @@ object MotoHubSnackbar {
     )
 
     private val messages = MutableSharedFlow<Message>(extraBufferCapacity = 8)
+
+    // One entry per pinned bar on screen. More than one only while a screen slides over another;
+    // the taller wins, and each removes itself on leaving, so the order they come and go in
+    // doesn't matter.
+    private val clearances = mutableStateMapOf<Any, Dp>()
+
+    /**
+     * The height of the pinned bottom action on screen now - an MhScreen bottomBar, Ride's action
+     * slot - above the navigation bar; 0.dp when there is none. [Host] already pads it: a host
+     * caller adds only its own offset (the dock).
+     */
+    val bottomClearance: Dp get() = clearances.values.maxOrNull() ?: 0.dp
+
+    internal fun reserve(owner: Any, height: Dp) {
+        clearances[owner] = height
+    }
+
+    internal fun release(owner: Any) {
+        clearances.remove(owner)
+    }
 
     fun show(
         context: Context,
@@ -260,7 +292,7 @@ object MotoHubSnackbar {
                 }
             }
         }
-        SnackbarHost(hostState, modifier.imePadding()) { data -> Snack(data) }
+        SnackbarHost(hostState, modifier.padding(bottom = bottomClearance).imePadding()) { data -> Snack(data) }
     }
 
     private class SnackbarVisuals(val payload: Message) : androidx.compose.material3.SnackbarVisuals {
@@ -274,45 +306,68 @@ object MotoHubSnackbar {
     @Composable
     private fun Snack(data: SnackbarData) {
         val tone = (data.visuals as? SnackbarVisuals)?.payload?.tone ?: MhSnackTone.INFO
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+        val hasAction = data.visuals.actionLabel != null
+        // A centred pill as wide as its words, not a full-width card: the one shape on screen no
+        // card has, so it reads as a message about the screen rather than part of it.
+        Box(
+            Modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(MotoHubColors.SurfaceHighest)
-                // A tap on the message dismisses it rather than reaching the button underneath.
-                // No liveRegion here: SnackbarHost already sets one, and two make TalkBack say it twice.
-                .clickable(onClick = data::dismiss)
-                .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            if (tone == MhSnackTone.SUCCESS) {
-                // "Done" lands on the glyph: it pops in just after the message arrives. The box
-                // holds its place, so the text doesn't shift when it does.
-                var arrived by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) { arrived = true }
-                Box(Modifier.size(22.dp)) {
-                    MhPop(arrived) { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MotoHubColors.Lime) }
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(MotoHubColors.SurfaceHighest)
+                    // A tap on the message dismisses it rather than reaching the button underneath.
+                    // No liveRegion here: SnackbarHost already sets one, and two make TalkBack say it twice.
+                    .clickable(onClick = data::dismiss)
+                    .padding(start = 16.dp, end = if (hasAction) 8.dp else 20.dp, top = 8.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (tone == MhSnackTone.SUCCESS) {
+                    // "Done" lands on the glyph: it pops in just after the message arrives. The box
+                    // holds its place, so the text doesn't shift when it does.
+                    var arrived by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) { arrived = true }
+                    Box(Modifier.size(20.dp)) {
+                        MhPop(arrived) { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = MotoHubColors.Lime) }
+                    }
+                } else {
+                    Icon(
+                        if (tone == MhSnackTone.ERROR) Icons.Rounded.ErrorOutline else Icons.Rounded.Info,
+                        contentDescription = null,
+                        tint = if (tone == MhSnackTone.ERROR) MotoHubColors.Error else MotoHubColors.TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
-            } else {
-                Icon(
-                    if (tone == MhSnackTone.ERROR) Icons.Rounded.ErrorOutline else Icons.Rounded.Info,
-                    contentDescription = null,
-                    tint = if (tone == MhSnackTone.ERROR) MotoHubColors.Error else MotoHubColors.TextSecondary,
-                    modifier = Modifier.size(22.dp)
+                Text(
+                    data.visuals.message,
+                    // Not fill: the pill stays as wide as the words, and a long message wraps.
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-            }
-            Text(
-                data.visuals.message,
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            data.visuals.actionLabel?.let { label ->
-                // onSurface, not lime: the snackbar floats over a screen that has its own lime action.
-                MhTextButton(label, onClick = { data.performAction() })
+                data.visuals.actionLabel?.let { label ->
+                    // onSurface, not lime: the snackbar floats over a screen that has its own lime action.
+                    MhTextButton(label, onClick = { data.performAction() })
+                }
             }
         }
     }
+}
+
+/**
+ * Keeps snackbars above this bottom-pinned bar: it reports its height to [MotoHubSnackbar] while
+ * it is on screen. Put it inside the navigation-bar and keyboard insets (after
+ * `navigationBarsPadding().imePadding()`), around the bar's own padding: the host pads the insets
+ * itself. MhScreen's bottomBar already has it.
+ */
+fun Modifier.reserveSnackbarClearance(): Modifier = composed {
+    val owner = remember { Any() }
+    val density = LocalDensity.current
+    DisposableEffect(owner) { onDispose { MotoHubSnackbar.release(owner) } }
+    onSizeChanged { MotoHubSnackbar.reserve(owner, with(density) { it.height.toDp() }) }
 }

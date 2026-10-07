@@ -18,6 +18,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,9 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import io.motohub.android.ui.theme.MotoHubColors
 
 /**
@@ -81,12 +85,17 @@ fun MhDialog(
         },
         modifier = modifier,
         icon = icon?.let { { Icon(it, contentDescription = null, tint = iconTint) } },
-        title = { Text(title) },
+        title = {
+            ScrimLikeASheet()
+            Text(title)
+        },
         text = if (body == null && content == null) null else {
             {
                 MotoHubDialogBody {
                     if (body != null) Text(body, style = MaterialTheme.typography.bodyLarge)
-                    content?.invoke(this, close)
+                    if (content != null) {
+                        CompositionLocalProvider(LocalMhInSheet provides true) { content(this, close) }
+                    }
                 }
             }
         },
@@ -94,6 +103,15 @@ fun MhDialog(
         containerColor = MotoHubColors.SurfaceHigh,
         properties = DialogProperties(dismissOnBackPress = dismissible, dismissOnClickOutside = dismissible)
     )
+}
+
+// A dialog's scrim is its window's dim, which Material leaves at the platform's 60%. Match the
+// sheets' token (80%), so the lime action behind doesn't show through as an olive pill.
+@Composable
+private fun ScrimLikeASheet() {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    val dim = MaterialTheme.colorScheme.scrim.alpha
+    SideEffect { window?.setDimAmount(dim) }
 }
 
 /**

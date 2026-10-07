@@ -72,13 +72,9 @@ fun MotoHubNotice(
         NoticeTone.ACTION -> MaterialTheme.colorScheme.primary
         NoticeTone.ERROR -> MaterialTheme.colorScheme.error
     }
-    // INFO is narration next to a card that already carries the accent; it stays a plain surface
-    // so a progress line does not shout as loudly as a failure sitting in the same column.
-    val container = when (tone) {
-        NoticeTone.INFO -> MaterialTheme.colorScheme.surface
-        NoticeTone.ACTION -> io.motohub.android.ui.theme.MotoHubColors.LimeContainer
-        NoticeTone.ERROR -> MaterialTheme.colorScheme.errorContainer
-    }
+    // Every tone is a plain surface card, as MhBanner is: the tone lives in the label's colour.
+    // A lime or brown slab was louder than the screen's own action.
+    val container = MaterialTheme.colorScheme.surface
     var expanded by rememberSaveable(label, body) { mutableStateOf(false) }
 
     Card(

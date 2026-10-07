@@ -20,6 +20,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,13 +43,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -365,14 +367,18 @@ fun MhIconCircle(
     }
 }
 
-/** Sentence-case label above a group. */
+/**
+ * Sentence-case label above a group, on the card's edge. White 17 sp SemiBold: a grey 15 sp
+ * header sat too close to the 16 sp rows under it, and the ladder (title, header, row) went flat.
+ * SemiBold against the rows' Medium keeps the two apart.
+ */
 @Composable
 fun MhSectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
-        modifier = modifier.padding(start = 4.dp, top = 8.dp).semantics { heading() },
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        modifier = modifier.padding(top = 8.dp).semantics { heading() },
+        style = MaterialTheme.typography.titleSmall.copy(fontSize = 17.sp, lineHeight = 22.sp),
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 
@@ -395,6 +401,10 @@ fun MhListGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.
  *
  * The chevron means "opens a screen", so a row on an [MhSheet] has none by default: there a row
  * acts (picks, imports, removes) and never navigates. See [LocalMhInSheet].
+ *
+ * [subtitleColor] is for a parent row whose screen has a broken prerequisite: the subtitle says
+ * what is off ("Accessibility service is off") in `MotoHubColors.Warning`, so the rider sees it
+ * without drilling in.
  */
 @Composable
 fun MhListRow(
@@ -406,6 +416,7 @@ fun MhListRow(
     iconContainer: Color = MotoHubColors.Fill,
     value: String? = null,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    subtitleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     enabled: Boolean = true,
     showChevron: Boolean = !LocalMhInSheet.current,
     role: Role = Role.Button,
@@ -426,7 +437,7 @@ fun MhListRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = titleColor)
             if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = subtitleColor)
             }
         }
         if (trailing != null) {
@@ -478,19 +489,28 @@ fun MhSwitchRow(
     )
 }
 
+/**
+ * Off is a full-size white thumb on Fill, a choice as live as on: Material's off state, a 16 dp
+ * grey dot, read as "unavailable". Only a disabled switch greys its thumb, inside a row that fades.
+ */
 @Composable
 fun MhSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, enabled: Boolean = true) {
     Switch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         enabled = enabled,
+        // Any non-null slot keeps the 24 dp thumb in both states; Material shrinks an empty one.
+        thumbContent = {},
         colors = SwitchDefaults.colors(
             checkedThumbColor = MotoHubColors.Background,
             checkedTrackColor = MotoHubColors.Lime,
             checkedBorderColor = Color.Transparent,
-            uncheckedThumbColor = MotoHubColors.TextSecondary,
+            uncheckedThumbColor = MotoHubColors.TextPrimary,
             uncheckedTrackColor = MotoHubColors.Fill,
-            uncheckedBorderColor = Color.Transparent
+            uncheckedBorderColor = Color.Transparent,
+            disabledUncheckedThumbColor = MotoHubColors.TextTertiary,
+            disabledUncheckedTrackColor = MotoHubColors.Fill,
+            disabledUncheckedBorderColor = Color.Transparent
         )
     )
 }
@@ -583,6 +603,10 @@ fun MhStatusChip(text: String, tone: MhTone, modifier: Modifier = Modifier) {
 /**
  * Something went wrong or needs attention, inline where it happened: what, one line of why, the
  * one action that fixes it. Anything longer goes in [details], folded away behind "Details".
+ *
+ * A card like the groups around it, with the colour only on its filled glyph: a red or brown slab
+ * was the loudest thing on Ride after the lime button, and a neutral one in Fill sat lighter than
+ * the cards next to it. On a sheet or dialog it is Fill, one step above the sheet.
  */
 @Composable
 fun MhBanner(
@@ -595,7 +619,13 @@ fun MhBanner(
     onDismiss: (() -> Unit)? = null,
     details: (@Composable ColumnScope.() -> Unit)? = null
 ) {
-    val (fg, bg) = tone.colors()
+    val (glyph, glyphTint) = when (tone) {
+        MhTone.ERROR -> Icons.Rounded.Error to MotoHubColors.Error
+        MhTone.WARNING -> Icons.Rounded.Warning to MotoHubColors.Warning
+        MhTone.NEUTRAL -> Icons.Rounded.Info to MotoHubColors.TextSecondary
+        MhTone.LIVE, MhTone.PROGRESS -> Icons.Rounded.Info to MotoHubColors.Lime
+    }
+    val container = if (LocalMhInSheet.current) MotoHubColors.Fill else MaterialTheme.colorScheme.surface
     // Keyed on the message: a new failure in the same spot must not open with the last one's
     // details already showing.
     var expanded by rememberSaveable(title, body) { mutableStateOf(false) }
@@ -604,23 +634,14 @@ fun MhBanner(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(bg)
+            .background(container)
             // The action row's 48 dp targets bring their own air below what they draw, so the
             // banner pads 12 under them: a compact pill still ends 16 from the edge.
             .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = if (hasAction || details != null) 12.dp else 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            Icon(
-                when (tone) {
-                    MhTone.ERROR -> Icons.Rounded.ErrorOutline
-                    MhTone.WARNING -> Icons.Rounded.WarningAmber
-                    else -> Icons.Rounded.Info
-                },
-                contentDescription = null,
-                tint = fg,
-                modifier = Modifier.size(22.dp)
-            )
+            Icon(glyph, contentDescription = null, tint = glyphTint, modifier = Modifier.size(22.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 if (body != null) {
@@ -689,6 +710,9 @@ fun MhBanner(
  *
  * [placeholder] is what an empty field stands for ("My motorcycle" for an unnamed one). It shows
  * in grey under the label, focused or not, and the value stays empty.
+ *
+ * While it has focus and text, a field shows a clear button: one tap beats holding backspace in
+ * gloves. A password field keeps its eye instead.
  */
 @Composable
 fun MhTextField(
@@ -715,6 +739,8 @@ fun MhTextField(
     // as the field's text instead, in grey: the label then sits on top as it does over a value.
     // TalkBack reads it as the value, which it is in effect - it is the name shown everywhere else.
     val shownPlaceholder = placeholder?.takeIf { value.isEmpty() }
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -736,16 +762,30 @@ fun MhTextField(
         keyboardOptions = options,
         keyboardActions = keyboardActions,
         supportingText = line?.let { { Text(it) } },
-        trailingIcon = if (!isPassword) null else {
-            {
-                MhIconButton(
-                    if (revealed) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = if (revealed) motoHubText("Hide password") else motoHubText("Show password"),
-                    onClick = { revealed = !revealed },
-                    tint = MotoHubColors.TextSecondaryOnFill
-                )
+        trailingIcon = when {
+            isPassword -> {
+                {
+                    MhIconButton(
+                        if (revealed) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                        contentDescription = if (revealed) motoHubText("Hide password") else motoHubText("Show password"),
+                        onClick = { revealed = !revealed },
+                        tint = MotoHubColors.TextSecondaryOnFill
+                    )
+                }
             }
+            focused && enabled && value.isNotEmpty() -> {
+                {
+                    MhIconButton(
+                        Icons.Rounded.Cancel,
+                        contentDescription = motoHubText("Clear"),
+                        onClick = { onValueChange("") },
+                        tint = MotoHubColors.TextSecondaryOnFill
+                    )
+                }
+            }
+            else -> null
         },
+        interactionSource = interaction,
         shape = MaterialTheme.shapes.small,
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MotoHubColors.Fill,
@@ -811,9 +851,10 @@ fun MhEmptyState(
 /** A short paragraph under a group: the one sentence a setting needs and its row has no room for. */
 @Composable
 fun MhFootnote(text: String, modifier: Modifier = Modifier) {
+    // On the card's edge, like the header above the group.
     Text(
         text,
-        modifier = modifier.padding(horizontal = 4.dp),
+        modifier = modifier,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

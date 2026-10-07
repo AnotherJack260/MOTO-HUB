@@ -106,7 +106,9 @@ private val MotoHubColorScheme = darkColorScheme(
     onError = MotoHubColors.Background,
     errorContainer = MotoHubColors.ErrorContainer,
     onErrorContainer = Color(0xFFFFB4AE),
-    scrim = Color(0x99000000)
+    // 80%, not 60%: at 60 the lime action behind a sheet still read as an olive pill, a second
+    // "do this" competing with the sheet's own.
+    scrim = Color(0xCC000000)
 )
 
 private fun sans(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.0) = TextStyle(
@@ -120,7 +122,8 @@ private fun sans(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.
 private val MotoHubTypography = Typography(
     displayLarge = sans(40, 46, FontWeight.Bold, -0.8),
     displayMedium = sans(34, 40, FontWeight.Bold, -0.6),
-    displaySmall = sans(28, 34, FontWeight.Bold, -0.4),
+    // The screen title: 32, double the row text, the step Revolut's ladder has (28 was 1.75x).
+    displaySmall = sans(32, 38, FontWeight.Bold, -0.5),
     headlineLarge = sans(26, 32, FontWeight.Bold, -0.3),
     headlineMedium = sans(22, 28, FontWeight.Bold, -0.2),
     headlineSmall = sans(20, 26, FontWeight.Bold, -0.1),
