@@ -95,7 +95,7 @@ private fun describe(suggestion: ProfileSuggestions.Suggestion): String? {
         ProfileSuggestions.Reason.EXPERIMENT -> motoHubText("Experimental. May do nothing.")
         ProfileSuggestions.Reason.OTHER -> ""
     }
-    return listOf(motoHubText(suggestion.override.description), note)
+    return listOf(suggestion.override.riderNote.orEmpty(), note)
         .filter { it.isNotBlank() }
         .joinToString(" ")
         .ifBlank { null }

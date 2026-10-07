@@ -438,7 +438,8 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | Cancel | abandons something the rider started | |
 | Don't send | consent decline | Not now (crash, notice) |
 | Not now | only a true "ask me later" | |
-| Remove · Reset · Clear | destructive confirm button = the title's verb | Clear log |
+| Remove · Reset · Clear | destructive confirm button = the title's verb | |
+| Clear log | red row after the log in Application logs; opens "Clear the log?" | a red "Clear" pill above the log |
 | Details · Hide details | MhBanner | |
 | Save · Done · Got it · I understand · Use · Skip · Skip this version | | Finish, I understand and continue |
 | Send report · Send reports · Send a report now · Send reports automatically | crash · notice · Diagnostics row · switches (crash, Diagnostics, trial keep sheet) | Send diagnostics now/automatically, Send my log now, Send logs automatically from now on |
@@ -534,12 +535,12 @@ A row's title is always the title of the screen it opens.
 | Area | Names |
 |---|---|
 | Tabs | Ride · Garage · Settings |
-| Ride | Connect your motorcycle · Show on the dashboard · Connection options · Switch motorcycle (sheet) · Allow notifications / Allow notifications and the microphone (permission sheet before the first stream) |
+| Ride | Connect your motorcycle · Show on the dashboard · Connection options · Switch motorcycle (sheet) · Allow notifications / Allow the microphone / Allow notifications and the microphone (permission sheet before the first stream, rows "Notifications · Keep streaming visible and let you stop it" and "Microphone · For Google Assistant and calls") |
 | Garage | Garage · Current motorcycle · Other motorcycles · Add a motorcycle |
 | Motorcycle details | Name (row and its sheet) · Android Auto · Connection · Advanced · Display fit · Screen margins · Dashboard profile · Dashboard capabilities |
 | Settings headers | On the motorcycle · Connection · Help · App |
 | Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · Check for updates on launch · About MOTO-HUB · MOTO-HUB ADV-SOLO · Developer tools |
-| Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs |
+| Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs · Legal (About) |
 | Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.

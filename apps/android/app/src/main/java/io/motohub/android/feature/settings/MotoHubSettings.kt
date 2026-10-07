@@ -290,6 +290,7 @@ object MotoHubSettings {
     private const val KEY_LAST_AUTO_UPDATE_CHECK_AT = "last_auto_update_check_at_millis"
     private const val KEY_LAST_AUTO_UPDATE_CHECK_VERSION = "last_auto_update_check_version"
     private const val KEY_SAFETY_DISCLAIMER_ACKNOWLEDGED = "safety_disclaimer_acknowledged"
+    private const val KEY_PERMISSION_PRIMER_SEEN = "permission_primer_seen"
     private const val KEY_VERBOSE_TBOX_LOGGING = "verbose_tbox_logging"
     private const val KEY_LOGGING_ENABLED = "logging_enabled"
 
@@ -588,6 +589,14 @@ object MotoHubSettings {
 
     fun setSafetyDisclaimerAcknowledged(context: Context, acknowledged: Boolean) {
         preferences(context).edit().putBoolean(KEY_SAFETY_DISCLAIMER_ACKNOWLEDGED, acknowledged).apply()
+    }
+
+    /** True once the rider has tapped Continue on the sheet that explains the first stream's prompts. */
+    fun permissionPrimerSeen(context: Context): Boolean =
+        preferences(context).getBoolean(KEY_PERMISSION_PRIMER_SEEN, false)
+
+    fun setPermissionPrimerSeen(context: Context, seen: Boolean) {
+        preferences(context).edit().putBoolean(KEY_PERMISSION_PRIMER_SEEN, seen).apply()
     }
 
 

@@ -119,7 +119,7 @@ enum class ProfileOverride(
     /**
      * The one line a rider can check against their own motorcycle, translated, or null when there
      * is nothing useful to say. [label] is "<Brand> <model>"; [description] stays the developer's
-     * note, for Developer tools, the logs and the profile trial.
+     * note, for Developer tools and the logs.
      */
     val riderNote: String?
         get() = when (this) {

@@ -26,8 +26,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import io.motohub.android.ui.components.MotoHubSnackbar
+import io.motohub.android.ui.components.MhChoiceRow
+import io.motohub.android.ui.components.MhListRow
 import io.motohub.android.ui.components.MhModals
+import io.motohub.android.ui.components.MhSheet
 import io.motohub.android.ui.components.MhSnackTone
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material.icons.rounded.Warehouse
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -88,6 +96,7 @@ import io.motohub.android.feature.garage.GarageTabContent
 import io.motohub.android.feature.garage.MotorcycleDetailsScreen
 import io.motohub.android.feature.garage.MotorcyclePhotoSource
 import io.motohub.android.feature.garage.TBoxCapabilityScreen
+import io.motohub.android.feature.garage.shownName
 import io.motohub.android.feature.home.HubHomeScreen
 import io.motohub.android.feature.home.HubViewModel
 import io.motohub.android.feature.home.AdvancedPromoScreen
@@ -175,6 +184,9 @@ private val TBoxScreenMarginsSaver = listSaver<TBoxScreenMargins, Int>(
         )
     }
 )
+
+/** What the permission primer explains, and the start it continues. */
+private class PermissionPrimer(val notifications: Boolean, val microphone: Boolean, val start: () -> Unit)
 
 private fun applyPhoneOnlyAndroidAutoDisplayMode(context: Context, displayMode: String?) {
     val mode = displayMode?.let { runCatching { AndroidAutoDisplayMode.valueOf(it) }.getOrNull() } ?: return
@@ -330,6 +342,9 @@ class MainActivity : ComponentActivity() {
                     aoaExternalState is AoaExternalRuntimeState.Streaming
                 val externalDisplayStreaming = aoaExternalState is AoaExternalRuntimeState.Streaming
                 var selectedTab by rememberSaveable { mutableStateOf(HubTab.RIDE) }
+                // The dock shows only on the tab roots: Settings reports whether it is on its own.
+                var settingsAtRoot by rememberSaveable { mutableStateOf(true) }
+                var showMotorcycleSwitcher by rememberSaveable { mutableStateOf(false) }
                 var showQrScanner by rememberSaveable { mutableStateOf(false) }
                 var showManualPairing by rememberSaveable { mutableStateOf(false) }
                 var showNetworkDiagnostics by rememberSaveable { mutableStateOf(false) }
@@ -370,6 +385,21 @@ class MainActivity : ComponentActivity() {
                 var photoTargetProfileId by rememberSaveable { mutableStateOf<String?>(null) }
                 var returnToGarageAfterPairing by rememberSaveable { mutableStateOf(false) }
                 val context = LocalContext.current
+
+                // A refused permission names the fix: "Allow the camera to …" [Settings].
+                fun allowInAppSettings(text: String) {
+                    MotoHubSnackbar.show(
+                        context,
+                        text,
+                        MhSnackTone.ERROR,
+                        actionLabel = motoHubText("Settings"),
+                        onAction = {
+                            if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
+                                MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
+                            }
+                        }
+                    )
+                }
 
                 // Every QR path ends like the manual form: a snackbar saying whether the motorcycle
                 // was saved. Nothing else on screen tells the rider.
@@ -588,17 +618,7 @@ class MainActivity : ComponentActivity() {
                         launchMotorcycleCamera()
                     } else {
                         photoTargetProfileId = null
-                        MotoHubSnackbar.show(
-                            context,
-                            motoHubText("Allow the camera to take a photo"),
-                            MhSnackTone.ERROR,
-                            actionLabel = motoHubText("Settings"),
-                            onAction = {
-                                if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
-                                    MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
-                                }
-                            }
-                        )
+                        allowInAppSettings(motoHubText("Allow the camera to take a photo"))
                     }
                 }
                 // The consent result can arrive before the activity is resumed, and some ROMs
@@ -731,6 +751,10 @@ class MainActivity : ComponentActivity() {
                             "full" -> startAndroidAuto()
                             "phone_only" -> startPhoneOnlyBridge()
                         }
+                    } else {
+                        // After two refusals Android stops asking, and every later tap was silent.
+                        ProjectionEventLog.warning("PERMISSION", "Microphone permission denied; Android Auto not started.")
+                        allowInAppSettings(motoHubText("Allow the microphone to start Android Auto"))
                     }
                 }
                 val requestMicAndStart: (String) -> Unit = { action ->
@@ -787,33 +811,54 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val continueAndroidAutoStart: () -> Unit = {
-                    val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-                    if (notificationGranted) {
-                        requestMicAndStart("full")
+                // The first stream fires the system's permission prompts back to back; say why first.
+                // Once Continue has been tapped it never shows again: a later refusal lands on the
+                // microphone snackbar or the "Allow notifications" banner instead.
+                var permissionPrimer by remember { mutableStateOf<PermissionPrimer?>(null) }
+                fun primeThen(androidAuto: Boolean, start: () -> Unit) {
+                    val notifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                        PackageManager.PERMISSION_GRANTED
+                    val microphone = androidAuto &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) !=
+                        PackageManager.PERMISSION_GRANTED
+                    if ((notifications || microphone) && !MotoHubSettings.permissionPrimerSeen(context)) {
+                        permissionPrimer = PermissionPrimer(notifications, microphone, start)
                     } else {
-                        androidAutoPermissionPending = true
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        start()
+                    }
+                }
+                val continueAndroidAutoStart: () -> Unit = {
+                    primeThen(androidAuto = true) {
+                        val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        if (notificationGranted) {
+                            requestMicAndStart("full")
+                        } else {
+                            androidAutoPermissionPending = true
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                     }
                 }
                 // Same permission sequence as continueAndroidAutoStart (notification, then mic)
                 // for the phone-only path - see startPhoneOnlyBridge for why skipping this was a bug.
                 val continueAndroidAutoPhoneOnlyStart: (Boolean) -> Unit = { showPreview ->
-                    phoneOnlyAndroidAutoShowPreview = showPreview
-                    val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-                    if (notificationGranted) {
-                        requestMicAndStartPhoneOnly()
-                    } else {
-                        phoneOnlyAndroidAutoPermissionPending = true
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    primeThen(androidAuto = true) {
+                        phoneOnlyAndroidAutoShowPreview = showPreview
+                        val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        if (notificationGranted) {
+                            requestMicAndStartPhoneOnly()
+                        } else {
+                            phoneOnlyAndroidAutoPermissionPending = true
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                     }
                 }
                 // Hoisted out of the home screen's callbacks so autostart can run the exact same
@@ -823,16 +868,18 @@ class MainActivity : ComponentActivity() {
                     // Mirroring needs the same reverse ports Android Auto does, and used to walk
                     // into the conflict with nothing said at all - only the AA path warned.
                     companionConflictGate.gate("Mirroring") {
-                        val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) == PackageManager.PERMISSION_GRANTED
-                        if (notificationGranted) {
-                            projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
-                        } else {
-                            projectionPermissionPending = true
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        primeThen(androidAuto = false) {
+                            val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+                            if (notificationGranted) {
+                                projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                            } else {
+                                projectionPermissionPending = true
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         }
                     }
                 }
@@ -1155,17 +1202,7 @@ class MainActivity : ComponentActivity() {
                         // A snackbar, not the Ride banner: it floats over whichever tab the
                         // rider asked from, and a denied camera is not a connection error.
                         ProjectionEventLog.warning("PERMISSION", "Camera permission denied.")
-                        MotoHubSnackbar.show(
-                            context,
-                            motoHubText("Allow the camera to scan QR codes"),
-                            MhSnackTone.ERROR,
-                            actionLabel = motoHubText("Settings"),
-                            onAction = {
-                                if (!WifiDirectGate.openAppInfo(context, context.packageName)) {
-                                    MotoHubSnackbar.error(context, motoHubText("Couldn't open app settings"))
-                                }
-                            }
-                        )
+                        allowInAppSettings(motoHubText("Allow the camera to scan QR codes"))
                     }
                 }
                 // One decoder behind two doors. The photo picker indexes the gallery and nothing
@@ -1230,6 +1267,16 @@ class MainActivity : ComponentActivity() {
                 val qrPhotoFileLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument()
                 ) { uri -> decodeQrImage(uri) }
+                // Garage's "Use" and Ride's "Switch motorcycle" sheet: one path, one set of answers.
+                fun selectMotorcycle(profileId: String) {
+                    when (viewModel.selectMotorcycle(profileId)) {
+                        HubViewModel.GarageResult.DONE -> selectedTab = HubTab.RIDE
+                        HubViewModel.GarageResult.STREAMING ->
+                            MotoHubSnackbar.error(context, motoHubText("Stop streaming first"))
+                        HubViewModel.GarageResult.FAILED ->
+                            MotoHubSnackbar.error(context, motoHubText("Couldn't switch motorcycles"))
+                    }
+                }
                 // "Import QR code" from any tab: Ride and Garage both open the same sheet.
                 val importQrPhoto: () -> Unit = {
                     ProjectionEventLog.record("UI", "User requested QR decoding from a photo.")
@@ -1254,6 +1301,8 @@ class MainActivity : ComponentActivity() {
                     showManualPairing -> HubScreenKey.MANUAL_PAIRING
                     else -> HubScreenKey.HOME
                 }
+                // The dock shows only on the tab roots (Settings says when it is on its own).
+                val showDock = selectedTab != HubTab.SETTINGS || settingsAtRoot
                 // The last profile each profile-keyed screen actually showed. During the slide
                 // out its id has already been nulled, and without this the exiting screen would
                 // recompose against a missing profile and vanish mid-animation.
@@ -1270,7 +1319,10 @@ class MainActivity : ComponentActivity() {
                                 ClipData.newPlainText(motoHubText("MOTO-HUB diagnostics"), text)
                             )
                             ProjectionEventLog.record("LOG", "Diagnostic log copied to the clipboard.")
-                            MotoHubSnackbar.success(context, motoHubText("Log copied"))
+                            // Android 13+ confirms a copy itself; a second confirmation would repeat it.
+                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+                                MotoHubSnackbar.success(context, motoHubText("Log copied"))
+                            }
                         },
                         onShare = {
                             val text = ProjectionEventLog.exportText()
@@ -1565,7 +1617,14 @@ class MainActivity : ComponentActivity() {
                     HubHomeScreen(
                         state = state,
                         selectedTab = selectedTab,
+                        // A tab is only ever tapped from its root (the dock is gone everywhere
+                        // else), so tapping the selected one is already "back to its root".
                         onTabSelected = { selectedTab = it },
+                        showDock = showDock,
+                        onSwitchMotorcycle = {
+                            ProjectionEventLog.record("UI", "Switch motorcycle sheet opened.")
+                            showMotorcycleSwitcher = true
+                        },
                         onScanQr = {
                             ProjectionEventLog.record("UI", "User requested live QR scanning.")
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -1704,16 +1763,18 @@ class MainActivity : ComponentActivity() {
                         externalDisplayStreaming = externalDisplayStreaming,
                         onStartExternalDisplay = {
                             ProjectionEventLog.record("EXTERNAL", "User selected external display mode.")
-                            val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                ) == PackageManager.PERMISSION_GRANTED
-                            if (notificationGranted) {
-                                externalDisplayProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
-                            } else {
-                                externalDisplayPermissionPending = true
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            primeThen(androidAuto = false) {
+                                val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                if (notificationGranted) {
+                                    externalDisplayProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                                } else {
+                                    externalDisplayPermissionPending = true
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
                             }
                         },
                         onStopExternalDisplay = {
@@ -1744,15 +1805,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel.resetManualPairingForm()
                                     showManualPairing = true
                                 },
-                                onSelectMotorcycle = { profileId ->
-                                    when (viewModel.selectMotorcycle(profileId)) {
-                                        HubViewModel.GarageResult.DONE -> selectedTab = HubTab.RIDE
-                                        HubViewModel.GarageResult.STREAMING ->
-                                            MotoHubSnackbar.error(context, motoHubText("Stop streaming first"))
-                                        HubViewModel.GarageResult.FAILED ->
-                                            MotoHubSnackbar.error(context, motoHubText("Couldn't switch motorcycles"))
-                                    }
-                                },
+                                onSelectMotorcycle = ::selectMotorcycle,
                                 onOpenDetails = { profileId ->
                                     val profile = state.motorcycles.firstOrNull { it.id == profileId }
                                     if (profile != null) {
@@ -1768,6 +1821,7 @@ class MainActivity : ComponentActivity() {
                         },
                         settingsContent = {
                             SettingsTabContent(
+                                onAtRootChanged = { settingsAtRoot = it },
                                 onOpenNetworkDiagnostics = {
                                     ProjectionEventLog.record("UI", "Network diagnostics screen opened.")
                                     showNetworkDiagnostics = true
@@ -1924,6 +1978,65 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+                if (showMotorcycleSwitcher) {
+                    // P1: rows straight on the sheet; each runs once the sheet has gone (P10).
+                    MhSheet(
+                        onDismiss = { showMotorcycleSwitcher = false },
+                        title = motoHubText("Switch motorcycle")
+                    ) { close ->
+                        val currentId = state.session.motorcycle?.id
+                        state.motorcycles.forEach { profile ->
+                            MhChoiceRow(
+                                title = profile.shownName(),
+                                subtitle = profile.ssid,
+                                icon = Icons.Rounded.TwoWheeler,
+                                selected = profile.id == currentId,
+                                onClick = { close { if (profile.id != currentId) selectMotorcycle(profile.id) } }
+                            )
+                        }
+                        MhListRow(
+                            title = motoHubText("Garage"),
+                            icon = Icons.Rounded.Warehouse,
+                            onClick = { close { selectedTab = HubTab.GARAGE } }
+                        )
+                    }
+                }
+                permissionPrimer?.let { primer ->
+                    MhSheet(
+                        onDismiss = { permissionPrimer = null },
+                        title = when {
+                            primer.notifications && primer.microphone ->
+                                motoHubText("Allow notifications and the microphone")
+                            primer.microphone -> motoHubText("Allow the microphone")
+                            else -> motoHubText("Allow notifications")
+                        },
+                        primaryLabel = motoHubText("Continue"),
+                        onPrimary = {
+                            MotoHubSettings.setPermissionPrimerSeen(context, true)
+                            ProjectionEventLog.record("PERMISSION", "Permission primer: continuing to the system prompts.")
+                            primer.start()
+                        },
+                        secondaryLabel = motoHubText("Not now"),
+                        onSecondary = {
+                            ProjectionEventLog.record("PERMISSION", "Permission primer: Not now; the start was cancelled.")
+                        }
+                    ) {
+                        if (primer.notifications) {
+                            MhListRow(
+                                title = motoHubText("Notifications"),
+                                subtitle = motoHubText("Keep streaming visible and let you stop it"),
+                                icon = Icons.Rounded.Notifications
+                            )
+                        }
+                        if (primer.microphone) {
+                            MhListRow(
+                                title = motoHubText("Microphone"),
+                                subtitle = motoHubText("For Google Assistant and calls"),
+                                icon = Icons.Rounded.Mic
+                            )
+                        }
+                    }
+                }
                 pendingUnverifiedQr?.let { payload ->
                     UnverifiedQrDialog(
                         payload = payload,
@@ -2009,10 +2122,14 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 // Last, so it floats over every screen. Only the snackbar itself takes taps (one
-                // dismisses it); the rest of the host lets them through. Lifted clear of the tab
-                // bar, and above the keyboard when one is open.
+                // dismisses it); the rest of the host lets them through. Lifted clear of the dock
+                // while it shows, and above the keyboard when one is open. The host adds the
+                // screen's pinned action (bottomClearance) itself.
+                val dockVisible = hubScreen == HubScreenKey.HOME && showDock
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                    MotoHubSnackbar.Host(Modifier.navigationBarsPadding().padding(bottom = 72.dp))
+                    MotoHubSnackbar.Host(
+                        Modifier.navigationBarsPadding().padding(bottom = if (dockVisible) 72.dp else 16.dp)
+                    )
                 }
             }
         }

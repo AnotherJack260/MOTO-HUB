@@ -156,8 +156,10 @@ fun HubHomeScreen(
     onDiscardTrialledProfile: () -> Unit = {},
     diagnosticsOffer: DiagnosticsOffer? = null,
     onOpenAdvancedPromo: () -> Unit = {},
-    // A tap on the motorcycle's name. The Garage until the "Switch motorcycle" sheet takes it over.
-    onSwitchMotorcycle: () -> Unit = { onTabSelected(HubTab.GARAGE) }
+    // A tap on the motorcycle's name: MainActivity opens the "Switch motorcycle" sheet.
+    onSwitchMotorcycle: () -> Unit = { onTabSelected(HubTab.GARAGE) },
+    // The dock shows only on the tab roots; a Settings sub-screen covers it like any pushed screen.
+    showDock: Boolean = true
 ) {
     val session = state.session
     val destination = resolveHubDestination(session, androidAutoActive, externalDisplayActive = externalDisplayActive)
@@ -243,7 +245,12 @@ fun HubHomeScreen(
         ) {
             // The dock pads the navigation bar itself. Consumed here, so a page inside a tab
             // (MhScreen ends its scroll clear of that bar) does not leave the same gap again above it.
-            Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.navigationBars)) {
+            // Without the dock the page reaches the bottom edge and pads that bar itself.
+            Box(
+                Modifier
+                    .weight(1f)
+                    .then(if (showDock) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier)
+            ) {
                 ScreenCrossfade(screen = selectedTab, label = "tab") { tab ->
                     when (tab) {
                         HubTab.RIDE, HubTab.NAV, HubTab.TRIPS -> {
@@ -423,12 +430,14 @@ fun HubHomeScreen(
                 }
             }
 
-            HubBottomNavigation(
-                selected = selectedTab,
-                onSelect = onTabSelected,
-                rideLive = destination == HubDestination.MODE_SELECTION ||
-                    destination == HubDestination.ACTIVE_SESSION
-            )
+            if (showDock) {
+                HubBottomNavigation(
+                    selected = selectedTab,
+                    onSelect = onTabSelected,
+                    rideLive = destination == HubDestination.MODE_SELECTION ||
+                        destination == HubDestination.ACTIVE_SESSION
+                )
+            }
         }
     }
 }
