@@ -76,6 +76,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -311,10 +312,17 @@ fun HubHomeScreen(
                                     // same clock, so the page above glides.
                                     ScreenCrossfade(screen = destination, label = "ride-action", animateHeight = true) { shown ->
                                         when (shown) {
-                                            HubDestination.PAIRING -> MhPrimaryButton(
-                                                motoHubText("Scan QR code"),
-                                                guarded(onScanQr),
-                                                icon = Icons.Rounded.QrCodeScanner
+                                            // No motorcycle yet: Scan is the primary, and the same
+                                            // options sheet still reaches Android Auto on this phone.
+                                            HubDestination.PAIRING -> ConnectionActions(
+                                                connectLabel = motoHubText("Scan QR code"),
+                                                onConnect = guarded(onScanQr),
+                                                connectIcon = Icons.Rounded.QrCodeScanner,
+                                                guarded = guarded,
+                                                onScanQr = null,
+                                                onImportQrPhoto = onImportQrPhoto,
+                                                onManualPairing = onManualPairing,
+                                                onStartPhoneOnlyAndroidAuto = onStartPhoneOnlyAndroidAuto
                                             )
                                             // Connect is the one thing a rider opens this app to
                                             // do; after a failure the same button is the retry, and
@@ -431,11 +439,7 @@ fun HubHomeScreen(
                                 // than slide, and the height follows on the same clock.
                                 ScreenCrossfade(screen = destination, label = "ride", animateHeight = true) { shown ->
                                     when (shown) {
-                                        HubDestination.PAIRING -> PairingContent(
-                                            onImportQrPhoto = onImportQrPhoto,
-                                            onManualPairing = onManualPairing
-                                        )
-                                        HubDestination.CONNECTION -> {}
+                                        HubDestination.PAIRING, HubDestination.CONNECTION -> {}
                                         // ?.let, not checkNotNull: a fading-out state is drawn with
                                         // the current session, which may have lost its motorcycle.
                                         HubDestination.CONNECTING -> motorcycle?.let {
@@ -706,27 +710,6 @@ private fun RidePage(action: @Composable () -> Unit, content: @Composable () -> 
     }
 }
 
-@Composable
-private fun PairingContent(
-    onImportQrPhoto: () -> Unit,
-    onManualPairing: () -> Unit
-) {
-    MhListGroup {
-        MhListRow(
-            title = motoHubText("Import QR code"),
-            subtitle = motoHubText("From a photo or screenshot"),
-            icon = Icons.Rounded.Image,
-            onClick = onImportQrPhoto
-        )
-        MhListRow(
-            title = motoHubText("Enter details manually"),
-            subtitle = motoHubText("Wi-Fi name and password"),
-            icon = Icons.Rounded.Keyboard,
-            onClick = onManualPairing
-        )
-    }
-}
-
 /**
  * The pinned slot at rest and after a failure: Connect (or Try again) and, directly under it,
  * "Connection options" - the other ways to set up a motorcycle, in one sheet (P7). Both go
@@ -737,27 +720,31 @@ private fun ConnectionActions(
     connectLabel: String,
     onConnect: () -> Unit,
     guarded: (() -> Unit) -> () -> Unit,
-    onScanQr: () -> Unit,
+    /** Null when Scan QR code is already the primary button above. */
+    onScanQr: (() -> Unit)?,
     onImportQrPhoto: () -> Unit,
     onManualPairing: () -> Unit,
-    onStartPhoneOnlyAndroidAuto: () -> Unit
+    onStartPhoneOnlyAndroidAuto: () -> Unit,
+    connectIcon: ImageVector? = null
 ) {
     // Here rather than one level up, and not saveable: leaving this state (auto-connect starting,
     // say) takes the sheet with it, and ScreenCrossfade's state holder would otherwise reopen it
     // the next time the rider lands back here.
     var showOptions by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MhPrimaryButton(connectLabel, onConnect)
+        MhPrimaryButton(connectLabel, onConnect, icon = connectIcon)
         MhSecondaryButton(motoHubText("Connection options"), guarded { showOptions = true })
     }
     if (showOptions) {
         MhSheet(onDismiss = { showOptions = false }, title = motoHubText("Connection options")) { close ->
             Column {
-                MhListRow(
-                    title = motoHubText("Scan QR code"),
-                    icon = Icons.Rounded.QrCodeScanner,
-                    onClick = { close(onScanQr) }
-                )
+                if (onScanQr != null) {
+                    MhListRow(
+                        title = motoHubText("Scan QR code"),
+                        icon = Icons.Rounded.QrCodeScanner,
+                        onClick = { close(onScanQr) }
+                    )
+                }
                 MhListRow(
                     title = motoHubText("Import QR code"),
                     subtitle = motoHubText("From a photo or screenshot"),
