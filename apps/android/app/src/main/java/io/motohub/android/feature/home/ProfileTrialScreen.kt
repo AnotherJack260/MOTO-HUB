@@ -3,10 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.home
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.session.DashboardDeliveryReport
 import io.motohub.android.tbox.ProfileOverride
@@ -71,18 +68,18 @@ internal fun ProfileTrialScreen(
 }
 
 /**
- * The strip that opens [ProfileTrialScreen], shown above whatever tab the rider is on.
+ * The banner that opens [ProfileTrialScreen], on Ride under the motorcycle's name, in whatever
+ * state the connection is in.
  *
- * Above the tabs on purpose: the rider it is for is not looking at the connection screen. Their
- * dashboard says READY, so they are somewhere else in the app - or on the bike, glancing down -
- * wondering why the TFT is frozen. A notice filed under the screen that claims everything is
- * fine is a notice nobody reads. A caution, not an error: everything the app can check works.
+ * Under the hero rather than above every tab: drawn above the page, it pushed Ride's title down
+ * the moment streaming started. It sits where Ride's other problems do, next to the status chip
+ * that says "Live" - the claim it contradicts. A caution, not an error: everything the app can
+ * check works.
  */
 @Composable
 internal fun DeliveryWarningBanner(onOpen: () -> Unit) {
     MhBanner(
         title = motoHubText("Your dashboard isn't showing the picture"),
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         body = motoHubText("Another profile usually fixes this."),
         tone = MhTone.WARNING,
         actionLabel = motoHubText("Try another profile"),

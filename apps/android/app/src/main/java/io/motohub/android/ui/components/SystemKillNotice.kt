@@ -3,6 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,13 +32,17 @@ import java.util.Locale
  * Deliberately not styled as an error. Nothing is broken and there is nothing to retry - the last
  * session ended, this explains why, and the rider decides what to do about it. The close icon is
  * the acknowledgement, so the rider can put it away without acting on it.
+ *
+ * [visible] is the caller's say on where: never over a live failure, a connection or a ride. It
+ * folds in and out on the shared clock, and so does the close.
  */
 @Composable
-fun SystemKillNotice(modifier: Modifier = Modifier) {
-    val kill = ProcessExitReport.unacknowledgedSystemKill ?: return
+fun SystemKillNotice(visible: Boolean = true, modifier: Modifier = Modifier) {
+    // Remembered rather than read on every pass: acknowledging clears the report, and the banner
+    // still has to be drawn while it folds away. The report is decided before the first frame.
+    val kill = remember { ProcessExitReport.unacknowledgedSystemKill } ?: return
     val context = LocalContext.current
     var dismissed by remember(kill.at) { mutableStateOf(false) }
-    if (dismissed) return
 
     val appName = remember {
         runCatching {
@@ -52,25 +57,34 @@ fun SystemKillNotice(modifier: Modifier = Modifier) {
     val advice = remember(kill.at) { BatteryOptimisationGate.advice(context, appName) }
     val time = remember(kill.at) { TIME_FORMAT.format(Date(kill.at)) }
 
-    MhBanner(
-        title = motoHubText("Your phone stopped the last session"),
-        modifier = modifier,
-        body = motoHubText("It closed %2\$s at %1\$s. This wasn't an app fault.", time, appName),
-        tone = MhTone.NEUTRAL,
-        actionLabel = if (exempt) motoHubText("Open app settings") else motoHubText("Open battery settings"),
-        onAction = { BatteryOptimisationGate.openSettings(context) },
-        onDismiss = {
-            ProcessExitReport.acknowledgeSystemKill(context)
-            dismissed = true
-        },
-        details = {
-            Text(
-                motoHubText(advice),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    )
+    AnimatedVisibility(visible = visible && !dismissed, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+        MhBanner(
+            // What happened, not whose fault it was: a rider reads a defence as an excuse.
+            title = motoHubText("Your phone closed MOTO-HUB"),
+            modifier = modifier,
+            // Two whole sentences rather than one joined onto the other: not every language
+            // separates sentences with a space.
+            body = if (exempt) {
+                motoHubText("At %1\$s, while it was running.", time)
+            } else {
+                motoHubText("At %1\$s, while it was running. Battery optimisation usually does this.", time)
+            },
+            tone = MhTone.NEUTRAL,
+            actionLabel = if (exempt) motoHubText("Open app settings") else motoHubText("Open battery settings"),
+            onAction = { BatteryOptimisationGate.openSettings(context) },
+            onDismiss = {
+                ProcessExitReport.acknowledgeSystemKill(context)
+                dismissed = true
+            },
+            details = {
+                Text(
+                    motoHubText(advice),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
 }
 
 private val TIME_FORMAT = SimpleDateFormat("HH:mm", Locale.getDefault())
