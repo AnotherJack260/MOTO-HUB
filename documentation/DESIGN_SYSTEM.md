@@ -31,7 +31,8 @@ The rider has gloves on, is in sunlight, and is in a hurry next to the bike.
 4. **Riders first, developers second.** Diagnostics labs, protocol overrides and
    inspectors live under "Advanced" or "Developer tools", never in the main path.
 5. **Glove-sized targets.** Primary buttons are 56 dp tall. Everything tappable
-   is at least 48 dp.
+   is at least 48 dp. A compact pill (inside a banner or at the end of a row)
+   draws 40 dp inside a 48 dp target.
 6. **Calm motion.** One duration, 220 ms (`MOTION_MILLIS`): screen slides, tab
    crossfades, a banner folding open. A screen slides in over a still, slightly
    dimmed base; no parallax. Nothing decorative or bouncing. Only a status chip
@@ -59,6 +60,7 @@ The rider has gloves on, is in sunlight, and is in a hurry next to the bike.
 | `error` (`MotoHubColors.ErrorText`) | `#FF9994` | red text: destructive labels, field errors |
 | `MotoHubColors.Error` | `#FF5A52` | red icons, dots and the error chip |
 | `errorContainer` | `#2B1513` | behind an error banner or chip |
+| `MotoHubColors.Error` at 24% | translucent | the destructive confirm pill on a sheet or dialog (`MhActionStyle.DESTRUCTIVE`) |
 | `MotoHubColors.Warning` / `WarningContainer` | `#FFB340` / `#2B2111` | cautions |
 | `scrim` | `#000000` at 60% | behind sheets and dialogs |
 
@@ -69,13 +71,16 @@ every surface (7.6 on background, 6.5 surface, 5.4 high, 4.6 highest).
 `Fill` is translucent on purpose: it always reads one step lighter than whatever
 it sits on. An opaque grey vanished on the surface that shared its value (a
 secondary pill on a sheet was 1:1). The worst case for text on it is `Fill` over
-a sheet, so the text colours that sit on `Fill` are chosen for that case:
+a sheet, so the text colours that sit on `Fill` are chosen for that case. The
+destructive confirm's red tint is translucent for the same reason: the opaque
+`errorContainer` is darker than a sheet and read as a hole, not a button.
 
 | Text on `Fill` | on background | on surface | on a sheet |
 |---|---|---|---|
 | `onSurface` | 13.5 | 10.8 | 8.7 |
 | `TextSecondaryOnFill` | 7.3 | 5.8 | 4.7 |
 | `ErrorText` (destructive pill) | 7.2 | 5.7 | 4.6 |
+| `ErrorText` on the 24% destructive tint | | | 4.9 |
 | `onSurfaceVariant` (do not use on `Fill`) | 5.7 | 4.5 | 3.6 |
 | `Error` (icons only) | 4.8 | 3.8 | 3.1 |
 
@@ -122,7 +127,8 @@ Rules:
   - `medium` 16: tiles, tab press highlight
   - `large` 20: cards, list groups, banners, the snackbar
   - `extraLarge` 28: sheet top corners
-  - Buttons and status chips are full pills.
+  - Buttons and status chips are full pills: 56 dp, or 40 dp for a compact
+    secondary pill.
   - Icon containers are circles: 40 dp in rows, 56 dp in heroes.
 - **Spacing.** 4 dp grid.
   - Screen gutter 16.
@@ -140,31 +146,32 @@ Rules:
 | Component | What it is |
 |---|---|
 | `MhPrimaryButton` | Lime pill, 56 dp, full width (`fillWidth = false` to wrap). `loading` keeps it lime with a dark spinner. One per layer. |
-| `MhSecondaryButton` | `Fill` pill, 56 dp, full width (`fillWidth = false` to wrap), light text. `destructive = true` gives red text. |
-| `MhTextButton` | Text only, 48 dp target, for "Details", "Skip". Never for back or close. |
+| `MhSecondaryButton` | `Fill` pill, 56 dp, full width (`fillWidth = false` to wrap), light text. `destructive = true` gives red text. `size = MhButtonSize.COMPACT` draws 40 dp in a 48 dp target, 16 dp side padding, 15 sp label, and wraps its label by default: the action inside a banner, or a row's `trailing` action ("Use"). Never compact for a screen's or a sheet's own actions. |
+| `MhTextButton` | Text only, 48 dp target, for "Cancel", "Skip", "Not now". Never for back or close. |
 | `MhIconButton` | 48 dp icon-only button with a plain 24 dp glyph. |
 | `MhIconCircle` | Neutral icon in a `Fill` circle, 40 dp in rows, 56 dp in heroes. |
 | `MhListGroup` | Rounded `surface` card holding rows, no dividers. |
-| `MhListRow` | Leading icon circle (optional), title, subtitle (never truncated), trailing value, chevron, or a control. |
+| `MhListRow` | Leading icon circle (optional), title, subtitle (never truncated), trailing value, chevron, or a control (a compact `MhSecondaryButton` fits). The chevron means "opens a screen": `showChevron` defaults to `!LocalMhInSheet.current`, so rows on a sheet have none. |
 | `MhSwitchRow` / `MhSwitch` | An on/off setting. The whole row toggles and is the one control TalkBack announces, with its state. |
 | `MhChoiceRow` | One of several exclusive choices; a lime check marks the chosen one. Put all the choices in one group, or directly on a sheet. |
 | `MhSectionHeader` | Sentence-case `titleSmall` in secondary colour above a group. A heading for TalkBack. |
 | `MhFootnote` | The standard info line under a group: the one sentence a setting needs and its row has no room for. |
-| `MhTopBar` | The 56 dp bar of every non-tab screen: back or close top-left, an optional compact centred title, trailing `MhTopBarAction`s. Pads the status bar itself. Use it alone where `MhScreen` can't be used (camera scanner, Android Auto preview); it only draws, so pair it with a `BackHandler`. |
+| `MhTopBar` | The 56 dp bar of every screen: back or close top-left (none on a tab page), an optional compact centred title, trailing `MhTopBarAction`s. Pads the status bar itself. Use it alone where `MhScreen` can't be used (camera scanner, Android Auto preview); it only draws, so pair it with a `BackHandler`. |
 | `MhTopBarAction` | A trailing top-bar action: icon in a 40 dp `Fill` circle, 48 dp target. |
-| `MhScreen` | Sub-screen scaffold: `MhTopBar`, large title, scrolling content, optional sticky bottom action that rides above the keyboard. The compact title fades in once the large one has scrolled away. System back calls `onBack`. Without a bottom action, the scroll ends clear of the navigation bar and the keyboard. `scrollable = false` gives the content the remaining height instead, for a LazyColumn. |
-| `MhTabPage` | A tab's own page: the same bar slot (actions only, no back) and large title as `MhScreen`, so titles line up. |
+| `MhScreen` | Sub-screen scaffold: `MhTopBar`, large title, scrolling content, optional sticky bottom action that rides above the keyboard. The title collapses into the bar as it scrolls (see Navigation chrome). System back calls `onBack`. Without a bottom action, the scroll ends clear of the navigation bar and the keyboard. `scrollable = false` gives the content the remaining height instead, for a LazyColumn. |
+| `MhTabPage` | A tab's own page: the same bar slot (actions only, no back) and large title as `MhScreen`, so titles line up. Its title collapses into the bar the same way, so a scrolled Settings still says "Settings". |
 | `HubBottomNavigation` | The dock. See Navigation chrome. `rideLive` puts a lime dot on Ride. |
-| `MhSheet` | `ModalBottomSheet` with grabber, title, short body, optional content, then primary and secondary pills stacked. `primaryStyle` is LIME, NEUTRAL or DESTRUCTIVE. See Sheets below. |
+| `MhSheet` | `ModalBottomSheet` with grabber, title, short body, optional content, then primary and secondary pills stacked. `primaryStyle` is LIME, NEUTRAL or DESTRUCTIVE. Provides `LocalMhInSheet = true` to its content. See Sheets below. |
+| `LocalMhInSheet` | `true` inside an `MhSheet`'s content. `MhListRow` reads it to drop the chevron; read it for any other "on a sheet" difference instead of adding a parameter. |
 | `MhDialog` | The blocking dialog (P3). Same API and contract as `MhSheet`, with an optional icon; stacked full-width pills, scrolling body, back and outside taps ignored unless `dismissible`. |
-| `MhActionStyle` | LIME (the layer's one action), NEUTRAL (consent and trust answers, P4), DESTRUCTIVE (red text on a `Fill` pill; fires the confirm haptic itself). |
+| `MhActionStyle` | LIME (the layer's one action), NEUTRAL (consent and trust answers, P4), DESTRUCTIVE (red text on a red-tinted pill, `Error` at 24%, so the confirm outweighs the grey Cancel; fires the confirm haptic itself). |
 | `MhModals` | `MhModals.open` counts the kit sheets and dialogs on screen. Startup prompts wait for zero. Only the kit writes it. |
 | `MotoHubDialogBody` | The scrolling, edge-faded body slot for any `AlertDialog` (`MhDialog` uses it). |
 | `MotoHubSnackbar` | App-level Material `SnackbarHost`, restyled: a dark rounded card (20 dp), leading icon, auto-dismiss, optional action in `onSurface`. Tap to dismiss. The newest message replaces the one on screen. Falls back to a system toast when the app is not in front. |
 | `MhStatusChip` | Pill with a dot: Live (lime), Connecting (pulsing), Offline (grey), Action needed (warning). Only Connecting pulses. |
-| `MhBanner` | Inline card for a failure or caution: icon, one-line title, one or two lines of body, one action, "Details" for the rest. `onDismiss` adds a 48 dp close icon in the title row. |
+| `MhBanner` | Inline card for a failure or caution: icon, one-line title, one or two lines of body, one action (a compact pill, so the banner never outweighs the screen's lime button), "Details" for the rest. "Details" is plain text in a 48 dp target that starts on the body's line. `onDismiss` adds a 48 dp close icon in the title row. |
 | `MotoHubNotice` | Only for long runtime instructions (the Android Auto failure steps) until the Ride slice folds it into `MhBanner`. |
-| `MhTextField` | Filled field on `Fill`, 12 dp corners, label, helper or error line (read by TalkBack), password visibility toggle. `monospace` also turns off autocorrect and capitalisation. |
+| `MhTextField` | Filled field on `Fill`, 12 dp corners, label, helper or error line (read by TalkBack), password visibility toggle. `monospace` also turns off autocorrect and capitalisation. `placeholder` is what an empty field stands for ("My motorcycle"): grey under the label, focused or not, while the value stays empty. |
 | `MhEmptyState` | Icon circle, title, one line, one action (with `actionIcon`, so it matches the same action elsewhere). |
 
 Legacy components are `@Deprecated` with a `ReplaceWith`: `MotoHubDetailScreen`,
@@ -174,6 +181,10 @@ sites it owns; do not add new ones.
 
 Icons are Material Symbols Rounded (`material-icons-extended`, Rounded set).
 They replace the hand-drawn Canvas glyphs.
+
+There is no `MhSlider` yet: the one slider (Music volume) is Material's. When a
+second slider appears, add `MhSlider` (24 dp white round thumb, 4 dp track, no
+stop indicator) and move both to it.
 
 ## Navigation chrome
 
@@ -187,13 +198,18 @@ They replace the hand-drawn Canvas glyphs.
   right. System back always does what the icon does (P9).
 - Trailing actions are `MhTopBarAction`s: 40 dp `Fill` circles, the last one
   16 dp from the edge.
-- The large title sits under the bar. When it scrolls away, a compact centred
-  title fades into the bar in 220 ms (the Revolut collapsing header).
+- The large title sits under the bar, on `MhScreen` and `MhTabPage` alike. As it
+  scrolls under the bar it fades out, so no half-cut glyphs hang there, and a
+  compact centred title fades into the bar over the last 24 dp before it is
+  gone (the Revolut collapsing header). Both follow the scroll, not a timer.
 
 **The dock is Revolut's.**
+- It shows only on the three tab roots. Every pushed screen covers it.
 - Full width on `surface`, running on under the gesture bar. The kit pads the
   inset inside the dock; callers add nothing.
 - 56 dp of items, 24 dp icons: filled when selected, outlined otherwise.
+  Garage uses the Warehouse glyph: Material's Garage has a car parked in it,
+  and none has a motorcycle.
 - `labelSmall` labels: selected `onSurface` SemiBold, the rest `onSurfaceVariant`.
 - No indicator pill, no top border, a bounded ripple per item.
 - `rideLive = true` draws a 6 dp lime dot at the top end of the Ride icon.
@@ -204,18 +220,19 @@ They replace the hand-drawn Canvas glyphs.
   - The UI maps the raw failure (which logic and the sister app match by string
     equality, so it never changes) to a presentation type.
   - Every failure and caution is an `MhBanner` (P5): a title from the glossary,
-    one helpful line, and one action that fixes it. On Ride that action is
+    one helpful line, and one action that fixes it, as a compact pill. On Ride that action is
     never "Try again", because the hero button is the retry.
   - The raw message sits behind "Details".
   - `MotoHubNotice` is only for the long Android Auto instructions.
 - **Destructive confirm (P2).** A sheet titled "<Verb> <thing>?" that names the
-  thing, a one-line consequence, a DESTRUCTIVE primary and "Cancel". On
+  thing, a one-line consequence, a DESTRUCTIVE primary (red on a red tint, so
+  it outweighs Cancel) and "Cancel". On
   success, a past-tense snackbar:
   ```kotlin
   val bike = removing ?: return
   MhSheet(
       onDismiss = { removing = null },
-      title = motoHubText("Remove %1$s?", bike.name),
+      title = motoHubText("Remove “%1$s”?", bike.name),
       body = motoHubText("Its QR code and photo are deleted from this phone."),
       primaryLabel = motoHubText("Remove"),
       onPrimary = { garage.remove(bike) },
@@ -233,12 +250,17 @@ They replace the hand-drawn Canvas glyphs.
   - The content slot is inset 4 dp, so `MhListRow` and `MhChoiceRow` line up
     with the 20 dp title. Rows sit directly on the sheet, with no inner group
     (P1). Anything else in the slot pads itself 16 dp.
+  - A row on a sheet acts (picks, imports, removes); it never navigates, so it
+    has no chevron. The kit drops it (`LocalMhInSheet`), so don't pass
+    `showChevron = false` there.
   - A snackbar raised while a sheet or dialog is open draws underneath it
     (they are separate windows), so close the sheet first (P10): inside
     `content`, `close { MotoHubSnackbar.success(context, motoHubText("Log copied")) }`.
     An error while the sheet stays open goes inline in the sheet.
 - **Dialogs.** `MhDialog` has the same contract as `MhSheet`. Consent and
   trust answers use `primaryStyle = NEUTRAL`: two equal pills, no lime (P4).
+- **Fields.** An empty field that stands for a default (an unnamed motorcycle is
+  "My motorcycle") shows that default as `placeholder`, never a bare label.
 - **Settings.**
   - Every choice is a row in a group. Exclusive choices show a trailing
     checkmark in one group.
@@ -259,11 +281,11 @@ They replace the hand-drawn Canvas glyphs.
 
 | # | Situation | Pattern |
 |---|---|---|
-| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Ride options, connection type, import QR, motorcycle photo, the action picker, timing and the teach prerequisite. |
-| P2 | Destructive confirm | An `MhSheet` titled "<Verb> <thing>?" that names the thing, with a one-line consequence. The primary uses `primaryStyle = DESTRUCTIVE` (red text on a Fill pill) and fires the haptic itself. The secondary is "Cancel". On success, a past-tense snackbar. This covers Remove motorcycle, Reset actions and Clear the log. "Remove photo" is a red row that acts at once with a snackbar, because it is already inside a sheet. |
+| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title, with no chevron. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Ride options, connection type, import QR, motorcycle photo, the action picker, timing and the teach prerequisite. |
+| P2 | Destructive confirm | An `MhSheet` titled "<Verb> <thing>?" that names the thing, with a one-line consequence. The primary uses `primaryStyle = DESTRUCTIVE` (red text on a red-tinted pill, heavier than the grey Cancel) and fires the haptic itself. The secondary is "Cancel". On success, a past-tense snackbar. This covers Remove motorcycle, Reset actions and Clear the log. "Remove photo" is a red row that acts at once with a snackbar, because it is already inside a sheet. |
 | P3 | Blocking | Only three things block. Safety is a full-screen page. Crash consent and the unverified QR use `MhDialog`. Everything else is a sheet, a snackbar or inline. |
 | P4 | Consent, trust and data answers | **No lime**: two equal neutral pills. This covers crash consent, the report notice, the unverified QR and the wire verdict. |
-| P5 | Inline problem | `MhBanner`: a title from the glossary, one body line, one action (the fix, never "Try again" on Ride, where the hero button is the retry), then "Details". The raw text is shown as is. |
+| P5 | Inline problem | `MhBanner`: a title from the glossary, one body line, one compact action (the fix, never "Try again" on Ride, where the hero button is the retry), then "Details". The raw text is shown as is. |
 | P6 | Lime | One lime-filled **action** per layer. A sheet or dialog is its own layer, and the scrimmed screen behind it does not count. Lime as *state* is allowed: switch on, check mark, live dot, progress, success icon. The selected tab is white. The snackbar action is not lime. |
 | P7 | Setup entry points | The same three rows with the same strings and icons in Ride PAIRING, the Ride options sheet and Garage. Pairing success returns to the tab it was launched from and does not auto-connect. Every save path ends with "Motorcycle saved". |
 | P8 | Developer reach | App-wide tools live in Settings › Developer tools (the last group, no header). Per-motorcycle tools live in Motorcycle details › Advanced. The simulator profile stays in a "Developer" group at the end of Dashboard profile. Application logs live in Diagnostics › Support. |
@@ -387,7 +409,7 @@ They replace the hand-drawn Canvas glyphs.
 - Allow notifications
 - Connection failed
 - Your dashboard isn't showing the picture
-- Your phone stopped the last session
+- Your phone closed MOTO-HUB
 - Button presses are off
 - Accessibility service is off
 - Switch greyed out?
@@ -403,12 +425,12 @@ A row's title is always the title of the screen it opens.
 | Area | Names |
 |---|---|
 | Tabs | Ride · Garage · Settings |
-| Ride | Connect your motorcycle · Show on the dashboard · Connection options |
+| Ride | Connect your motorcycle · Show on the dashboard · Connection options · Switch motorcycle (sheet) |
 | Garage | Garage · Current motorcycle · Other motorcycles · Add a motorcycle |
 | Motorcycle details | Android Auto · Connection · Advanced · Display fit · Screen margins · Dashboard profile · Dashboard capabilities |
 | Settings headers | On the motorcycle · Connection · Help · App |
 | Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · Check for updates on launch · About MOTO-HUB · MOTO-HUB ADV-SOLO · Developer tools |
 | Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs |
-| Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data |
+| Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · What it adds · Before you switch · Community · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.

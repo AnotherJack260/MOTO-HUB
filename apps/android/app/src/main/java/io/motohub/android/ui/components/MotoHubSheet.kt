@@ -40,6 +40,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,10 +84,17 @@ internal fun CountAsModal() {
 }
 
 /**
+ * True inside an [MhSheet]'s content. A row on a sheet acts - picks, imports, removes - and never
+ * navigates, so [MhListRow] leaves out its chevron there unless a caller asks for it.
+ */
+val LocalMhInSheet = staticCompositionLocalOf { false }
+
+/**
  * A decision that does not need the whole screen: grabber, title, a line or two, then the actions
  * stacked as pills (primary on top). [content] goes between the body and the actions for the
  * sheets that carry a list or a field. It is inset 4 dp, so an MhListRow or MhChoiceRow (16 dp of
- * its own) lines up with the 20 dp title; anything else in the slot pads itself 16 dp.
+ * its own) lines up with the 20 dp title; anything else in the slot pads itself 16 dp. Rows in it
+ * have no chevron by default ([LocalMhInSheet]).
  *
  * [onDismiss] means "the sheet is gone", whichever way it went: scrim, back, swipe, or any button.
  * It runs exactly once and only clears the caller's `showX` flag - a flag that is never cleared
@@ -180,7 +189,9 @@ fun MhSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            content?.invoke(this, close)
+            if (content != null) {
+                CompositionLocalProvider(LocalMhInSheet provides true) { content(this, close) }
+            }
             if (primaryLabel != null || secondaryLabel != null) {
                 Column(inset.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (primaryLabel != null && onPrimary != null) {

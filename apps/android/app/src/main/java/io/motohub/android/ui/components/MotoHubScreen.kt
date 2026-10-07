@@ -4,8 +4,7 @@
 package io.motohub.android.ui.components
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -66,7 +66,7 @@ enum class MhNavIcon { BACK, CLOSE }
  * [actions] go on the right as [MhTopBarAction] circles, the last one 16 dp from the edge.
  *
  * [title] is the compact, centred one-liner: it repeats the large title, so cutting it with an
- * ellipsis is fine here. [MhScreen] fades it in once its large title has scrolled away.
+ * ellipsis is fine here. [MhScreen] and [MhTabPage] fade it in as their large title scrolls away.
  *
  * Usable on its own where [MhScreen] cannot be - the camera scanner, the Android Auto preview, a
  * screen whose body is a LazyColumn. It pads the status bar itself (nothing, where a parent
@@ -152,8 +152,8 @@ fun MhTopBarAction(
 
 /**
  * Every screen that is not a tab: [MhTopBar], a large left-aligned title, content that scrolls,
- * and optionally an action pinned to the bottom that rides above the keyboard. When the large
- * title scrolls away, a compact one fades into the bar.
+ * and optionally an action pinned to the bottom that rides above the keyboard. As the large title
+ * scrolls away it fades out, and a compact one fades into the bar.
  *
  * Without a [bottomBar] the scroll ends clear of the navigation bar and the keyboard, so the last
  * row can always be scrolled into reach. [scrollable] = false is for a body that scrolls itself
@@ -177,16 +177,13 @@ fun MhScreen(
 ) {
     BackHandler(onBack = onBack)
     val scroll = rememberScrollState()
-    // Where the large title ends, in scroll pixels. Derived, so the screen recomposes when the
-    // title passes under the bar, not on every pixel of scrolling.
-    var titleBottom by remember { mutableIntStateOf(Int.MAX_VALUE) }
-    val collapsed by remember(scrollable) { derivedStateOf { scrollable && scroll.value >= titleBottom } }
+    val collapse = rememberTitleCollapse(scroll)
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        CollapsingTopBar(onBack, navIcon, title, collapsed, actions)
+        CollapsingTopBar(onBack, navIcon, title, collapse, actions)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -196,7 +193,7 @@ fun MhScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
-            if (title != null) LargeTitle(title, subtitle) { titleBottom = it }
+            if (title != null) LargeTitle(title, subtitle, collapse)
             if (scrollable) {
                 content()
                 Spacer(Modifier.height(if (bottomBar == null) 24.dp else 8.dp))
@@ -233,22 +230,46 @@ fun MhScreen(
     }
 }
 
-// Its own scope, so the 220 ms fade recomposes the bar and not the whole screen.
+/**
+ * The collapsing header that [MhScreen] and [MhTabPage] share. Progress runs from 0, the large
+ * title in full view, to 1, the large title scrolled entirely under the bar. The large title fades
+ * out over all of it, so no half-cut glyphs hang under the bar; the compact title fades in over
+ * the last 24 dp, so the two hand over at the bar. Both follow the finger rather than a timed
+ * animation, and both are read where they draw: scrolling repaints, it does not recompose the
+ * screen.
+ */
+@Stable
+private class TitleCollapse(private val scroll: ScrollState, private val fadePx: Float) {
+    /** Where the large title ends, in scroll pixels; MAX until it has been laid out (or never is). */
+    var titleBottom by mutableIntStateOf(Int.MAX_VALUE)
+
+    fun largeAlpha() = 1f - (scroll.value / titleBottom.toFloat()).coerceIn(0f, 1f)
+
+    // Derived and clamped, so it changes - and recomposes the bar - only inside the last 24 dp.
+    val compactAlpha by derivedStateOf { ((scroll.value - titleBottom.toFloat() + fadePx) / fadePx).coerceIn(0f, 1f) }
+}
+
+@Composable
+private fun rememberTitleCollapse(scroll: ScrollState): TitleCollapse {
+    val fadePx = with(LocalDensity.current) { 24.dp.toPx() }
+    return remember(scroll, fadePx) { TitleCollapse(scroll, fadePx) }
+}
+
+// Its own scope, so the compact title's fade recomposes the bar and not the whole screen.
 @Composable
 private fun CollapsingTopBar(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     navIcon: MhNavIcon,
     title: String?,
-    collapsed: Boolean,
+    collapse: TitleCollapse,
     actions: @Composable RowScope.() -> Unit
 ) {
-    val titleAlpha by animateFloatAsState(if (collapsed) 1f else 0f, tween(MOTION_MILLIS), label = "compact-title")
-    MhTopBar(onBack = onBack, navIcon = navIcon, title = title, titleAlpha = titleAlpha, actions = actions)
+    MhTopBar(onBack = onBack, navIcon = navIcon, title = title, titleAlpha = collapse.compactAlpha, actions = actions)
 }
 
 /** The large title both [MhScreen] and [MhTabPage] use, so the two line up exactly. */
 @Composable
-private fun LargeTitle(title: String, subtitle: String?, onBottom: (Int) -> Unit = {}) {
+private fun LargeTitle(title: String, subtitle: String?, collapse: TitleCollapse) {
     val top = 4.dp
     val topPx = with(LocalDensity.current) { top.roundToPx() }
     Column(
@@ -259,7 +280,8 @@ private fun LargeTitle(title: String, subtitle: String?, onBottom: (Int) -> Unit
             title,
             modifier = Modifier
                 .semantics { heading() }
-                .onSizeChanged { onBottom(topPx + it.height) },
+                .onSizeChanged { collapse.titleBottom = topPx + it.height }
+                .graphicsLayer { alpha = collapse.largeAlpha() },
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -271,7 +293,8 @@ private fun LargeTitle(title: String, subtitle: String?, onBottom: (Int) -> Unit
 
 /**
  * A tab's own page: the same bar slot and large title as [MhScreen], so a title does not jump
- * when the rider drills in, but no back button. [actions] sit on the right of the bar.
+ * when the rider drills in, but no back button. [actions] sit on the right of the bar, and the
+ * title collapses into it the same way.
  */
 @Composable
 fun MhTabPage(
@@ -281,17 +304,19 @@ fun MhTabPage(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val scroll = rememberScrollState()
+    val collapse = rememberTitleCollapse(scroll)
     Column(modifier.fillMaxSize()) {
-        MhTopBar(onBack = null, actions = actions)
+        CollapsingTopBar(onBack = null, navIcon = MhNavIcon.BACK, title = title, collapse = collapse, actions = actions)
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
-            LargeTitle(title, subtitle = null)
+            LargeTitle(title, subtitle = null, collapse = collapse)
             content()
             Spacer(Modifier.height(24.dp))
         }

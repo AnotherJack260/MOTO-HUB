@@ -21,16 +21,16 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Garage
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TwoWheeler
-import androidx.compose.material.icons.rounded.Garage
+import androidx.compose.material.icons.outlined.Warehouse
 import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material.icons.rounded.Warehouse
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -92,7 +92,9 @@ fun HubBottomNavigation(
             NavItem(motoHubText("Nav"), Icons.Rounded.Navigation, Icons.Outlined.Navigation, selected == HubTab.NAV, Modifier.weight(1f)) { onSelect(HubTab.NAV) }
             NavItem(motoHubText("Trips"), Icons.Rounded.Route, Icons.Outlined.Route, selected == HubTab.TRIPS, Modifier.weight(1f)) { onSelect(HubTab.TRIPS) }
         }
-        NavItem(motoHubText("Garage"), Icons.Rounded.Garage, Icons.Outlined.Garage, selected == HubTab.GARAGE, Modifier.weight(1f)) { onSelect(HubTab.GARAGE) }
+        // Warehouse, not Material's Garage: that one has a car parked in it. No Material glyph has a
+        // motorcycle in a garage, and a hand-drawn one would stand out from the Rounded set.
+        NavItem(motoHubText("Garage"), Icons.Rounded.Warehouse, Icons.Outlined.Warehouse, selected == HubTab.GARAGE, Modifier.weight(1f)) { onSelect(HubTab.GARAGE) }
         NavItem(motoHubText("Settings"), Icons.Rounded.Settings, Icons.Outlined.Settings, selected == HubTab.SETTINGS, Modifier.weight(1f)) { onSelect(HubTab.SETTINGS) }
     }
 }

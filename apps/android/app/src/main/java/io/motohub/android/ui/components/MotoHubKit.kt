@@ -57,6 +57,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,15 +74,21 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.ui.theme.MotoHubColors
 
@@ -122,7 +129,23 @@ fun MhPrimaryButton(
     }
 }
 
-/** Every other action that deserves a button: grey pill, red text when it undoes something. */
+/** How tall an [MhSecondaryButton] is. */
+enum class MhButtonSize {
+    /** 56 dp, like the primary: a screen's or a sheet's own actions. */
+    LARGE,
+
+    /**
+     * 40 dp drawn in a 48 dp target, 15 sp label: an action that lives inside something else - a
+     * banner, the end of a row - and must not weigh as much as the screen's lime button.
+     */
+    COMPACT
+}
+
+/**
+ * Every other action that deserves a button: grey pill, red text when it undoes something.
+ * [MhButtonSize.COMPACT] wraps its label unless told otherwise, so it drops into a banner or a
+ * row's `trailing` slot as is.
+ */
 @Composable
 fun MhSecondaryButton(
     text: String,
@@ -132,24 +155,48 @@ fun MhSecondaryButton(
     destructive: Boolean = false,
     loading: Boolean = false,
     icon: ImageVector? = null,
-    fillWidth: Boolean = true
+    size: MhButtonSize = MhButtonSize.LARGE,
+    fillWidth: Boolean = size == MhButtonSize.LARGE
+) {
+    SecondaryPill(text, onClick, modifier, enabled, destructive, loading, icon, size, fillWidth, MotoHubColors.Fill)
+}
+
+@Composable
+private fun SecondaryPill(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    destructive: Boolean = false,
+    loading: Boolean = false,
+    icon: ImageVector? = null,
+    size: MhButtonSize = MhButtonSize.LARGE,
+    fillWidth: Boolean = true,
+    container: Color = MotoHubColors.Fill
 ) {
     val content = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    val compact = size == MhButtonSize.COMPACT
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
         // 56 like the primary: stacked in a sheet the pair reads as one set, and gloves need it.
-        modifier = modifier.fillWidthIf(fillWidth).heightIn(min = 56.dp),
+        // Compact only draws 40: Material's button already reserves a 48 dp target around it.
+        modifier = modifier.fillWidthIf(fillWidth).heightIn(min = if (compact) 40.dp else 56.dp),
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MotoHubColors.Fill,
+            containerColor = container,
             contentColor = content,
-            disabledContainerColor = MotoHubColors.Fill,
+            disabledContainerColor = container,
             disabledContentColor = if (loading) content else MotoHubColors.TextTertiary
         ),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+        contentPadding = if (compact) {
+            PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        } else {
+            PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+        }
     ) {
-        ButtonContent(text, icon, loading)
+        val label = MaterialTheme.typography.labelLarge
+        ButtonContent(text, icon, loading, if (compact) label.copy(fontSize = 15.sp) else label)
     }
 }
 
@@ -157,8 +204,8 @@ private fun Modifier.fillWidthIf(fill: Boolean) = if (fill) fillMaxWidth() else 
 
 /**
  * How a sheet's or dialog's main action is drawn. LIME is the one action of that layer; NEUTRAL
- * is for answers the app must not nudge (consent, trust); DESTRUCTIVE is red text on a Fill pill
- * and gives the confirm haptic itself, so no caller has to remember it.
+ * is for answers the app must not nudge (consent, trust); DESTRUCTIVE is red text on a red-tinted
+ * pill and gives the confirm haptic itself, so no caller has to remember it.
  */
 enum class MhActionStyle { LIME, NEUTRAL, DESTRUCTIVE }
 
@@ -169,18 +216,26 @@ internal fun MhActionButton(text: String, style: MhActionStyle, onClick: () -> U
     when (style) {
         MhActionStyle.LIME -> MhPrimaryButton(text, onClick)
         MhActionStyle.NEUTRAL -> MhSecondaryButton(text, onClick)
-        MhActionStyle.DESTRUCTIVE -> MhSecondaryButton(
+        // Tinted, not Fill: on a grey pill "Remove" weighed exactly what "Cancel" under it did,
+        // and the white Cancel looked like the answer. Only the confirm gets it; a red pill on a
+        // screen ("Stop streaming") stays on Fill.
+        MhActionStyle.DESTRUCTIVE -> SecondaryPill(
             text,
             onClick = {
                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                 onClick()
             },
-            destructive = true
+            destructive = true,
+            container = DestructiveFill
         )
     }
 }
 
-/** "Cancel", "Details", "Not now": text with a full-size touch target. */
+// Error at 24%, translucent for the reason Fill is: the opaque errorContainer is darker than the
+// sheet and read as a hole, not a button. Over a sheet it keeps ErrorText at 4.9:1.
+private val DestructiveFill = MotoHubColors.Error.copy(alpha = 0.24f)
+
+/** "Cancel", "Skip", "Not now": text with a full-size touch target. */
 @Composable
 fun MhTextButton(
     text: String,
@@ -201,7 +256,12 @@ fun MhTextButton(
 }
 
 @Composable
-private fun ButtonContent(text: String, icon: ImageVector?, loading: Boolean) {
+private fun ButtonContent(
+    text: String,
+    icon: ImageVector?,
+    loading: Boolean,
+    style: TextStyle = MaterialTheme.typography.labelLarge
+) {
     if (loading) {
         CircularProgressIndicator(Modifier.size(20.dp), color = LocalContentColor.current, strokeWidth = 2.dp)
         Spacer(Modifier.width(10.dp))
@@ -209,7 +269,7 @@ private fun ButtonContent(text: String, icon: ImageVector?, loading: Boolean) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
     }
-    Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    Text(text, style = style, textAlign = TextAlign.Center)
 }
 
 /** A 48 dp icon-only button - back, close, info. */
@@ -270,6 +330,9 @@ fun MhListGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.
 /**
  * The row every list is made of. The subtitle is never cut: a longer translation makes the row
  * taller. [trailing] replaces the value/chevron pair when the row ends in a control.
+ *
+ * The chevron means "opens a screen", so a row on an [MhSheet] has none by default: there a row
+ * acts (picks, imports, removes) and never navigates. See [LocalMhInSheet].
  */
 @Composable
 fun MhListRow(
@@ -282,7 +345,7 @@ fun MhListRow(
     value: String? = null,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     enabled: Boolean = true,
-    showChevron: Boolean = true,
+    showChevron: Boolean = !LocalMhInSheet.current,
     role: Role = Role.Button,
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null
@@ -453,12 +516,15 @@ fun MhBanner(
     // Keyed on the message: a new failure in the same spot must not open with the last one's
     // details already showing.
     var expanded by rememberSaveable(title, body) { mutableStateOf(false) }
+    val hasAction = actionLabel != null && onAction != null
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .background(bg)
-            .padding(16.dp),
+            // The action row's 48 dp targets bring their own air below what they draw, so the
+            // banner pads 12 under them: a compact pill still ends 16 from the edge.
+            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = if (hasAction || details != null) 12.dp else 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
@@ -490,19 +556,29 @@ fun MhBanner(
                 )
             }
         }
-        if ((actionLabel != null && onAction != null) || details != null) {
+        if (hasAction || details != null) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 34.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (actionLabel != null && onAction != null) {
-                    MhSecondaryButton(actionLabel, onAction, fillWidth = false)
+                    // Compact: a full-size pill here outweighed the screen's own lime button.
+                    MhSecondaryButton(actionLabel, onAction, size = MhButtonSize.COMPACT)
                 }
                 if (details != null) {
-                    MhTextButton(
+                    // Plain text, not MhTextButton: a TextButton pads its label 12 dp and centres
+                    // it in a 58 dp minimum, so alone in the row it never lined up with the body.
+                    // Here it starts on the body's line; after a pill the padding keeps the gap
+                    // inside the target.
+                    Text(
                         if (expanded) motoHubText("Hide details") else motoHubText("Details"),
-                        onClick = { expanded = !expanded },
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable(role = Role.Button) { expanded = !expanded }
+                            .minimumInteractiveComponentSize()
+                            .padding(start = if (hasAction) 12.dp else 0.dp, end = 12.dp),
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -515,7 +591,7 @@ fun MhBanner(
                 exit = fadeOut(tween(MOTION_MILLIS)) + shrinkVertically(tween(MOTION_MILLIS))
             ) {
                 Column(
-                    modifier = Modifier.padding(start = 34.dp),
+                    modifier = Modifier.padding(start = 34.dp, bottom = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     content = details
                 )
@@ -531,6 +607,9 @@ fun MhBanner(
  * error while the field has focus. [monospace] marks a machine value (SSID, key, hex): it also
  * turns off autocorrect and capitalisation, or the keyboard "fixes" an SSID with a space in it.
  * Focus shows as a lime label - the cursor is lime already, so the field needs no glowing border.
+ *
+ * [placeholder] is what an empty field stands for ("My motorcycle" for an unnamed one). It shows
+ * in grey under the label, focused or not, and the value stays empty.
  */
 @Composable
 fun MhTextField(
@@ -544,13 +623,19 @@ fun MhTextField(
     monospace: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    placeholder: String? = null
 ) {
     var revealed by rememberSaveable(label) { mutableStateOf(false) }
     val options = keyboardOptions
         .let { if (monospace) it.copy(autoCorrectEnabled = false, capitalization = KeyboardCapitalization.None) else it }
         .let { if (isPassword) it.copy(keyboardType = KeyboardType.Password) else it }
     val line = error ?: helper
+    // Material 1.3 shows its placeholder only while the field has focus; unfocused and empty, the
+    // field showed nothing but its label, which read as data missing. So the placeholder is drawn
+    // as the field's text instead, in grey: the label then sits on top as it does over a value.
+    // TalkBack reads it as the value, which it is in effect - it is the name shown everywhere else.
+    val shownPlaceholder = placeholder?.takeIf { value.isEmpty() }
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -559,7 +644,16 @@ fun MhTextField(
         singleLine = true,
         isError = error != null,
         textStyle = MaterialTheme.typography.bodyLarge.let { if (monospace) it.copy(fontFamily = FontFamily.Monospace) else it },
-        visualTransformation = if (isPassword && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = when {
+            shownPlaceholder != null -> VisualTransformation {
+                TransformedText(
+                    AnnotatedString(shownPlaceholder, SpanStyle(color = MotoHubColors.TextSecondaryOnFill)),
+                    EmptyValueOffsets
+                )
+            }
+            isPassword && !revealed -> PasswordVisualTransformation()
+            else -> VisualTransformation.None
+        },
         keyboardOptions = options,
         keyboardActions = keyboardActions,
         supportingText = line?.let { { Text(it) } },
@@ -591,6 +685,12 @@ fun MhTextField(
         ),
         modifier = modifier.fillMaxWidth()
     )
+}
+
+// The value under a placeholder is empty: every position in the grey text maps to its start.
+private object EmptyValueOffsets : OffsetMapping {
+    override fun originalToTransformed(offset: Int) = 0
+    override fun transformedToOriginal(offset: Int) = 0
 }
 
 /** Nothing here yet: what it is, one line, the way to fill it. */
