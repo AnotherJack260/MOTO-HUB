@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddAPhoto
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -73,7 +73,6 @@ import io.motohub.android.ui.components.MhSheet
 import io.motohub.android.ui.components.MhTextField
 import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.ui.components.ScreenSlideTransition
-import io.motohub.android.ui.components.mhPressable
 import io.motohub.android.ui.theme.MotoHubColors
 
 private enum class MotorcycleDetail { ANDROID_AUTO_DISPLAY, TFT_MARGINS, PROFILE_OVERRIDE }
@@ -194,9 +193,20 @@ private fun MotorcycleDetailsMainList(
     MhScreen(
         title = profile.shownName(),
         onBack = onBack,
-        header = { DetailsHeader(profile, onOpenPhotoSheet = { showPhotoSheet = true }) }
+        // Without a photo: the standard large title and collapse; "Add photo" is the first row.
+        header = if (profile.photoPath == null) null else {
+            { DetailsHeader(profile, onOpenPhotoSheet = { showPhotoSheet = true }) }
+        }
     ) {
         MhListGroup {
+            if (profile.photoPath == null) {
+                MhListRow(
+                    title = motoHubText("Add photo"),
+                    icon = Icons.Rounded.AddAPhoto,
+                    showChevron = false,
+                    onClick = { showPhotoSheet = true }
+                )
+            }
             MhListRow(
                 title = motoHubText("Name"),
                 icon = Icons.Rounded.Edit,
@@ -343,75 +353,49 @@ private fun MotorcycleDetailsMainList(
 }
 
 /**
- * The page header, in place of a large title. With a photo: the picture full-bleed under the
- * floating bar, fading into the page, with the name on its lower edge. Without one: an "Add photo"
- * tile, then the name. Either way the picture opens the photo sheet, and the name is the screen's
- * heading.
+ * The page header of a motorcycle with a photo, in place of a large title: the picture full-bleed
+ * under the floating bar, fading into the page, with the name on its lower edge. The picture opens
+ * the photo sheet, and the name is the screen's heading. Without a photo the screen keeps the
+ * standard large title instead.
  */
 @Composable
 private fun DetailsHeader(profile: MotorcycleProfile, onOpenPhotoSheet: () -> Unit) {
-    @Composable
-    fun Name(modifier: Modifier) {
-        Text(
-            profile.shownName(),
-            modifier = modifier.semantics { heading() },
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground
+    val background = MaterialTheme.colorScheme.background
+    val changePhoto = motoHubText("Change photo")
+    Box(Modifier.fillMaxWidth()) {
+        MotorcyclePhoto(
+            path = profile.photoPath,
+            modifier = Modifier
+                .matchParentSize()
+                .semantics { contentDescription = changePhoto }
+                .clickable(role = Role.Button, onClick = onOpenPhotoSheet),
+            shape = RectangleShape
         )
-    }
-
-    if (profile.photoPath == null) {
-        Column(
-            // Under the status bar and the 56 dp bar that floats over the header.
+        // Into the page's own colour, so the name reads on any picture. Draw-only: taps fall
+        // through to the photo.
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to background))
+        )
+        Row(
+            // ponytail: a fixed 168 dp of picture above the name; size it by the photo's
+            // aspect if riders' photos crop badly.
             Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, top = 56.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 168.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            MotorcyclePhoto(
-                path = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .mhPressable(MaterialTheme.shapes.large, onClick = onOpenPhotoSheet),
-                shape = MaterialTheme.shapes.large
+            Text(
+                profile.shownName(),
+                modifier = Modifier.weight(1f).semantics { heading() },
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Name(Modifier)
-        }
-    } else {
-        val background = MaterialTheme.colorScheme.background
-        val changePhoto = motoHubText("Change photo")
-        Box(Modifier.fillMaxWidth()) {
-            MotorcyclePhoto(
-                path = profile.photoPath,
-                modifier = Modifier
-                    .matchParentSize()
-                    .semantics { contentDescription = changePhoto }
-                    .clickable(role = Role.Button, onClick = onOpenPhotoSheet),
-                shape = RectangleShape
-            )
-            // Into the page's own colour, so the name reads on any picture. Draw-only: taps fall
-            // through to the photo.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to background))
-            )
-            Row(
-                // ponytail: a fixed 168 dp of picture above the name; size it by the photo's
-                // aspect if riders' photos crop badly.
-                Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(start = 16.dp, end = 16.dp, top = 168.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Name(Modifier.weight(1f))
-                // A camera, not a pencil: next to the name, a pencil would read as "rename".
-                MhIconCircle(Icons.Rounded.PhotoCamera, container = MotoHubColors.SurfaceHigh)
-            }
+            // A camera, not a pencil: next to the name, a pencil would read as "rename".
+            MhIconCircle(Icons.Rounded.PhotoCamera, container = MotoHubColors.SurfaceHigh)
         }
     }
 }

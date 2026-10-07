@@ -9,7 +9,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -2062,7 +2062,7 @@
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_busy_ports_1_s_b24949ac">Bezette poorten: %1$s</string>
     <!-- CompanionConflictGateHost.kt -->
-    <string name="legacy_open_1_s_app_settings_e661b091">App-instellingen van %1$s openen</string>
+    <string name="legacy_open_1_s_app_settings_e661b091">Instellingen van %1$s</string>
     <!-- BluetoothStatus.kt -->
     <string name="legacy_bluetooth_is_off_turn_it_on_then_pair_the_motorc_f98e2f09">Bluetooth staat uit. Zet het aan en koppel daarna de motor.</string>
     <!-- BluetoothStatus.kt -->
@@ -2680,7 +2680,7 @@
     <!-- HubHomeScreen.kt -->
     <string name="legacy_couldn_t_open_hotspot_settings_bde173a4">Kan de hotspot-instellingen niet openen</string>
     <!-- HubHomeScreen.kt -->
-    <string name="legacy_use_phone_hotspot_891dab24">Hotspot van telefoon gebruiken</string>
+    <string name="legacy_use_phone_hotspot_891dab24">Hotspot gebruiken</string>
     <!-- HubHomeScreen.kt -->
     <string name="legacy_open_vpn_settings_4f116fe5">VPN-instellingen openen</string>
     <!-- HubHomeScreen.kt -->
@@ -2892,7 +2892,7 @@
     <!-- SettingsScreen.kt -->
     <string name="legacy_keyboard_remote_presses_aren_t_seen_until_you_tu_141a3f7e">Drukken op een toetsenbord-afstandsbediening worden pas gezien als je het aanzet.</string>
     <!-- SettingsScreen.kt -->
-    <string name="legacy_open_accessibility_settings_70d3e92b">Toegankelijkheidsinstellingen openen</string>
+    <string name="legacy_open_accessibility_settings_70d3e92b">Toegankelijkheid openen</string>
     <!-- SettingsScreen.kt -->
     <string name="legacy_switch_greyed_out_7f4e6707">Schakelaar grijs?</string>
     <!-- SettingsScreen.kt -->
@@ -2954,5 +2954,7 @@
     <!-- SystemKillNotice.kt -->
     <string name="legacy_open_app_settings_b20ae938">App-instellingen openen</string>
     <!-- SystemKillNotice.kt -->
-    <string name="legacy_open_battery_settings_67b273cc">Batterij-instellingen openen</string>
+    <string name="legacy_open_battery_settings_67b273cc">Batterij-instellingen</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Lichter</string>
 </resources>

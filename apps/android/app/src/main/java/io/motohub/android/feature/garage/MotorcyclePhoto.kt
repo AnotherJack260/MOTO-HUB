@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddAPhoto
+import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,9 +38,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * A motorcycle's photo, or - when it has none - a `Fill` frame with an "add a photo" glyph, plus
- * the words "Add photo" once the frame is 120 dp tall or more. A frame whose photo is still
- * decoding stays plain, so it never flashes "Add photo" on its way to the picture.
+ * A motorcycle's photo, or - when it has none - a `Fill` frame: an avatar shows the motorcycle
+ * glyph, and a frame 120 dp tall or more shows an "add a photo" glyph with the words "Add photo".
+ * A frame whose photo is still decoding stays plain, so it never flashes a placeholder on its way
+ * to the picture.
  */
 @Composable
 fun MotorcyclePhoto(
@@ -73,11 +75,12 @@ fun MotorcyclePhoto(
             )
         } else if (decoded) {
             val labelled = maxHeight >= 120.dp
-            // An icon circle's proportion in a row avatar; a fixed glyph above the label.
-            val glyph = if (labelled) 32.dp else min(maxWidth, maxHeight) * 0.5f
+            // A small avatar is the motorcycle itself, at MhIconCircle's proportion; the camera
+            // only appears where the frame is big enough to say "Add photo" under it.
+            val glyph = if (labelled) 32.dp else min(maxWidth, maxHeight) * 0.55f
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(
-                    Icons.Rounded.AddAPhoto,
+                    if (labelled) Icons.Rounded.AddAPhoto else Icons.Rounded.TwoWheeler,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(glyph)

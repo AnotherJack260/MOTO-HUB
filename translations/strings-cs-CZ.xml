@@ -9,7 +9,7 @@
     <string name="language_english">English</string>
     <string name="language_italian">Italiano</string>
     <string name="language_portuguese">Português</string>
-    <string name="language_korean">한국어 (대한민국)</string>
+    <string name="language_korean">한국어</string>
     <string name="language_french">Français</string>
     <string name="language_spanish">Español</string>
     <string name="language_german">Deutsch</string>
@@ -2070,7 +2070,7 @@
     <!-- CompanionConflictGateHost.kt -->
     <string name="legacy_busy_ports_1_s_b24949ac">Obsazené porty: %1$s</string>
     <!-- CompanionConflictGateHost.kt -->
-    <string name="legacy_open_1_s_app_settings_e661b091">Otevřít nastavení aplikace %1$s</string>
+    <string name="legacy_open_1_s_app_settings_e661b091">Nastavení aplikace %1$s</string>
     <!-- BluetoothStatus.kt -->
     <string name="legacy_bluetooth_is_off_turn_it_on_then_pair_the_motorc_f98e2f09">Bluetooth je vypnutý. Zapněte ho a pak spárujte motocykl.</string>
     <!-- BluetoothStatus.kt -->
@@ -2963,4 +2963,6 @@
     <string name="legacy_open_app_settings_b20ae938">Otevřít nastavení aplikace</string>
     <!-- SystemKillNotice.kt -->
     <string name="legacy_open_battery_settings_67b273cc">Otevřít nastavení baterie</string>
+    <!-- SettingsScreen.kt -->
+    <string name="legacy_lighter_6d62ec23">Lehčí</string>
 </resources>
