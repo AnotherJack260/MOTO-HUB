@@ -284,11 +284,7 @@ object MotoHubSettings {
     private const val KEY_ROUTE_PREFERENCE = "route_preference"
     private const val KEY_NAV_VOICE_ENABLED = "nav_voice_enabled"
     private const val KEY_USE_DEMO_ROUTING_SERVER = "use_demo_routing_server"
-    private const val KEY_SKIPPED_UPDATE_TAG = "skipped_update_tag"
-    private const val KEY_AUTO_UPDATE_CHECKS = "auto_update_checks"
     private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
-    private const val KEY_LAST_AUTO_UPDATE_CHECK_AT = "last_auto_update_check_at_millis"
-    private const val KEY_LAST_AUTO_UPDATE_CHECK_VERSION = "last_auto_update_check_version"
     private const val KEY_SAFETY_DISCLAIMER_ACKNOWLEDGED = "safety_disclaimer_acknowledged"
     private const val KEY_PERMISSION_PRIMER_SEEN = "permission_primer_seen"
     private const val KEY_VERBOSE_TBOX_LOGGING = "verbose_tbox_logging"
@@ -538,21 +534,6 @@ object MotoHubSettings {
         preferences(context).edit().putBoolean(KEY_SHOW_RECORDED_TRACK, enabled).apply()
     }
 
-    /** The GitHub release tag the rider chose to skip, or null if none/cleared. */
-    fun skippedUpdateTag(context: Context): String? = preferences(context).getString(KEY_SKIPPED_UPDATE_TAG, null)
-
-    fun setSkippedUpdateTag(context: Context, tagName: String?) {
-        preferences(context).edit().putString(KEY_SKIPPED_UPDATE_TAG, tagName).apply()
-    }
-
-    /** Check GitHub releases shortly after launch, at most once every 24 hours. */
-    fun autoUpdateChecks(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_AUTO_UPDATE_CHECKS, true)
-
-    fun setAutoUpdateChecks(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_AUTO_UPDATE_CHECKS, enabled).apply()
-    }
-
     /**
      * Hold the phone's screen awake while a MOTO-HUB screen is in the foreground.
      *
@@ -566,21 +547,6 @@ object MotoHubSettings {
 
     fun setKeepScreenOn(context: Context, enabled: Boolean) {
         preferences(context).edit().putBoolean(KEY_KEEP_SCREEN_ON, enabled).apply()
-    }
-
-    /** Epoch millis of the last *automatic* update check; 0 if one has never run. */
-    fun lastAutoUpdateCheckAtMillis(context: Context): Long =
-        preferences(context).getLong(KEY_LAST_AUTO_UPDATE_CHECK_AT, 0L)
-
-    fun setLastAutoUpdateCheckAtMillis(context: Context, epochMillis: Long) {
-        preferences(context).edit().putLong(KEY_LAST_AUTO_UPDATE_CHECK_AT, epochMillis).apply()
-    }
-
-    fun lastAutoUpdateCheckVersion(context: Context): String? =
-        preferences(context).getString(KEY_LAST_AUTO_UPDATE_CHECK_VERSION, null)
-
-    fun setLastAutoUpdateCheckVersion(context: Context, versionName: String) {
-        preferences(context).edit().putString(KEY_LAST_AUTO_UPDATE_CHECK_VERSION, versionName).apply()
     }
 
     /** True after the rider chose not to see the startup safety warning again. */

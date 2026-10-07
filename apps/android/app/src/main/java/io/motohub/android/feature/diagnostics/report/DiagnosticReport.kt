@@ -379,7 +379,6 @@ object DiagnosticReportBuilder {
     private fun settings(context: Context) = JSONObject().apply {
         put("autostartEnabled", MotoHubSettings.autostartEnabled(context))
         put("autostartService", MotoHubSettings.autostartService(context).name)
-        put("autoUpdateChecks", MotoHubSettings.autoUpdateChecks(context))
         put("keepScreenOn", MotoHubSettings.keepScreenOn(context))
         put("autoDiagnosticsUpload", DiagnosticReportSettings.autoUploadEnabled(context))
     }

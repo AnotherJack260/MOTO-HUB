@@ -6,14 +6,11 @@ package io.motohub.android.feature.about
 import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.i18n.motoHubText
 
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.CallSplit
 import androidx.compose.material.icons.rounded.Code
-import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,10 +20,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import io.motohub.android.BuildConfig
 import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhListGroup
@@ -35,17 +30,15 @@ import io.motohub.android.ui.components.MhScreen
 import io.motohub.android.ui.components.MhSectionHeader
 import io.motohub.android.ui.components.ScreenSlideTransition
 
-const val MOTO_HUB_GITHUB_URL = "https://github.com/vincenzobpt/MOTO-HUB"
-const val MOTO_HUB_DISCORD_URL = "https://discord.gg/FzhXZtPhC8"
+private const val RIDELINK_SOURCE_URL = "https://github.com/AnotherJack260/MOTO-HUB"
+private const val MOTO_HUB_GITHUB_URL = "https://github.com/vincenzobpt/MOTO-HUB"
 
 /** Taps on the version row that reveal an edition's hidden prototype page. */
 private const val PROTOTYPE_UNLOCK_TAP_COUNT = 10
 
 @Composable
 fun AboutScreen(
-    onOpenGithub: () -> Unit,
-    onOpenDiscord: () -> Unit,
-    onCheckUpdates: () -> Unit,
+    onOpenGithub: (url: String) -> Unit,
     onBack: () -> Unit,
     /** Editions with a hidden prototype pass this; where it is null the version
      *  row is inert and no unlock exists. This screen is shared by both
@@ -53,10 +46,7 @@ fun AboutScreen(
     onUnlockPrototype: (() -> Unit)? = null,
     /** Only the edition that actually draws maps passes true. CORE ships no map, no geocoder and
      *  no routing, so crediting OpenStreetMap there would claim a dependency it does not have. */
-    showsMaps: Boolean = false,
-    /** A check is in flight - the rider's own or the automatic one at launch. The row waits for it
-     *  rather than taking a tap the running check would swallow. */
-    checkingForUpdates: Boolean = false
+    showsMaps: Boolean = false
 ) {
     // The two long paragraphs live one row away, on their own page: read once, they were the bulk
     // of About on every later visit.
@@ -67,13 +57,10 @@ fun AboutScreen(
         } else {
             AboutContent(
                 onOpenGithub = onOpenGithub,
-                onOpenDiscord = onOpenDiscord,
-                onCheckUpdates = onCheckUpdates,
                 onOpenLegal = { showLegal = true },
                 onBack = onBack,
                 onUnlockPrototype = onUnlockPrototype,
-                showsMaps = showsMaps,
-                checkingForUpdates = checkingForUpdates
+                showsMaps = showsMaps
             )
         }
     }
@@ -81,14 +68,11 @@ fun AboutScreen(
 
 @Composable
 private fun AboutContent(
-    onOpenGithub: () -> Unit,
-    onOpenDiscord: () -> Unit,
-    onCheckUpdates: () -> Unit,
+    onOpenGithub: (url: String) -> Unit,
     onOpenLegal: () -> Unit,
     onBack: () -> Unit,
     onUnlockPrototype: (() -> Unit)?,
-    showsMaps: Boolean,
-    checkingForUpdates: Boolean
+    showsMaps: Boolean
 ) {
     val context = LocalContext.current
     // Android developer-options style easter egg. The count resets every time the About screen is
@@ -130,31 +114,20 @@ private fun AboutContent(
                     }
                 }
             )
-            MhListRow(
-                title = motoHubText("Check for updates"),
-                icon = Icons.Rounded.SystemUpdate,
-                enabled = !checkingForUpdates,
-                trailing = if (checkingForUpdates) {
-                    { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
-                } else {
-                    null
-                },
-                onClick = onCheckUpdates
-            )
         }
-        MhSectionHeader(motoHubText("Community"))
         MhListGroup {
             MhListRow(
-                title = motoHubText("Discord"),
-                subtitle = motoHubText("Ask questions and report a problem"),
-                icon = Icons.Rounded.Forum,
-                onClick = onOpenDiscord
+                title = motoHubText("Source code"),
+                // A machine value, like the version above: shown as is, never translated.
+                subtitle = "github.com/AnotherJack260/MOTO-HUB",
+                icon = Icons.Rounded.Code,
+                onClick = { onOpenGithub(RIDELINK_SOURCE_URL) }
             )
             MhListRow(
-                title = motoHubText("GitHub"),
-                subtitle = motoHubText("Source code, releases and issues"),
-                icon = Icons.Rounded.Code,
-                onClick = onOpenGithub
+                title = motoHubText("Based on MOTO-HUB"),
+                subtitle = motoHubText("By Vincenzo Buonomano · AGPL-3.0"),
+                icon = Icons.AutoMirrored.Rounded.CallSplit,
+                onClick = { onOpenGithub(MOTO_HUB_GITHUB_URL) }
             )
         }
         MhListGroup {
@@ -165,7 +138,7 @@ private fun AboutContent(
     }
 }
 
-/** The experimental-use warning and the independence notice, word for word as About had them. */
+/** The experimental-use warning and the independence notice. */
 @Composable
 private fun LegalScreen(onBack: () -> Unit) {
     MhScreen(title = motoHubText("Legal"), onBack = onBack) {
@@ -178,10 +151,10 @@ private fun LegalScreen(onBack: () -> Unit) {
         )
         LegalParagraph(
             motoHubText(
-                "MOTO-HUB is an independent project. It is not affiliated with, endorsed by, " +
-                    "or sponsored by Carbit, CFMOTO, any other manufacturer whose dashboard uses " +
-                    "EasyConn, Google, or Android Auto. All product names and marks belong to " +
-                    "their respective owners."
+                "RideLink is an independent personal fork of MOTO-HUB, free software under the " +
+                    "GNU AGPL v3. It is not affiliated with, endorsed by, or sponsored by Carbit, " +
+                    "CFMOTO, any other manufacturer whose dashboard uses EasyConn, Google, or " +
+                    "Android Auto. All product names and marks belong to their respective owners."
             )
         )
     }

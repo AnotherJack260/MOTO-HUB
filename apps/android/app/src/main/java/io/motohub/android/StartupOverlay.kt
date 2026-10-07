@@ -6,8 +6,8 @@ package io.motohub.android
 /**
  * The app-wide interruptions MainActivity can raise, most important first. Composed on their own
  * they used to stack: after a crash, with a wire question pending and the safety page not yet
- * silenced, three windows ended up on top of each other with the least important one - the update,
- * a second later - above the rest.
+ * silenced, three windows ended up on top of each other with the least important one above the
+ * rest.
  *
  * [waitsForModals] marks the ones nobody asked for just now. They never land on top of a sheet or
  * dialog the rider has open; the companion conflict follows a start the rider (or autostart) just
@@ -17,7 +17,6 @@ internal enum class StartupOverlay(val waitsForModals: Boolean) {
     SAFETY(false),
     COMPANION(false),
     CRASH_CONSENT(false),
-    UPDATE(true),
     WIRE_VERDICT(true),
     WIRE_NUDGE(true)
 }

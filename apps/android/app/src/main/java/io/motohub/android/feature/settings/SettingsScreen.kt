@@ -27,7 +27,6 @@ import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SportsEsports
-import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Wifi
@@ -63,7 +62,6 @@ import io.motohub.android.feature.controls.HandlebarMappingScreen
 import io.motohub.android.feature.controls.HandlebarPressHud
 import io.motohub.android.feature.controls.MediaButtonBridge
 import io.motohub.android.feature.diagnostics.report.SupportIdSection
-import io.motohub.android.feature.home.AdvancedPromoRow
 import io.motohub.android.i18n.motoHubText
 import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.tbox.TBoxCapabilityStore
@@ -105,7 +103,6 @@ fun SettingsTabContent(
     onOpenBleExplorer: () -> Unit,
     onOpenApplicationLogs: () -> Unit,
     onOpenAbout: () -> Unit,
-    onOpenAdvanced: () -> Unit,
     onOpenAndroidAutoHelp: () -> Unit,
     seamlessResumeEnabled: Boolean,
     onSeamlessResumeChanged: (Boolean) -> Unit,
@@ -131,7 +128,6 @@ fun SettingsTabContent(
             null -> SettingsRoot(
                 open = go,
                 onOpenAbout = onOpenAbout,
-                onOpenAdvanced = onOpenAdvanced,
                 onOpenAndroidAutoHelp = onOpenAndroidAutoHelp
             )
             SettingsDetail.LANGUAGE -> LanguageDetail(back)
@@ -173,11 +169,9 @@ fun SettingsTabContent(
 private fun SettingsRoot(
     open: (SettingsDetail) -> Unit,
     onOpenAbout: () -> Unit,
-    onOpenAdvanced: () -> Unit,
     onOpenAndroidAutoHelp: () -> Unit
 ) {
     val context = LocalContext.current
-    var autoUpdateChecks by remember { mutableStateOf(MotoHubSettings.autoUpdateChecks(context)) }
     val handlebarProblem = rememberOnResume { handlebarProblem(context) }
     MhTabPage(context.getString(R.string.settings_title)) {
         MhSectionHeader(motoHubText("On the motorcycle"))
@@ -257,26 +251,12 @@ private fun SettingsRoot(
                     onClick = { open(SettingsDetail.LANGUAGE) }
                 )
             }
-            MhSwitchRow(
-                title = context.getString(R.string.settings_check_updates_on_launch),
-                subtitle = motoHubText("At most once a day"),
-                icon = Icons.Rounded.SystemUpdate,
-                checked = autoUpdateChecks,
-                onCheckedChange = {
-                    autoUpdateChecks = it
-                    MotoHubSettings.setAutoUpdateChecks(context, it)
-                    ProjectionEventLog.record("SETTINGS", "Automatic update checks changed to enabled=$it.")
-                }
-            )
             MhListRow(
                 title = motoHubText("About MOTO-HUB"),
                 icon = Icons.Rounded.Info,
                 value = BuildConfig.VERSION_NAME,
                 onClick = onOpenAbout
             )
-            // The always-reachable way to the ADV-SOLO page: Ride shows the same row only while
-            // nothing is connecting or streaming. Draws nothing in ADVANCED.
-            AdvancedPromoRow(onOpenDetails = onOpenAdvanced)
         }
         MhListGroup {
             MhListRow(

@@ -88,7 +88,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.motohub.android.BuildConfig
 import io.motohub.android.androidauto.AndroidAutoRuntime
 import io.motohub.android.androidauto.AndroidAutoSelfModeHelp
 import io.motohub.android.feature.garage.MotorcyclePhoto
@@ -166,7 +165,6 @@ fun HubHomeScreen(
     onKeepTrialledProfile: (sendNow: Boolean, enableAutoUpload: Boolean) -> Unit = { _, _ -> },
     onDiscardTrialledProfile: () -> Unit = {},
     diagnosticsOffer: DiagnosticsOffer? = null,
-    onOpenAdvancedPromo: () -> Unit = {},
     // The hero's options sheet: "Switch motorcycle" (MainActivity's switcher sheet), the photo
     // (the same flow as Motorcycle details) and Motorcycle details itself.
     onSwitchMotorcycle: () -> Unit = { onTabSelected(HubTab.GARAGE) },
@@ -432,23 +430,15 @@ fun HubHomeScreen(
                                 )
                                 Spacer(Modifier.height(16.dp))
 
-                                // On the two resting states only, and never next to a failure: a
-                                // promo never competes with a problem, a connection or a ride.
-                                val promo: @Composable () -> Unit = {
-                                    if (!BuildConfig.IS_PRO && failure == null) {
-                                        MhListGroup { AdvancedPromoRow(onOpenAdvancedPromo) }
-                                    }
-                                }
                                 // Connection states are not navigation, so they fade through rather
                                 // than slide, and the height follows on the same clock.
                                 ScreenCrossfade(screen = destination, label = "ride", animateHeight = true) { shown ->
                                     when (shown) {
                                         HubDestination.PAIRING -> PairingContent(
-                                            promo = promo,
                                             onImportQrPhoto = onImportQrPhoto,
                                             onManualPairing = onManualPairing
                                         )
-                                        HubDestination.CONNECTION -> promo()
+                                        HubDestination.CONNECTION -> {}
                                         // ?.let, not checkNotNull: a fading-out state is drawn with
                                         // the current session, which may have lost its motorcycle.
                                         HubDestination.CONNECTING -> motorcycle?.let {
@@ -742,26 +732,22 @@ private fun RidePage(action: @Composable () -> Unit, content: @Composable () -> 
 
 @Composable
 private fun PairingContent(
-    promo: @Composable () -> Unit,
     onImportQrPhoto: () -> Unit,
     onManualPairing: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        MhListGroup {
-            MhListRow(
-                title = motoHubText("Import QR code"),
-                subtitle = motoHubText("From a photo or screenshot"),
-                icon = Icons.Rounded.Image,
-                onClick = onImportQrPhoto
-            )
-            MhListRow(
-                title = motoHubText("Enter details manually"),
-                subtitle = motoHubText("Wi-Fi name and password"),
-                icon = Icons.Rounded.Keyboard,
-                onClick = onManualPairing
-            )
-        }
-        promo()
+    MhListGroup {
+        MhListRow(
+            title = motoHubText("Import QR code"),
+            subtitle = motoHubText("From a photo or screenshot"),
+            icon = Icons.Rounded.Image,
+            onClick = onImportQrPhoto
+        )
+        MhListRow(
+            title = motoHubText("Enter details manually"),
+            subtitle = motoHubText("Wi-Fi name and password"),
+            icon = Icons.Rounded.Keyboard,
+            onClick = onManualPairing
+        )
     }
 }
 

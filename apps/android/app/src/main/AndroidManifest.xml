@@ -36,16 +36,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <queries>
         <package android:name="com.google.android.projection.gearhead" />
         <package android:name="com.google.android.gms" />
-        <!-- MOTO-HUB ADVANCED, still read by the diagnostics report. -->
-        <package android:name="io.motohub.android.pro" />
-        <!-- MOTO-HUB ADV-SOLO: Core offers it on Home, as a shortcut once installed; without this
-             entry getPackageInfo() hides it and the offer never turns into "Open". -->
-        <package android:name="io.motohub.android.solo" />
         <!-- OEM companion apps that hold the EasyConn reverse ports; see
              CompanionAppRegistry. Without a <package> entry Android hides the app from
              getPackageInfo() and the rider gets no "force-stop it" help at all. -->

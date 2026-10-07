@@ -92,8 +92,6 @@ import io.motohub.android.session.dashReachable
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.tbox.ThinkerRideGate
 import io.motohub.android.feature.about.AboutScreen
-import io.motohub.android.feature.about.MOTO_HUB_DISCORD_URL
-import io.motohub.android.feature.about.MOTO_HUB_GITHUB_URL
 import io.motohub.android.feature.garage.GarageTabContent
 import io.motohub.android.feature.garage.MotorcycleDetailsScreen
 import io.motohub.android.feature.garage.MotorcyclePhoto
@@ -102,7 +100,6 @@ import io.motohub.android.feature.garage.TBoxCapabilityScreen
 import io.motohub.android.feature.garage.shownName
 import io.motohub.android.feature.home.HubHomeScreen
 import io.motohub.android.feature.home.HubViewModel
-import io.motohub.android.feature.home.AdvancedPromoScreen
 import io.motohub.android.feature.home.WireNeedsAndroidAutoDialog
 import io.motohub.android.feature.home.WireVerdictDialog
 import io.motohub.android.feature.androidauto.AndroidAutoHelpScreen
@@ -130,12 +127,6 @@ import io.motohub.android.feature.safety.SafetyDisclaimerDialog
 import io.motohub.android.feature.settings.AutostartService
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.feature.settings.SettingsTabContent
-import io.motohub.android.feature.update.DownloadProgress
-import io.motohub.android.feature.update.GithubRelease
-import io.motohub.android.feature.update.GithubUpdateDialog
-import io.motohub.android.feature.update.GithubUpdateInstaller
-import io.motohub.android.feature.update.GithubUpdateRepository
-import io.motohub.android.feature.update.latestNewerApkRelease
 import io.motohub.android.session.ProjectionSessionService
 import io.motohub.android.feature.diagnostics.report.CrashDiagnosticsConsentDialog
 import io.motohub.android.feature.diagnostics.report.DiagnosticReportScheduler
@@ -355,7 +346,6 @@ class MainActivity : ComponentActivity() {
                 var showBleExplorer by rememberSaveable { mutableStateOf(false) }
                 var showApplicationLogs by rememberSaveable { mutableStateOf(false) }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
-                var showAdvancedPromo by rememberSaveable { mutableStateOf(false) }
                 var showAndroidAutoHelp by rememberSaveable { mutableStateOf(false) }
                 val launchedPhoneOnlyAa =
                     intent?.getBooleanExtra(IpcBridgeContract.EXTRA_START_PHONE_ONLY_ANDROID_AUTO, false) == true
@@ -364,13 +354,6 @@ class MainActivity : ComponentActivity() {
                 var showAndroidAutoPreview by rememberSaveable { mutableStateOf(launchedPhoneOnlyAa) }
                 var androidAutoPreviewIsPhoneOnly by rememberSaveable { mutableStateOf(launchedPhoneOnlyAa) }
                 var androidAutoPhoneOnlyLaunchedFromPro by rememberSaveable { mutableStateOf(launchedPhoneOnlyAa) }
-                var showUpdateDialog by rememberSaveable { mutableStateOf(false) }
-                var updateAutoCheckAttempted by rememberSaveable { mutableStateOf(false) }
-                var updateLoading by remember { mutableStateOf(false) }
-                var updateError by remember { mutableStateOf<String?>(null) }
-                var updateReleases by remember { mutableStateOf<List<GithubRelease>>(emptyList()) }
-                var installingUpdateTag by remember { mutableStateOf<String?>(null) }
-                var installingUpdateProgress by remember { mutableStateOf<DownloadProgress?>(null) }
                 var showQrImageSource by remember { mutableStateOf(false) }
                 var qrPhotoProcessing by remember { mutableStateOf(false) }
                 var qrPhotoProgress by remember { mutableStateOf(0 to 0) }
@@ -464,80 +447,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 var seamlessResumePermissionPending by remember { mutableStateOf(false) }
-                var unknownSourcesAllowed by remember {
-                    mutableStateOf(GithubUpdateInstaller.canInstallUnknownSources(this@MainActivity))
-                }
-                val updateRepository = remember { GithubUpdateRepository() }
-                val updateScope = rememberCoroutineScope()
-                fun checkForUpdates(openDialog: Boolean) {
-                    if (!openDialog) {
-                        // Automatic checks are throttled to once/24h so a rider who opens
-                        // MOTO-HUB many times a day doesn't hit GitHub's anonymous API rate
-                        // limit (60 req/h) on every launch; a manual tap always bypasses this.
-                        // A new CORE version also bypasses the throttle once, so the first
-                        // launch of the newly installed APK can discover its next update.
-                        val elapsed = System.currentTimeMillis() - MotoHubSettings.lastAutoUpdateCheckAtMillis(context)
-                        val appVersionChanged = MotoHubSettings.lastAutoUpdateCheckVersion(context) !=
-                            BuildConfig.VERSION_NAME
-                        if (elapsed < AUTO_UPDATE_CHECK_THROTTLE_MS && !appVersionChanged) {
-                            ProjectionEventLog.debug(
-                                "UPDATES",
-                                "Automatic GitHub check skipped; last check was ${elapsed / 60_000L} minute(s) ago."
-                            )
-                            return
-                        }
-                        MotoHubSettings.setLastAutoUpdateCheckAtMillis(context, System.currentTimeMillis())
-                        MotoHubSettings.setLastAutoUpdateCheckVersion(context, BuildConfig.VERSION_NAME)
-                    }
-                    // Nothing opens up front: About's row shows the check running, and the
-                    // result decides - the sheet for a newer release, a snackbar otherwise.
-                    if (updateLoading) return
-                    updateLoading = true
-                    updateError = null
-                    updateScope.launch {
-                        val result = runCatching {
-                            // The dispatcher is chosen inside now, along with the network:
-                            // while a T-Box session is up this process is bound to the
-                            // motorcycle's Wi-Fi and GitHub is unreachable from it.
-                            updateRepository.fetchReleases(context)
-                        }
-                        updateLoading = false
-                        result.onSuccess { releases ->
-                            val skippedTag = MotoHubSettings.skippedUpdateTag(context)
-                            updateReleases = listOfNotNull(
-                                latestNewerApkRelease(
-                                    releases,
-                                    BuildConfig.VERSION_NAME,
-                                    BuildConfig.VERSION_CODE
-                                )
-                            ).filter { openDialog || it.tagName != skippedTag }
-                            if (updateReleases.isNotEmpty()) {
-                                showUpdateDialog = true
-                            } else if (openDialog) {
-                                MotoHubSnackbar.success(context, motoHubText("You have the latest version"))
-                            } else {
-                                ProjectionEventLog.debug(
-                                    "UPDATES",
-                                    "Automatic GitHub check found no newer, non-skipped APK release."
-                                )
-                            }
-                        }.onFailure { failure ->
-                            updateError = "Unable to check GitHub releases: ${failure.message}"
-                            ProjectionEventLog.warning("UPDATES", updateError.orEmpty(), failure)
-                            // The automatic check stays silent; the rider who asked gets told.
-                            // The raw reason is the log line above, not the snackbar.
-                            if (openDialog) {
-                                MotoHubSnackbar.show(
-                                    context,
-                                    motoHubText("Couldn't check for updates"),
-                                    MhSnackTone.ERROR,
-                                    actionLabel = motoHubText("Try again"),
-                                    onAction = { checkForUpdates(openDialog = true) }
-                                )
-                            }
-                        }
-                    }
-                }
+                val reconnectScope = rememberCoroutineScope()
                 val displayModeStore = remember(context) { AndroidAutoDisplayModeStore(context) }
                val displayGeometryStore = remember(context) { TBoxDisplayGeometryStore(context) }
                 val screenMarginsStore = remember(context) { TBoxScreenMarginsStore(context) }
@@ -970,7 +880,7 @@ class MainActivity : ComponentActivity() {
                         )
                         return
                     }
-                    updateScope.launch {
+                    reconnectScope.launch {
                         delay(AUTO_CONNECT_AFTER_STOP_DELAY_MS)
                         if (!MotoHubSettings.autoConnect(context)) return@launch
                         var waitAttempts = 0
@@ -1007,22 +917,6 @@ class MainActivity : ComponentActivity() {
                             wifiPermissionLauncher.launch(permissions)
                         }
                     }
-                }
-                val unknownSourcesLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.StartActivityForResult()
-                ) {
-                    unknownSourcesAllowed = GithubUpdateInstaller.canInstallUnknownSources(context)
-                }
-                LaunchedEffect(showSafetyDisclaimer) {
-                    if (showSafetyDisclaimer) return@LaunchedEffect
-                    if (updateAutoCheckAttempted) return@LaunchedEffect
-                    updateAutoCheckAttempted = true
-                    if (!MotoHubSettings.autoUpdateChecks(context)) {
-                        ProjectionEventLog.debug("UPDATES", "Automatic GitHub update checks are disabled in General settings.")
-                        return@LaunchedEffect
-                    }
-                    delay(AUTO_UPDATE_CHECK_DELAY_MS)
-                    checkForUpdates(openDialog = false)
                 }
                 suspend fun attemptAutoConnect() {
                     if (!MotoHubSettings.autoConnect(context)) {
@@ -1330,7 +1224,6 @@ class MainActivity : ComponentActivity() {
                     showApplicationLogs -> HubScreenKey.APPLICATION_LOGS
                     showAndroidAutoHelp -> HubScreenKey.ANDROID_AUTO_HELP
                     showAbout -> HubScreenKey.ABOUT
-                    showAdvancedPromo -> HubScreenKey.ADVANCED_PROMO
                     showAndroidAutoPreview -> HubScreenKey.ANDROID_AUTO_PREVIEW
                     capabilityProfileId != null -> HubScreenKey.CAPABILITIES
                     editorProfileId != null -> HubScreenKey.MOTORCYCLE_DETAILS
@@ -1383,13 +1276,6 @@ class MainActivity : ComponentActivity() {
                             showApplicationLogs = false
                         }
                     )
-                        HubScreenKey.ADVANCED_PROMO ->
-                    AdvancedPromoScreen(
-                        onBack = {
-                            ProjectionEventLog.record("UI", "MOTO-HUB ADVANCED page closed.")
-                            showAdvancedPromo = false
-                        }
-                    )
                         HubScreenKey.ANDROID_AUTO_HELP ->
                     AndroidAutoHelpScreen(
                         onBack = {
@@ -1399,33 +1285,15 @@ class MainActivity : ComponentActivity() {
                     )
                         HubScreenKey.ABOUT ->
                     AboutScreen(
-                        onOpenGithub = {
-                            ProjectionEventLog.record("UI", "GitHub repository link opened.")
+                        onOpenGithub = { url ->
+                            ProjectionEventLog.record("UI", "GitHub repository link opened: $url")
                             runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(MOTO_HUB_GITHUB_URL))
-                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                             }.onFailure {
                                 ProjectionEventLog.error("UI", "Unable to open the GitHub repository.", it)
                                 MotoHubSnackbar.error(context, motoHubText("Couldn't open GitHub"))
                             }
                         },
-                        onOpenDiscord = {
-                            ProjectionEventLog.record("UI", "Discord community link opened.")
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(MOTO_HUB_DISCORD_URL))
-                                )
-                            }.onFailure {
-                                ProjectionEventLog.error("UI", "Unable to open the Discord link.", it)
-                                MotoHubSnackbar.error(context, motoHubText("Couldn't open Discord"))
-                            }
-                        },
-                        onCheckUpdates = {
-                            ProjectionEventLog.record("UPDATES", "Manual GitHub update check requested.")
-                            checkForUpdates(openDialog = true)
-                        },
-                        checkingForUpdates = updateLoading,
                         onBack = {
                             ProjectionEventLog.record("UI", "About screen closed.")
                             showAbout = false
@@ -1748,10 +1616,6 @@ class MainActivity : ComponentActivity() {
                             showAndroidAutoPreview = true
                         },
                         onStartPhoneOnlyAndroidAuto = { continueAndroidAutoPhoneOnlyStart(true) },
-                        onOpenAdvancedPromo = {
-                            ProjectionEventLog.record("UI", "MOTO-HUB ADVANCED page opened from Home.")
-                            showAdvancedPromo = true
-                        },
                         dimDisplayEnabled = dimDisplayEnabled,
                         onDimDisplayChanged = { enabled ->
                             ProjectionEventLog.record("DISPLAY", "User changed display dimmer preference to enabled=$enabled.")
@@ -1860,10 +1724,6 @@ class MainActivity : ComponentActivity() {
                                     ProjectionEventLog.record("UI", "About screen opened.")
                                     showAbout = true
                                 },
-                                onOpenAdvanced = {
-                                    ProjectionEventLog.record("UI", "MOTO-HUB ADVANCED page opened from Settings.")
-                                    showAdvancedPromo = true
-                                },
                                 seamlessResumeEnabled = seamlessResumeEnabled,
                                 onSeamlessResumeChanged = { enabled ->
                                     if (!enabled) {
@@ -1907,57 +1767,12 @@ class MainActivity : ComponentActivity() {
                         if (showSafetyDisclaimer) add(StartupOverlay.SAFETY)
                         if (companionConflictGate.pending != null) add(StartupOverlay.COMPANION)
                         if (crashConsentRequired) add(StartupOverlay.CRASH_CONSENT)
-                        if (showUpdateDialog && updateReleases.isNotEmpty()) add(StartupOverlay.UPDATE)
                         if (state.wireQuestionFor != null && !wireQuestionDeferred) add(StartupOverlay.WIRE_VERDICT)
                         if (state.wireNeedsAndroidAutoFor != null) add(StartupOverlay.WIRE_NUDGE)
                     },
                     modalsOpen = MhModals.open
                 )
                 SideEffect { shownOverlay = overlay }
-                val updateRelease = updateReleases.firstOrNull()
-                if (overlay == StartupOverlay.UPDATE && updateRelease != null) {
-                    GithubUpdateDialog(
-                        release = updateRelease,
-                        error = updateError,
-                        installingTag = installingUpdateTag,
-                        installingProgress = installingUpdateProgress,
-                        canInstallUnknownSources = unknownSourcesAllowed,
-                        onDismiss = { showUpdateDialog = false },
-                        onSkip = { release ->
-                            MotoHubSettings.setSkippedUpdateTag(context, release.tagName)
-                            updateReleases = updateReleases.filterNot { it.tagName == release.tagName }
-                            ProjectionEventLog.record("UPDATES", "Skipped release ${release.versionName}.")
-                            if (updateReleases.isEmpty()) showUpdateDialog = false
-                        },
-                        onAllowUnknownSources = {
-                            unknownSourcesLauncher.launch(
-                                GithubUpdateInstaller.unknownSourcesSettingsIntent(context)
-                            )
-                        },
-                        onInstall = { release ->
-                            installingUpdateTag = release.tagName
-                            installingUpdateProgress = null
-                            updateError = null
-                            updateScope.launch {
-                                GithubUpdateInstaller.downloadAndInstall(
-                                    context,
-                                    release,
-                                    onProgress = { progress -> installingUpdateProgress = progress }
-                                ).onFailure { failure ->
-                                    updateError = "Unable to install ${release.versionName}: " +
-                                        (failure.message ?: "unknown error")
-                                    ProjectionEventLog.error("UPDATES", updateError.orEmpty(), failure)
-                                    // The sheet says it inline; swiped away mid-download, it can't.
-                                    if (!showUpdateDialog) {
-                                        MotoHubSnackbar.error(context, motoHubText("Couldn't install the update"))
-                                    }
-                                }
-                                installingUpdateTag = null
-                                installingUpdateProgress = null
-                            }
-                        }
-                    )
-                }
                 // One sheet for the whole import, up while any of its states holds: a picker result
                 // that lands in a recreated process, without the chooser's flag, still shows here.
                 if (showQrImageSource || qrPhotoProcessing || qrImportFailure != null || qrImportDecoded != null) {
@@ -2366,8 +2181,6 @@ class MainActivity : ComponentActivity() {
         const val OFFICIAL_APP_CLOSE_RETRY_DELAY_MS = 1_500L
         const val FOREGROUND_SETTLE_TIMEOUT_MS = 1_000L
         const val FOREGROUND_SETTLE_POLL_MS = 50L
-        const val AUTO_UPDATE_CHECK_DELAY_MS = 1_200L
-        const val AUTO_UPDATE_CHECK_THROTTLE_MS = 24 * 60 * 60 * 1_000L
     }
 }
 

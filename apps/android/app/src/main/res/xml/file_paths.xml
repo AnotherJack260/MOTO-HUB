@@ -4,9 +4,6 @@
         name="shared_diagnostics"
         path="shared-diagnostics/" />
     <cache-path
-        name="updates"
-        path="updates/" />
-    <cache-path
         name="garage_camera"
         path="garage-camera/" />
 </paths>

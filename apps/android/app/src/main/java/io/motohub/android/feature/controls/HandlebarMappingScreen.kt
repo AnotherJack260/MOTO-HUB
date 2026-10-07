@@ -300,7 +300,6 @@ private fun HandlebarListContent(
     ) {
         AnimatedVisibility(visible = !captureEnabled, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
             CaptureOffBanner(
-                managedByCompanion = HandlebarControlStore.isManagedByCompanion(context),
                 onEnable = captureControl?.let { control ->
                     {
                         captureEnabled = true
@@ -374,19 +373,18 @@ private fun Section(header: String, content: @Composable ColumnScope.() -> Unit)
  * see the one switch deciding that none of them would be performed.
  */
 @Composable
-private fun CaptureOffBanner(managedByCompanion: Boolean, onEnable: (() -> Unit)?) {
+private fun CaptureOffBanner(onEnable: (() -> Unit)?) {
     MhBanner(
         title = motoHubText("Button presses are off"),
         tone = MhTone.WARNING,
         body = when {
-            managedByCompanion -> motoHubText("MOTO-HUB ADV-SOLO manages this. Turn them on there.")
             onEnable != null -> motoHubText("They still show up here, but do nothing.")
             // CORE: the switch lives on the page that opened this one.
             else -> motoHubText(
                 "They show up here, but do nothing until “Buttons control Android Auto” is on in Handlebar buttons."
             )
         },
-        actionLabel = if (onEnable != null && !managedByCompanion) motoHubText("Turn on") else null,
+        actionLabel = if (onEnable != null) motoHubText("Turn on") else null,
         onAction = onEnable
     )
 }
