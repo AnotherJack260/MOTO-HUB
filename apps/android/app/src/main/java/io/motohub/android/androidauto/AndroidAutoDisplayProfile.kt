@@ -16,22 +16,26 @@ data class DisplayGeometry(val width: Int, val height: Int) {
     }
 }
 
-enum class AndroidAutoDisplayMode(
-    val title: String,
+enum class AndroidAutoDisplayMode {
+    LETTERBOX,
+    STRETCH,
+    FILL;
+
+    // Getters, not constructor values: read when shown, so they follow a language change.
+    /** The picker's row title and the value the "Display fit" row shows: one word for one choice. */
+    val title: String
+        get() = when (this) {
+            LETTERBOX -> motoHubText("Fit")
+            STRETCH -> motoHubText("Stretch")
+            FILL -> motoHubText("Crop")
+        }
+
     val description: String
-) {
-    LETTERBOX(
-        title = motoHubText("Preserve aspect ratio"),
-        description = motoHubText("Show the complete image with black side bars when needed.")
-    ),
-    STRETCH(
-        title = motoHubText("Stretch display"),
-        description = motoHubText("Use the whole TFT and keep all content visible with slight stretching.")
-    ),
-    FILL(
-        title = motoHubText("Fill and crop"),
-        description = motoHubText("Use the whole TFT without stretching; crop the edges when aspect ratios differ.")
-    )
+        get() = when (this) {
+            LETTERBOX -> motoHubText("The whole picture, with black bars")
+            STRETCH -> motoHubText("Fills the screen, slightly stretched")
+            FILL -> motoHubText("Fills the screen, edges cut off")
+        }
 }
 
 data class AndroidAutoDisplayProfile(
