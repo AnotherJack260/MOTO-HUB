@@ -5,10 +5,15 @@ package io.motohub.android.feature.diagnostics.report
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.os.Build
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -34,6 +40,8 @@ import io.motohub.android.ui.components.MhBanner
 import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
+import io.motohub.android.ui.components.MhPop
 import io.motohub.android.ui.components.MhSectionHeader
 import io.motohub.android.ui.components.MhSwitchRow
 import io.motohub.android.ui.components.MhTone
@@ -42,11 +50,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
  * The body of Settings ▸ Diagnostics: the Support ID a rider reads out when asking for help, the
  * log, sending a report now or automatically, and what a report holds and how it is handled.
+ *
+ * A build without a collector (`MOTOHUB_DIAGNOSTICS_ENDPOINT` unset: local builds, forks) has
+ * nowhere to send to, so the two report controls and their footnote aren't shown at all - a dead
+ * row and a switch that does nothing read as broken. The log can still be shared by hand.
  *
  * The logging master switch lives here too, next to the notice that says the log has stopped,
  * so the two share one state and the notice appears the moment the switch goes off - not on the
@@ -66,6 +79,17 @@ fun SupportIdSection(onOpenApplicationLogs: () -> Unit) {
     // The last successful upload's time when the rider tapped "Send a report now"; null while no
     // request of theirs is open. A newer time once the upload ends means it went out.
     var requestedAt by remember { mutableStateOf<Long?>(null) }
+    // The copy glyph turns into a lime check for a moment: the row's only sign it was copied on
+    // Android 13+, where the system's clipboard confirmation replaces the snackbar.
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(COPIED_MILLIS)
+            copied = false
+        }
+    }
+    val copyAlpha by animateFloatAsState(if (copied) 0f else 1f, tween(MhMotion.FAST), label = "copy-glyph")
+    val canSend = DiagnosticReportUploader.configured
     val status by DiagnosticReportScheduler.status.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -111,12 +135,22 @@ fun SupportIdSection(onOpenApplicationLogs: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Icon(
-                        Icons.Rounded.ContentCopy,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Rounded.ContentCopy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp).graphicsLayer { alpha = copyAlpha }
+                        )
+                        MhPop(copied) {
+                            Icon(
+                                Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             },
             onClick = {
@@ -124,7 +158,11 @@ fun SupportIdSection(onOpenApplicationLogs: () -> Unit) {
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(
                     ClipData.newPlainText(motoHubText("MOTO-HUB Support ID"), id)
                 )
-                MotoHubSnackbar.success(context, motoHubText("Support ID copied"))
+                copied = true
+                // Android 13+ confirms a copy itself; a second confirmation would repeat it.
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+                    MotoHubSnackbar.success(context, motoHubText("Support ID copied"))
+                }
             }
         )
         // Support asks riders for the log, and a build without a collector can only share it.
@@ -133,47 +171,49 @@ fun SupportIdSection(onOpenApplicationLogs: () -> Unit) {
             subtitle = motoHubText("Copy or share the log"),
             onClick = onOpenApplicationLogs
         )
-        MhListRow(
-            title = motoHubText("Send a report now"),
-            // The frozen log is said here as well as in the notice above, because this is the row
-            // the thumb is on when it decides. Still tappable: a report is the rider's to send,
-            // and even a stale log carries the identity and version fields support asks for.
-            subtitle = when {
-                !DiagnosticReportUploader.configured -> motoHubText("Not available in this build")
-                status.inProgress -> motoHubText("Sending…")
-                !loggingEnabled && frozenAt != null -> motoHubText("Logging is off; the log ends %1\$s", stamp(frozenAt))
-                !loggingEnabled -> motoHubText("Logging is off; there is no log to send")
-                // The raw error stays in the store and in the log, where support reads it.
-                status.lastError != null -> motoHubText("Couldn't send the report")
-                status.lastUploadAt > 0L -> motoHubText("Last sent %1\$s", stamp(status.lastUploadAt))
-                else -> motoHubText("Never sent")
-            },
-            enabled = DiagnosticReportUploader.configured,
-            onClick = {
-                if (status.inProgress) return@MhListRow
-                ProjectionEventLog.record("SUPPORT", "Diagnostics report requested by the rider.")
-                requestedAt = DiagnosticReportSettings.lastUploadAt(context)
-                DiagnosticReportScheduler.sendNow(context)
-            }
-        )
-        MhSwitchRow(
-            title = motoHubText("Send reports automatically"),
-            subtitle = motoHubText("At most once a day, after an update or a crash"),
-            checked = autoUpload,
-            onCheckedChange = {
-                autoUpload = it
-                DiagnosticReportSettings.setAutoUploadEnabled(context, it)
-                if (!it) DiagnosticReportSettings.setPending(context, false)
-                ProjectionEventLog.record("SETTINGS", "Automatic diagnostics upload changed to enabled=$it.")
-            }
+        if (canSend) {
+            MhListRow(
+                title = motoHubText("Send a report now"),
+                // The frozen log is said here as well as in the notice above, because this is the
+                // row the thumb is on when it decides. Still tappable: a report is the rider's to
+                // send, and even a stale log carries the identity and version fields support asks for.
+                subtitle = when {
+                    status.inProgress -> motoHubText("Sending…")
+                    !loggingEnabled && frozenAt != null -> motoHubText("Logging is off; the log ends %1\$s", stamp(frozenAt))
+                    !loggingEnabled -> motoHubText("Logging is off; there is no log to send")
+                    // The raw error stays in the store and in the log, where support reads it.
+                    status.lastError != null -> motoHubText("Couldn't send the report")
+                    status.lastUploadAt > 0L -> motoHubText("Last sent %1\$s", stamp(status.lastUploadAt))
+                    else -> motoHubText("Never sent")
+                },
+                onClick = {
+                    if (status.inProgress) return@MhListRow
+                    ProjectionEventLog.record("SUPPORT", "Diagnostics report requested by the rider.")
+                    requestedAt = DiagnosticReportSettings.lastUploadAt(context)
+                    DiagnosticReportScheduler.sendNow(context)
+                }
+            )
+            MhSwitchRow(
+                title = motoHubText("Send reports automatically"),
+                subtitle = motoHubText("At most once a day, after an update or a crash"),
+                checked = autoUpload,
+                onCheckedChange = {
+                    autoUpload = it
+                    DiagnosticReportSettings.setAutoUploadEnabled(context, it)
+                    if (!it) DiagnosticReportSettings.setPending(context, false)
+                    ProjectionEventLog.record("SETTINGS", "Automatic diagnostics upload changed to enabled=$it.")
+                }
+            )
+        }
+    }
+    if (canSend) {
+        MhFootnote(
+            motoHubText(
+                "Reports hold your dashboard and phone models, the Android, Android Auto and MOTO-HUB " +
+                    "versions, and the app log. Never passwords, positions or hardware addresses."
+            )
         )
     }
-    MhFootnote(
-        motoHubText(
-            "Reports hold your dashboard and phone models, the Android, Android Auto and MOTO-HUB " +
-                "versions, and the app log. Never passwords, positions or hardware addresses."
-        )
-    )
 
     MhSectionHeader(motoHubText("Privacy"))
     MhListGroup {
@@ -255,3 +295,6 @@ private fun LoggingOffNotice(frozenAtMillis: Long?) {
 private fun stamp(epochMillis: Long): String = STAMP_FORMAT.format(Date(epochMillis))
 
 private val STAMP_FORMAT = SimpleDateFormat("d MMM HH:mm", Locale.getDefault())
+
+/** How long the Support ID row shows its check after a copy. */
+private const val COPIED_MILLIS = 1500L

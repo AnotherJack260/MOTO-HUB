@@ -3,27 +3,32 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.feature.settings
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.bluetooth.BluetoothManager
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.BluetoothSearching
-import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.Help
 import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
-import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.AccessTimeFilled
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.MonitorHeart
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.PlayCircle
-import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Icon
@@ -31,7 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,17 +44,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleEventEffect
 import io.motohub.android.BuildConfig
 import io.motohub.android.R
 import io.motohub.android.data.MotorcycleProfileStore
+import io.motohub.android.feature.controls.BluetoothStatus
 import io.motohub.android.feature.controls.HandlebarControlStore
 import io.motohub.android.feature.controls.HandlebarHidCaptureService
 import io.motohub.android.feature.controls.HandlebarInputMode
@@ -68,6 +74,7 @@ import io.motohub.android.ui.components.MhChoiceRow
 import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhScreen
 import io.motohub.android.ui.components.MhSectionHeader
 import io.motohub.android.ui.components.MhSwitchRow
@@ -101,9 +108,12 @@ fun SettingsTabContent(
     onOpenAdvanced: () -> Unit,
     onOpenAndroidAutoHelp: () -> Unit,
     seamlessResumeEnabled: Boolean,
-    onSeamlessResumeChanged: (Boolean) -> Unit
+    onSeamlessResumeChanged: (Boolean) -> Unit,
+    // True on the Settings root, false on any sub-screen: the dock shows only on tab roots.
+    onAtRootChanged: (Boolean) -> Unit = {}
 ) {
     var detail by rememberSaveable { mutableStateOf<SettingsDetail?>(null) }
+    LaunchedEffect(detail) { onAtRootChanged(detail == null) }
     // ScreenSlideTransition takes its direction from isBase(target) alone, which fits one card over
     // a floor. Settings goes three deep (Android Auto > Resolution), so it is told directly whether
     // this move went up a level - otherwise back from Resolution would slide in like a new screen.
@@ -168,6 +178,7 @@ private fun SettingsRoot(
 ) {
     val context = LocalContext.current
     var autoUpdateChecks by remember { mutableStateOf(MotoHubSettings.autoUpdateChecks(context)) }
+    val handlebarProblem = rememberOnResume { handlebarProblem(context) }
     MhTabPage(context.getString(R.string.settings_title)) {
         MhSectionHeader(motoHubText("On the motorcycle"))
         MhListGroup {
@@ -175,7 +186,7 @@ private fun SettingsRoot(
                 title = motoHubText("Video quality"),
                 icon = Icons.Rounded.HighQuality,
                 value = "${context.getString(MotoHubSettings.videoQuality(context).labelRes)} · " +
-                    context.getString(MotoHubSettings.videoPowerMode(context).labelRes),
+                    MotoHubSettings.videoPowerMode(context).title(),
                 onClick = { open(SettingsDetail.VIDEO) }
             )
             MhListRow(
@@ -184,10 +195,18 @@ private fun SettingsRoot(
                 value = androidAutoValue(context),
                 onClick = { open(SettingsDetail.ANDROID_AUTO) }
             )
+            // "On" while presses can't arrive is the one answer that sends a rider hunting, so
+            // the broken prerequisite is said here, two screens up from where it is fixed.
             MhListRow(
                 title = motoHubText("Handlebar buttons"),
                 icon = Icons.Rounded.SportsEsports,
-                value = if (HandlebarControlStore.isEnabled(context)) motoHubText("On") else motoHubText("Off"),
+                subtitle = handlebarProblem,
+                subtitleColor = MotoHubColors.Warning,
+                value = when {
+                    handlebarProblem != null -> null
+                    HandlebarControlStore.isEnabled(context) -> motoHubText("On")
+                    else -> motoHubText("Off")
+                },
                 onClick = { open(SettingsDetail.HANDLEBAR) }
             )
         }
@@ -211,7 +230,7 @@ private fun SettingsRoot(
             // No value: three independent switches don't reduce to one word.
             MhListRow(
                 title = motoHubText("Dashboard clock"),
-                icon = Icons.Rounded.Schedule,
+                icon = Icons.Rounded.AccessTimeFilled,
                 onClick = { open(SettingsDetail.CLOCK) }
             )
         }
@@ -219,12 +238,12 @@ private fun SettingsRoot(
         MhListGroup {
             MhListRow(
                 title = motoHubText("Android Auto won't start"),
-                icon = Icons.AutoMirrored.Rounded.HelpOutline,
+                icon = Icons.AutoMirrored.Rounded.Help,
                 onClick = onOpenAndroidAutoHelp
             )
             MhListRow(
                 title = motoHubText("Diagnostics"),
-                icon = Icons.Rounded.PrivacyTip,
+                icon = Icons.Rounded.MonitorHeart,
                 onClick = { open(SettingsDetail.DIAGNOSTICS) }
             )
         }
@@ -262,7 +281,7 @@ private fun SettingsRoot(
         MhListGroup {
             MhListRow(
                 title = motoHubText("Developer tools"),
-                icon = Icons.Rounded.Code,
+                icon = Icons.Rounded.Terminal,
                 onClick = { open(SettingsDetail.DEVELOPER) }
             )
         }
@@ -284,6 +303,53 @@ private fun AutostartService.title(): String = when (this) {
     AutostartService.MIRRORING -> motoHubText("Mirroring")
     AutostartService.ANDROID_AUTO -> motoHubText("Android Auto")
     AutostartService.RIDE_DASHBOARD -> motoHubText("Ride Dashboard")
+}
+
+/**
+ * Named by frame rate: the catalogue's "Balanced" also named a Picture choice, and "Smooth" sat
+ * next to Picture's "Smoother". Only the words changed; the stored enum and its logs did not.
+ */
+private fun VideoPowerMode.title(): String = when (this) {
+    VideoPowerMode.AUTO -> motoHubText("Auto")
+    VideoPowerMode.SMOOTH -> motoHubText("30 fps")
+    VideoPowerMode.BALANCED -> motoHubText("24 fps")
+    VideoPowerMode.SAVER -> motoHubText("20 fps")
+}
+
+/**
+ * What stops the handlebar buttons working right now, for the root row; null when nothing does
+ * or they are off. HID is exempt from the Bluetooth grant: its presses arrive through the
+ * accessibility service (see MediaButtonBridge), so only that service is checked for it.
+ */
+private fun handlebarProblem(context: Context): String? = when {
+    !HandlebarControlStore.isEnabled(context) -> null
+    HandlebarControlStore.inputMode(context) == HandlebarInputMode.HID ->
+        if (HandlebarHidCaptureService.isEnabled(context)) null else motoHubText("Accessibility service is off")
+    !BluetoothStatus.hasConnectPermission(context) -> motoHubText("Bluetooth access is off")
+    else -> null
+}
+
+/**
+ * Nothing paired, as far as this phone can tell: no bonded device at all, or no grant to look.
+ * ponytail: the bond list can't say which device is the motorcycle, so a phone with only
+ * headphones paired counts as paired; telling them apart needs the dashboard's address.
+ */
+@SuppressLint("MissingPermission")
+private fun nothingPaired(context: Context): Boolean {
+    if (!BluetoothStatus.hasConnectPermission(context)) return true
+    val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter ?: return true
+    return runCatching { adapter.bondedDevices.isEmpty() }.getOrDefault(true)
+}
+
+/**
+ * A value set outside the app (a permission, an accessibility service, a pairing), read again
+ * each time the app comes back to the front: the rider changes it in system settings and returns.
+ */
+@Composable
+private fun <T> rememberOnResume(read: () -> T): T {
+    var value by remember { mutableStateOf(read()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { value = read() }
+    return value
 }
 
 @Composable
@@ -323,40 +389,50 @@ private fun AutostartDetail(onBack: () -> Unit) {
     var enabled by remember { mutableStateOf(MotoHubSettings.autostartEnabled(context)) }
     var service by remember { mutableStateOf(MotoHubSettings.autostartService(context)) }
     MhScreen(title = motoHubText("Start automatically"), onBack = onBack) {
-        MhListGroup {
-            MhSwitchRow(
-                title = motoHubText("Start on connect"),
-                subtitle = motoHubText("Skips the mode picker when the motorcycle connects"),
-                checked = enabled,
-                onCheckedChange = {
-                    enabled = it
-                    MotoHubSettings.setAutostartEnabled(context, it)
-                    ProjectionEventLog.record("SETTINGS", "Autostart on connect changed to enabled=$it.")
+        // One column with no gap of its own, so the 16 dp above "What to start" lives inside the
+        // fold and closes with it instead of snapping shut at the end.
+        Column {
+            MhListGroup {
+                MhSwitchRow(
+                    title = motoHubText("Start on connect"),
+                    subtitle = motoHubText("Skips the mode picker when the motorcycle connects"),
+                    checked = enabled,
+                    onCheckedChange = {
+                        enabled = it
+                        MotoHubSettings.setAutostartEnabled(context, it)
+                        ProjectionEventLog.record("SETTINGS", "Autostart on connect changed to enabled=$it.")
+                    }
+                )
+            }
+            // Hidden, not greyed, while it's off: a selected check under an off switch read as live.
+            // The choice is kept, so turning it back on shows the same one.
+            AnimatedVisibility(enabled, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+                Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    MhSectionHeader(motoHubText("What to start"))
+                    MhListGroup {
+                        AutostartService.entries
+                            .filter { BuildConfig.IS_PRO || !it.advancedOnly }
+                            .forEach { candidate ->
+                                MhChoiceRow(
+                                    title = candidate.title(),
+                                    subtitle = if (candidate == AutostartService.MIRRORING) {
+                                        motoHubText("Android asks to allow screen capture each time")
+                                    } else {
+                                        null
+                                    },
+                                    selected = service == candidate,
+                                    onClick = {
+                                        service = candidate
+                                        MotoHubSettings.setAutostartService(context, candidate)
+                                        ProjectionEventLog.record("SETTINGS", "Autostart service changed to ${candidate.name}.")
+                                    }
+                                )
+                            }
+                    }
+                    MhFootnote(motoHubText("Runs once per app launch. Stop streaming and you're back in control."))
                 }
-            )
+            }
         }
-        MhSectionHeader(motoHubText("What to start"))
-        MhListGroup {
-            AutostartService.entries
-                .filter { BuildConfig.IS_PRO || !it.advancedOnly }
-                .forEach { candidate ->
-                    MhChoiceRow(
-                        title = candidate.title(),
-                        subtitle = if (candidate == AutostartService.MIRRORING) {
-                            motoHubText("Android asks to allow screen capture each time")
-                        } else {
-                            null
-                        },
-                        selected = service == candidate,
-                        onClick = {
-                            service = candidate
-                            MotoHubSettings.setAutostartService(context, candidate)
-                            ProjectionEventLog.record("SETTINGS", "Autostart service changed to ${candidate.name}.")
-                        }
-                    )
-                }
-        }
-        MhFootnote(motoHubText("Runs once per app launch. Stop streaming and you're back in control."))
     }
 }
 
@@ -385,16 +461,16 @@ private fun VideoQualityDetail(onBack: () -> Unit) {
                 )
             }
         }
-        MhSectionHeader(motoHubText("Power mode"))
+        MhSectionHeader(motoHubText("Frame rate"))
         MhListGroup {
             VideoPowerMode.entries.forEach { candidate ->
                 MhChoiceRow(
-                    title = context.getString(candidate.labelRes),
+                    title = candidate.title(),
                     subtitle = when (candidate) {
                         VideoPowerMode.AUTO -> motoHubText("Adapts to phone heat and Wi-Fi")
-                        VideoPowerMode.SMOOTH -> motoHubText("30 fps")
-                        VideoPowerMode.BALANCED -> motoHubText("24 fps")
-                        VideoPowerMode.SAVER -> motoHubText("20 fps, less heat and battery")
+                        VideoPowerMode.SMOOTH -> motoHubText("Smoothest")
+                        VideoPowerMode.BALANCED -> null
+                        VideoPowerMode.SAVER -> motoHubText("Less heat and battery")
                     },
                     selected = powerMode == candidate,
                     onClick = {
@@ -546,18 +622,8 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
     var inputMode by remember { mutableStateOf(HandlebarControlStore.inputMode(context)) }
     // Granted outside this app, in system settings, so the only moment it can have changed is a
     // return to this screen - hence the resume watch rather than a plain read in composition.
-    var hidServiceEnabled by remember { mutableStateOf(HandlebarHidCaptureService.isEnabled(context)) }
+    val hidServiceEnabled = rememberOnResume { HandlebarHidCaptureService.isEnabled(context) }
     var openedAccessibilitySettings by rememberSaveable { mutableStateOf(false) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                hidServiceEnabled = HandlebarHidCaptureService.isEnabled(context)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
     val volumeLevels = remember { MediaButtonBridge.volumeLevels(context) }
     var listeningVolume by remember { mutableStateOf(volumeLevels.first.toFloat()) }
     val openAccessibilitySettings = {
@@ -596,10 +662,12 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
                 onClick = onOpenMapping
             )
             // Here rather than in Diagnostics: this is where a rider checks whether presses arrive.
+            // Greyed while the buttons are off, like the volume below: there are no presses to name.
             MhSwitchRow(
                 title = motoHubText("Show button presses on the dashboard"),
                 subtitle = motoHubText("A one-second banner names each press"),
                 checked = pressBanner,
+                enabled = enabled,
                 onCheckedChange = {
                     pressBanner = it
                     HandlebarPressHud.setEnabled(context, it)
@@ -609,39 +677,51 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
         }
         MhSectionHeader(motoHubText("Music volume"))
         MhListGroup {
+            // Disabled the way a kit row is: the whole row at 45%, the slider's own colours kept.
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .alpha(if (enabled) 1f else 0.45f),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val tint = MaterialTheme.colorScheme.onSurfaceVariant
+                val thumb = MaterialTheme.colorScheme.onSurface
+                val active = MaterialTheme.colorScheme.primary
                 Icon(Icons.AutoMirrored.Rounded.VolumeDown, contentDescription = null, tint = tint)
                 Slider(
                     value = listeningVolume,
                     onValueChange = { listeningVolume = it },
                     onValueChangeFinished = { MediaButtonBridge.setVolume(context, listeningVolume.toInt()) },
                     modifier = Modifier.weight(1f).semantics { contentDescription = motoHubText("Music volume") },
+                    enabled = enabled,
                     valueRange = 0f..volumeLevels.second.toFloat(),
                     steps = (volumeLevels.second - 1).coerceAtLeast(0),
                     colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.onSurface,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        thumbColor = thumb,
+                        activeTrackColor = active,
                         inactiveTrackColor = MotoHubColors.Fill,
                         activeTickColor = Color.Transparent,
-                        inactiveTickColor = Color.Transparent
+                        inactiveTickColor = Color.Transparent,
+                        disabledThumbColor = thumb,
+                        disabledActiveTrackColor = active,
+                        disabledInactiveTrackColor = MotoHubColors.Fill,
+                        disabledActiveTickColor = Color.Transparent,
+                        disabledInactiveTickColor = Color.Transparent
                     )
                 )
                 Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = null, tint = tint)
             }
         }
-        MhFootnote(motoHubText("While buttons control Android Auto, set your listening level here."))
-        MhSectionHeader(motoHubText("Input protocol"))
+        MhFootnote(motoHubText("The music level while the buttons control Android Auto."))
+        MhSectionHeader(motoHubText("Button type"))
         MhListGroup {
             HandlebarInputMode.entries.forEach { candidate ->
                 MhChoiceRow(
                     title = when (candidate) {
-                        HandlebarInputMode.AVRCP -> motoHubText("AVRCP (media keys)")
-                        HandlebarInputMode.HID -> motoHubText("HID (D-pad)")
+                        HandlebarInputMode.AVRCP -> motoHubText("Media keys")
+                        HandlebarInputMode.HID -> motoHubText("Keyboard remote")
                     },
                     subtitle = when (candidate) {
                         HandlebarInputMode.AVRCP -> motoHubText("Most dashboards")
@@ -671,7 +751,7 @@ private fun HandlebarDetail(onBack: () -> Unit, onOpenMapping: () -> Unit) {
             if (!openedAccessibilitySettings) {
                 MhBanner(
                     title = motoHubText("Accessibility service is off"),
-                    body = motoHubText("HID presses aren't seen until you turn it on."),
+                    body = motoHubText("Keyboard remote presses aren't seen until you turn it on."),
                     tone = MhTone.WARNING,
                     actionLabel = motoHubText("Open accessibility settings"),
                     onAction = openAccessibilitySettings
@@ -757,6 +837,8 @@ private fun ClockDetail(onBack: () -> Unit) {
             TBoxClockAskRegistry.discardsTime(context, TBoxWireLadder.fingerprintOf(capabilities))
         }.getOrDefault(false)
     }
+    // Paired in system settings, so read again when the rider comes back from there.
+    val nothingPaired = rememberOnResume { nothingPaired(context) }
     MhScreen(title = motoHubText("Dashboard clock"), onBack = onBack) {
         MhListGroup {
             MhSwitchRow(
@@ -775,7 +857,12 @@ private fun ClockDetail(onBack: () -> Unit) {
             )
             MhSwitchRow(
                 title = motoHubText("Set the clock over Bluetooth"),
-                subtitle = motoHubText("Experimental. For dashboards stuck at 00:00."),
+                // The pairing caveat only where it applies, instead of in every rider's footnote.
+                subtitle = if (nothingPaired) {
+                    motoHubText("Needs the motorcycle paired over Bluetooth")
+                } else {
+                    motoHubText("For dashboards stuck at 00:00 (experimental)")
+                },
                 checked = bluetoothClock,
                 onCheckedChange = {
                     bluetoothClock = it
@@ -794,13 +881,7 @@ private fun ClockDetail(onBack: () -> Unit) {
                 }
             )
         }
-        MhFootnote(
-            motoHubText(
-                "Turn the Wi-Fi clock off only if your dashboard still shows 01.01.1970; there it can " +
-                    "overwrite a time set by hand. The Bluetooth clock needs the motorcycle paired with " +
-                    "this phone first."
-            )
-        )
+        MhFootnote(motoHubText("Turn the Wi-Fi clock off only if your dashboard still shows 01.01.1970."))
     }
 }
 
