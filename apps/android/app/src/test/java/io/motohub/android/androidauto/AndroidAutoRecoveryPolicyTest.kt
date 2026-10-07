@@ -84,6 +84,18 @@ class AndroidAutoRecoveryPolicyTest {
     }
 
     @Test
+    fun `a phone-only session restarts only for a drop inside the window`() {
+        assertFalse(isPhoneOnlyRestartDue(droppedAtElapsed = 0L, nowElapsed = 5_000L))
+        assertTrue(isPhoneOnlyRestartDue(droppedAtElapsed = 5_000L, nowElapsed = 5_340L))
+        assertTrue(
+            isPhoneOnlyRestartDue(5_000L, nowElapsed = 5_000L + PHONE_ONLY_RESTART_WINDOW_MS)
+        )
+        assertFalse(
+            isPhoneOnlyRestartDue(5_000L, nowElapsed = 5_001L + PHONE_ONLY_RESTART_WINDOW_MS)
+        )
+    }
+
+    @Test
     fun `watchdog ignores an uninitialized progress clock`() {
         assertFalse(
             isAndroidAutoWatchdogStalled(
