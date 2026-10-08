@@ -22,6 +22,13 @@ sealed interface TBoxEvent {
     ) : TBoxEvent
     data class Touch(val action: Int, val pointerId: Int, val x: Int, val y: Int) : TBoxEvent
     data object VideoStreamStart : TBoxEvent
+
+    /**
+     * The transport dropped queued video up to the next IDR, so the dash's picture is frozen until
+     * the encoder makes one: request a sync frame now. Repeated about once a second while it is
+     * still owed. [opensStall] is true only for the first ask of a run, the one worth a log line.
+     */
+    data class KeyframeNeeded(val opensStall: Boolean) : TBoxEvent
     data class Warning(val message: String) : TBoxEvent
     data class FatalError(val message: String) : TBoxEvent
     data object Stopped : TBoxEvent

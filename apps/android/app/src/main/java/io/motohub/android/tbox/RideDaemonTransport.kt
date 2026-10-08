@@ -436,6 +436,11 @@ class RideDaemonTransport(
         java.util.concurrent.ConcurrentHashMap.newKeySet<Pair<Long, Long>>()
     /** Keeps a dash's keepalive traffic from spending the whole log ring on itself. */
     private val beatCollapser = ProtocolBeatCollapser()
+    /** The same for the daemon's once-a-second keyframe asks during a video stall. */
+    private val keyframeAskCollapser = KeyframeAskCollapser()
+    /** Whether this session negotiated JPEG stills, which have no sync frame to ask for. */
+    @Volatile
+    private var sessionJpegStills = false
 
     override fun configureProtocolProfile(profile: TBoxModelProfile, motorcycle: MotorcycleProfile?) {
         protocolProfile = profile
@@ -562,6 +567,31 @@ class RideDaemonTransport(
         }
     }
 
+    /**
+     * The daemon's video queue overflowed and dropped to the next IDR, so the dash's picture is
+     * frozen until one arrives. Every ask goes on to the session's encoder as a sync-frame request
+     * - the daemon repeats it each second the IDR is still owed - but only the one that opens a
+     * stall is written; [keyframeAskCollapser] tallies the rest.
+     */
+    private fun onKeyframeNeeded(payload: ByteArray?) {
+        // JPEG stills are whole pictures with no sync frame to ask for (and the daemon never
+        // raises this for them).
+        if (sessionJpegStills) return
+        val dropped = decodeKeyframeNeededDropped(payload)
+        val decision = keyframeAskCollapser.onAsk(dropped, SystemClock.elapsedRealtime())
+        decision.rollup?.let { ProjectionEventLog.record("TBOX", it) }
+        val opensStall = decision is BeatDecision.Write
+        if (opensStall) {
+            ProjectionEventLog.warning(
+                "TBOX",
+                "The dashboard fell behind the video: RideDaemon dropped $dropped frame(s) up to " +
+                    "the next keyframe, and the picture is frozen until one arrives. Asking the " +
+                    "encoder for one; RideDaemon asks again each second it is still owed."
+            )
+        }
+        mutableEvents.tryEmit(TBoxEvent.KeyframeNeeded(opensStall))
+    }
+
     /** Whether the command reached the socket. Nothing here says the dashboard liked it. */
     private fun probeOutcome(delivered: Boolean): String =
         if (delivered) "." else "; the write failed and the experiment stopped here."
@@ -601,6 +631,7 @@ class RideDaemonTransport(
                 // encoder; if the two ever disagreed, one side would be putting JPEGs inside a
                 // frame the other negotiated as an access unit.
                 setJpegStillsEnabled(profile.easyConnJpegStills)
+                sessionJpegStills = profile.easyConnJpegStills
                 // The official app states the phone's mirroring state to the head unit and
                 // carries the phone's own display metrics inside it. Only Android can read
                 // those, and a wrong size stated confidently is worse than an honest zero,
@@ -2033,6 +2064,10 @@ class RideDaemonTransport(
                     logAppStatusNotify(payload)
                     return
                 }
+                if (command == TRANSPORT_KEYFRAME_NEEDED_COMMAND) {
+                    onKeyframeNeeded(payload)
+                    return
+                }
                 if (command == TRANSPORT_VIDEO_FRAMING_COMMAND) {
                     val extendByte = payload?.getOrNull(0)?.toInt() ?: -1
                     val plainApplied = payload?.getOrNull(1)?.toInt() == 1
@@ -2430,6 +2465,8 @@ class RideDaemonTransport(
         beatCollapser.close(SystemClock.elapsedRealtime())
             ?.let { ProjectionEventLog.debug("TBOX", it) }
         beatCollapser.reset()
+        keyframeAskCollapser.close()?.let { ProjectionEventLog.record("TBOX", it) }
+        keyframeAskCollapser.reset()
     }
 
     /**
@@ -2557,6 +2594,8 @@ class RideDaemonTransport(
         const val TRANSPORT_APP_STATUS_COMMAND = 4L
         const val APP_STATUS_MIRROR_LIVE = 1
         const val APP_STATUS_BACKGROUND = 2
+        /** Payload: 4 bytes big-endian, frames dropped since the last ask. See [onKeyframeNeeded]. */
+        const val TRANSPORT_KEYFRAME_NEEDED_COMMAND = 5L
         /** Bounds for the always-on first-occurrence dump of unknown protocol commands. */
         const val UNKNOWN_COMMAND_LOG_LIMIT = 32
         const val UNKNOWN_COMMAND_PREVIEW_BYTES = 64
@@ -2769,6 +2808,65 @@ internal class ProtocolBeatCollapser(
     }
 }
 
+/** A keyframe ask this long after the previous one opens a new stall: the daemon repeats an owed
+ *  ask every second, so a longer gap means the last stall ended. */
+internal const val KEYFRAME_STALL_GAP_MS = 3_000L
+
+/**
+ * Folds the daemon's keyframe asks the way [ProtocolBeatCollapser] folds beats.
+ *
+ * A dash that stops reading video overflows the daemon's queue every few frames, and the daemon
+ * asks for a keyframe once a second for as long as that lasts - minutes, on a stalled link. The
+ * ask that opens a stall is written; the rest are tallied and reported a minute in, and when the
+ * next stall opens or the session ends. Synchronized for the same reason as the beat collapser.
+ */
+internal class KeyframeAskCollapser(
+    private val stallGapMillis: Long = KEYFRAME_STALL_GAP_MS,
+    private val rollupIntervalMillis: Long = PROTOCOL_BEAT_ROLLUP_INTERVAL_MS
+) {
+    private val lock = Any()
+    private var lastAskAt: Long? = null
+    private var runStartedAt = 0L
+    private var folded = 0
+    private var foldedDropped = 0L
+
+    fun onAsk(dropped: Long, now: Long): BeatDecision = synchronized(lock) {
+        val previous = lastAskAt
+        lastAskAt = now
+        if (previous == null || now - previous > stallGapMillis) {
+            val rollup = previous?.let(::closeRun)
+            runStartedAt = now
+            return BeatDecision.Write(rollup)
+        }
+        folded++
+        foldedDropped += dropped
+        if (now - runStartedAt < rollupIntervalMillis) return BeatDecision.Fold(null)
+        val rollup = closeRun(now)
+        runStartedAt = now
+        return BeatDecision.Fold(rollup)
+    }
+
+    /** Ends the open tally, for a teardown that would otherwise drop it unreported. */
+    fun close(): String? = synchronized(lock) { lastAskAt?.let(::closeRun) }
+
+    fun reset() = synchronized(lock) {
+        lastAskAt = null
+        folded = 0
+        foldedDropped = 0L
+    }
+
+    private fun closeRun(endedAt: Long): String? {
+        if (folded == 0) return null
+        val seconds = ((endedAt - runStartedAt).coerceAtLeast(0L) + 500L) / 1000L
+        val line = "RideDaemon asked for a keyframe $folded more time${if (folded == 1) "" else "s"} " +
+            "over ${seconds}s and dropped $foldedDropped more frame(s); each ask was passed on " +
+            "as a sync-frame request."
+        folded = 0
+        foldedDropped = 0L
+        return line
+    }
+}
+
 internal fun decodeEasyConnPackage(value: ByteArray?): String? = value
     ?.toString(Charsets.UTF_8)
     ?.trim()
@@ -2891,4 +2989,10 @@ internal fun decodePageSwitchProbeCommand(payload: ByteArray?): Long {
         value = (value shl 8) or (payload[index].toLong() and 0xFF)
     }
     return value
+}
+
+/** Frames a keyframe-needed event says were dropped: 4 bytes big-endian, unsigned; 0 when short. */
+internal fun decodeKeyframeNeededDropped(payload: ByteArray?): Long {
+    if (payload == null || payload.size < 4) return 0L
+    return ByteBuffer.wrap(payload).int.toLong() and 0xFFFFFFFFL
 }

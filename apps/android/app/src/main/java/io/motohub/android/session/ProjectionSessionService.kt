@@ -545,6 +545,10 @@ class ProjectionSessionService : Service() {
                         videoStreamStartRequested.set(true)
                         encoder?.requestSyncFrame("TFT consumer requested mirroring video")
                     }
+                    is TBoxEvent.KeyframeNeeded -> encoder?.requestSyncFrame(
+                        "RideDaemon dropped mirroring video to the next keyframe",
+                        logSuccess = event.opensStall
+                    )
                     is TBoxEvent.Warning -> ProjectionEventLog.record("T-BOX", event.message)
                     is TBoxEvent.FatalError -> onTBoxFailureEvent("T-Box error: ${event.message}")
                     TBoxEvent.Stopped -> onTBoxFailureEvent("The T-Box ended the session.")

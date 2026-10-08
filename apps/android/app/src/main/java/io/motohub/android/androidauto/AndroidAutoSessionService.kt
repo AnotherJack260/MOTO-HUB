@@ -1016,6 +1016,10 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                         videoStreamStartRequested.set(true)
                         encoder?.requestSyncFrame("TFT consumer requested Android Auto video")
                     }
+                    is TBoxEvent.KeyframeNeeded -> encoder?.requestSyncFrame(
+                        "RideDaemon dropped Android Auto video to the next keyframe",
+                        logSuccess = event.opensStall
+                    )
                     is TBoxEvent.Touch -> touchFilter?.onTouch(event)
                     is TBoxEvent.Warning -> ProjectionEventLog.record("T-BOX", event.message)
                     is TBoxEvent.FatalError -> onTBoxFailureEvent("T-Box error: ${event.message}")

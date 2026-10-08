@@ -480,11 +480,13 @@ class AvcEncoder(
         releaseCodec()
     }
 
-    fun requestSyncFrame(reason: String) {
+    /** [logSuccess] false keeps a caller that repeats the request (and folds its own log) quiet;
+     *  a failure is always logged. */
+    fun requestSyncFrame(reason: String, logSuccess: Boolean = true) {
         val activeCodec = codec ?: return
         applySyncFrameRequest(activeCodec)
             .onSuccess {
-                ProjectionEventLog.record("ENCODER", "Requested AVC sync frame: $reason.")
+                if (logSuccess) ProjectionEventLog.record("ENCODER", "Requested AVC sync frame: $reason.")
             }
             .onFailure {
                 ProjectionEventLog.warning("ENCODER", "AVC sync-frame request failed: $reason.", it)

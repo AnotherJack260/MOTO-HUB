@@ -211,6 +211,38 @@ class RideDaemonTransportTest {
     }
 
     @Test
+    fun `a keyframe stall is one line, its repeats a tally`() {
+        // The daemon's payload is a 4-byte big-endian unsigned count.
+        assertEquals(7L, decodeKeyframeNeededDropped(byteArrayOf(0, 0, 0, 7)))
+        assertEquals(0xFFFFFFFFL, decodeKeyframeNeededDropped(byteArrayOf(-1, -1, -1, -1)))
+        assertEquals(0L, decodeKeyframeNeededDropped(byteArrayOf(0, 7)))
+
+        val collapser = KeyframeAskCollapser(stallGapMillis = 3_000L, rollupIntervalMillis = 60_000L)
+        assertEquals(BeatDecision.Write(null), collapser.onAsk(dropped = 7, now = 10_000L))
+        // The daemon asks again each second the IDR is owed.
+        assertEquals(BeatDecision.Fold(null), collapser.onAsk(dropped = 30, now = 11_000L))
+        assertEquals(BeatDecision.Fold(null), collapser.onAsk(dropped = 30, now = 12_000L))
+
+        // A gap longer than the repeat cadence: the IDR came through, this is a new stall, and
+        // the previous one's tally is reported before its line.
+        val next = collapser.onAsk(dropped = 5, now = 30_000L)
+        assertTrue(next is BeatDecision.Write)
+        assertEquals(
+            "RideDaemon asked for a keyframe 2 more times over 2s and dropped 60 more frame(s); " +
+                "each ask was passed on as a sync-frame request.",
+            next.rollup
+        )
+        assertNull(collapser.close())
+
+        // A stall that never ends is still reported a minute in, and its tail at teardown.
+        repeat(58) { collapser.onAsk(dropped = 1, now = 31_000L + it * 1_000L) }
+        assertNull(collapser.onAsk(dropped = 1, now = 89_000L).rollup)
+        assertTrue(collapser.onAsk(dropped = 1, now = 90_000L).rollup!!.contains("60 more times over 60s"))
+        assertTrue(collapser.onAsk(dropped = 1, now = 91_000L) is BeatDecision.Fold)
+        assertTrue(collapser.close()!!.contains("1 more time over 1s"))
+    }
+
+    @Test
     fun `no dashboard asks for the page experiment any more`() {
         // It ran on the QJ dash on 2026-09-09 and failed twice over: not one of the three
         // commands was acknowledged, and the rider watching the panel saw nothing, the
