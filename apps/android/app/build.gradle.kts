@@ -302,8 +302,9 @@ val exportPublicApk by tasks.registering(Copy::class) {
         // aa_identity_data - the private Android Auto identity - into an artifact whose whole
         // purpose is to be published. Refuse to export rather than trust the invocation.
         check(!includeAndroidAutoIdentity.get()) {
-            "The public APK must be assembled WITHOUT -PincludeAndroidAutoIdentity: rerun " +
-                "'./gradlew exportPublicApk' with no identity flag so the release is rebuilt clean."
+            "The public APK must be assembled without the Android Auto identity, which " +
+                "gradle.properties includes: rerun './gradlew exportPublicApk " +
+                "-PincludeAndroidAutoIdentity=false' so the release is rebuilt clean."
         }
     }
     doLast {
@@ -315,7 +316,7 @@ val exportPublicApk by tasks.registering(Copy::class) {
         val identityEntries = zipTree(exported).matching { include("res/raw/aa_cert", "res/raw/aa_identity_data") }
         check(identityEntries.isEmpty) {
             "${exported.name} contains the private Android Auto identity and must not be " +
-                "published. Delete it, then rerun the export without -PincludeAndroidAutoIdentity."
+                "published. Delete it, then rerun the export with -PincludeAndroidAutoIdentity=false."
         }
     }
 }

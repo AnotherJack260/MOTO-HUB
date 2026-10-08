@@ -220,7 +220,10 @@ fun SupportIdSection(onOpenApplicationLogs: () -> Unit) {
         MhListRow(title = motoHubText("What gets sent"), onClick = { reviewingNotice = true })
         // The long form behind the summary above, and the only place a rider can find out how to
         // have their reports deleted - which is why it sits here rather than behind the notice.
-        MhListRow(title = motoHubText("How your data is handled"), onClick = { readingPrivacyNotice = true })
+        // It names where reports go, so a build that cannot send one leaves it out.
+        if (canSend) {
+            MhListRow(title = motoHubText("How your data is handled"), onClick = { readingPrivacyNotice = true })
+        }
         MhSwitchRow(
             title = motoHubText("Keep a diagnostic log"),
             subtitle = motoHubText("Stays on this phone unless you send a report"),

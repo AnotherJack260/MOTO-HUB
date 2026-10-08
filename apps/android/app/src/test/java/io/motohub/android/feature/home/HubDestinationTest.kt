@@ -20,6 +20,17 @@ class HubDestinationTest {
     }
 
     @Test
+    fun `android auto or external display without a profile opens active session`() {
+        val session = HubSessionState(phase = SessionPhase.NETWORK_SETUP_REQUIRED)
+
+        assertEquals(HubDestination.ACTIVE_SESSION, resolveHubDestination(session, true))
+        assertEquals(
+            HubDestination.ACTIVE_SESSION,
+            resolveHubDestination(session, false, externalDisplayActive = true)
+        )
+    }
+
+    @Test
     fun `network and discovery phases open connection progress`() {
         assertEquals(
             HubDestination.CONNECTING,
