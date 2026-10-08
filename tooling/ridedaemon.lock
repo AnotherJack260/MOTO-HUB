@@ -1,14 +1,14 @@
 # Generated dependency record. Update this file whenever hudlib.aar is rebuilt.
 source_repository=https://github.com/AnotherJack260/ridedaemon-lib
-source_commit=e029ec1951804c5f94db725dbc7100b8ea8de2f3
+source_commit=cc608ab2cce7ec76159d409693c48b23bbd53bcf
 source_dirty=false
 source_checkout=refs/ridedaemon-lib-motohub
 gomobile_android_api=31
 artifact=apps/android/app/libs/hudlib.aar
-sha256=7825cca6c927db6b54b98fe015b18d39d266cd12b5f99ea71bb7103177b5954d
+sha256=309dda02571c254a8a8f34d4c1b8c8e12fc41795afbd0c6e5b2fd411679e69a4
 license=GPL-3.0-only
 
-# Rebuilt 2026-10-08 (RideLink lib phase 2d: 2c plus a ~1 s poll-mode queue so a dash pause no longer freezes the picture): branch ridelink-phase2 at source_commit (3802910 plus
+# Rebuilt 2026-10-08 (RideLink lib phase 2e: a ~1 s queue for every pull-driven dash so a dash pause no longer freezes the picture): branch ridelink-phase2 at source_commit (3802910 plus
 # the fixes from the Codex gpt-6.1-sol review: write deadlines, ReleaseDash queue, bounded feature
 # queue, media-control TLS, unindexed JPEG/movie framing, MCU-Lite/USB stalls), on top of the
 # phase-1 build below.

@@ -326,7 +326,9 @@ class AaCompositor(
                             "${previewVpW}x$previewVpH @($previewVpX,$previewVpY)"
                     )
                 }
-                if (hasContent) drawFrame()
+                // Preview only: a preview opening is a storm of resizes, and each one reaching the
+                // encoder would be an unpaced frame on the dash's queue (Codex review, 2026-10-08).
+                if (hasContent) drawFrame(toEncoder = false)
             } catch (failure: Throwable) {
                 log("[COMPOSITOR] preview attach failed: $failure")
             }
@@ -615,11 +617,11 @@ class AaCompositor(
         worstSwapMs = 0L
     }
 
-    private fun drawFrame() {
+    private fun drawFrame(toEncoder: Boolean = true) {
         if (!::surfaceTexture.isInitialized) return
         surfaceTexture.getTransformMatrix(texMatrix)
         val viewport = tftViewport
-        if (encoderWindowSurface != EGL14.EGL_NO_SURFACE && viewport != null) {
+        if (toEncoder && encoderWindowSurface != EGL14.EGL_NO_SURFACE && viewport != null) {
             drawTarget(
                 encoderWindowSurface,
                 viewport.x,
