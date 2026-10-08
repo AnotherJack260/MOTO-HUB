@@ -366,7 +366,9 @@ class ProjectionSessionService : Service() {
                     serviceScope.launch {
                         if (!stopping) fail("AVC encoder stopped: ${failure.message}")
                     }
-                }
+                },
+                // The VirtualDisplay below draws straight into the encoder at the panel's rate.
+                rawScreenInput = true
             )
             activeEncoder.start()
             adaptiveVideoController.reset()

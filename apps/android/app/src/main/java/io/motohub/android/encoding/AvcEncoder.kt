@@ -89,7 +89,14 @@ internal fun gopUsesCbr(streamInterval: Int, variableBitrate: Boolean, cbrSuppor
 class AvcEncoder(
     private val profile: EncoderProfile,
     private val onAccessUnit: (ByteArray) -> Boolean,
-    private val onFailure: (Throwable) -> Unit
+    private val onFailure: (Throwable) -> Unit,
+    /**
+     * True when the input surface is the raw screen (a mirroring VirtualDisplay, which follows the
+     * panel at 60-120 Hz), so the codec thins it to the profile's rate before encoding. Off for
+     * Android Auto: its compositor already paces to the cap, and the codec's frame dropper only
+     * forgives ~2 ms of jitter, so it would thin a ~30 fps compositor output too.
+     */
+    private val rawScreenInput: Boolean = false
 ) {
     private val running = AtomicBoolean(false)
     @Volatile private var codec: MediaCodec? = null
@@ -319,7 +326,9 @@ class AvcEncoder(
             // a GOP stream cannot lose a P-frame, and a polling dash reading ~35 frames a second
             // falls behind until RideDaemon drops to the next keyframe: a freeze every second or
             // two (rider log, 2026-10-08: 2515 frames offered in 40 s, 1408 pulled).
-            setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, profile.frameRate.toFloat())
+            if (rawScreenInput) {
+                setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, profile.frameRate.toFloat())
+            }
             // The floor under a stalled pixel source, not idle pacing. When the source stops
             // - an Android Auto decoder stall, seconds at a time, is the common case - this
             // interval is the only thing still feeding the dash, because the codec re-submits

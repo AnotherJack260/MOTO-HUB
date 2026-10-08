@@ -193,7 +193,9 @@ class AoaExternalService : Service() {
                     serviceScope.launch {
                         if (!stopping) fail("AVC encoder error: ${failure.message}")
                     }
-                }
+                },
+                // The VirtualDisplay below draws straight into the encoder at the panel's rate.
+                rawScreenInput = true
             )
             activeEncoder.start()
             keep(activeEncoder, release = { it.stop() }) { encoder = it }
