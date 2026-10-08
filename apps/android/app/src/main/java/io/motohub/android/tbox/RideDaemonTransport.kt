@@ -699,7 +699,8 @@ class RideDaemonTransport(
                 // those, and a wrong size stated confidently is worse than an honest zero,
                 // so they are measured here rather than guessed in the daemon.
                 setAppStatusNotifyEnabled(profile.announcesMirrorState)
-                if (profile.announcesMirrorState) {
+                // The flavor-51 lifecycle announces the mirror too, so it gets the same metrics.
+                if (profile.announcesMirrorState || profile.flavor51Lifecycle) {
                     val screen = readPhoneScreen()
                     setPhoneScreenWidth(screen.first.toLong())
                     setPhoneScreenHeight(screen.second.toLong())
@@ -751,6 +752,19 @@ class RideDaemonTransport(
             loggedCarbitPlan.set(null)
             carbitMovieModeLogged.set(false)
             if (profile.carbitExactVideo) createdSession.setCarbitExactMediaControl(true)
+            // The library turns this on for every flavor-51 dash; every profile that streams today
+            // was proven without it, so only a profile that asks for it gets it.
+            createdSession.setFlavor51Lifecycle(profile.flavor51Lifecycle)
+            ProjectionEventLog.record(
+                "TBOX",
+                "Flavor-51 lifecycle is ${if (profile.flavor51Lifecycle) "on" else "off"} for " +
+                    "profile ${profile.key}" + if (profile.flavor51Lifecycle) {
+                        ": a flavor-51 dash gets APPSTATUS, switchEc2Front on STREAM_START and no " +
+                            "reply to 0x102B0."
+                    } else {
+                        "; the wire stays as it was before the library had it."
+                    }
+            )
             synchronized(sessionLock) {
                 session = createdSession
                 dashWorker = worker
@@ -800,11 +814,6 @@ class RideDaemonTransport(
                         "${RIDE_DAEMON_STARTUP_TIMEOUT_SEC}s to answer before the native session " +
                         "gives up - the wait a rider sees here is that one, not any shorter " +
                         "timeout named on the calling side."
-                )
-                ProjectionEventLog.record(
-                    "TBOX",
-                    "Flavor-51 lifecycle is on (the library default): APPSTATUS announcements, " +
-                        "switchEc2Front on STREAM_START and no reply to 0x102B0 for a flavor-51 dash."
                 )
                 startWithNetworkSocket(activeSession, host, activeLink)
                 ProjectionEventLog.record("TBOX", "RideDaemon startSessionWithSocketFd returned successfully.")

@@ -104,6 +104,13 @@ enum class TBoxModelProfile(
      */
     val carbitExactVideo: Boolean = false,
     /**
+     * Let the library give a flavor-51 dash the official app's lifecycle (SetFlavor51Lifecycle):
+     * APPSTATUS announcements with this phone's screen metrics, switchEc2Front on STREAM_START
+     * and no reply to 0x102B0. The library turns it on for every flavor-51 dash by default; off
+     * here, so a profile that streams today keeps the wire it was proven on.
+     */
+    val flavor51Lifecycle: Boolean = false,
+    /**
      * Send the phone-to-car page sequence once the dash says STREAM_START.
      *
      * **Off for every dashboard, including the one it was written for.** It puts three
@@ -458,7 +465,8 @@ enum class TBoxModelProfile(
      * exactly as Carbit does, and Android Auto encodes to Carbit's own plan for the dash's
      * CAPTURE_CONFIG - its size, its bitrate (3 Mbps unless the dash asks), its frame rate (up to
      * Android Auto's), the 3s GOP and CBR only when the dash asks. Without a plan it streams
-     * exactly as the VBR test. Manual selection only, like its siblings.
+     * exactly as the VBR test. It is also the only profile with the flavor-51 lifecycle. Manual
+     * selection only, like its siblings.
      */
     ZONTES_350D_CARBIT(
         key = "zontes_350d_carbit",
@@ -471,7 +479,8 @@ enum class TBoxModelProfile(
         encoderKeyframeIntervalSeconds = 3,
         encoderPlainGopWithoutIntraRefresh = true,
         encoderVariableBitrate = true,
-        carbitExactVideo = true
+        carbitExactVideo = true,
+        flavor51Lifecycle = true
     ),
     /**
      * Compatibility experiment for the Voge dashes (flavor 51, channel 37504, 592x752 portrait

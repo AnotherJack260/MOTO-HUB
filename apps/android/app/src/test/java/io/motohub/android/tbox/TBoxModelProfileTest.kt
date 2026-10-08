@@ -687,4 +687,16 @@ class TBoxModelProfileTest {
         val jcdz21 = TBoxCapabilities(huName = "JCDZ21-E42b", flavor = "51", channel = "21321")
         assertEquals(TBoxModelProfile.GENERIC, TBoxModelProfile.resolve("21321", jcdz21))
     }
+
+    @Test
+    fun `only the Carbit profile takes the library's flavor-51 lifecycle`() {
+        // The VBR test is the owner's proven picture: it must keep the wire it was proven on, with
+        // no APPSTATUS, switchEc2Front or silenced 0x102B0 the library would add by default.
+        assertEquals(false, TBoxModelProfile.ZONTES_350D_VBR_TEST.flavor51Lifecycle)
+        assertEquals(true, TBoxModelProfile.ZONTES_350D_CARBIT.flavor51Lifecycle)
+        assertEquals(
+            listOf(TBoxModelProfile.ZONTES_350D_CARBIT),
+            TBoxModelProfile.entries.filter { it.flavor51Lifecycle }
+        )
+    }
 }
