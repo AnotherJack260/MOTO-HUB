@@ -1,12 +1,26 @@
 # Generated dependency record. Update this file whenever hudlib.aar is rebuilt.
 source_repository=https://github.com/AnotherJack260/ridedaemon-lib
-source_commit=ebd060eddac4967fc22eaabe46f2156a42d975d5
+source_commit=3802910d72059a99c48f60eecb041a9e3e033f15
 source_dirty=false
 source_checkout=refs/ridedaemon-lib-motohub
 gomobile_android_api=31
 artifact=apps/android/app/libs/hudlib.aar
-sha256=2090c14a08482ee092b0deb6e996213b10359ff1a175954f5ce0a250e7774e85
+sha256=bfb3d2cc652552239107ffc754e94c3df29b3406a7a533ab3ed7b9203c2c9d61
 license=GPL-3.0-only
+
+# Rebuilt 2026-10-08 (RideLink lib phase 2): branch ridelink-phase2 at source_commit, on top of
+# the phase-1 build below. Not pushed to the fork yet, so CI's locked RideDaemon checkout cannot
+# fetch source_commit until it is.
+#
+# Same build shape: -androidapi 31, 4 ABIs. Binding surface diffed with javap: purely additive.
+# What the app uses: MobileSession.releaseDash / setCarbitExactMediaControl / captureConfig,
+# Api.carbitEncoderPlan, and Api.newDashFeatures with DashFeatures.sendNaviStatus /
+# sendNaviInfo / sendNaviEnd. Also added and not called yet: setPhoneIdentity,
+# setTLSCertificate, setAppForeground, setFlavor51Lifecycle (on by default), setIdleProbe,
+# pushJpeg, the other DashFeatures senders and listener, and the RFCOMM / MCU-Lite types.
+#
+# New transport events: 16 (the dash's CAPTURE_CONFIG as JSON) and the dash requests 0x10380,
+# 0x103F0, 0x10490, 0x106F0 and 0x107C0; see hud/api/doc.go.
 
 # Rebuilt 2026-10-08 (RideLink lib phase 1): branch ridelink-phase1, seven commits on top of
 # a2b9191 (the p2c-channel-routing build below). Not pushed to the fork yet, so CI's locked
@@ -73,4 +87,4 @@ license=GPL-3.0-only
 # diffed against the old AAR with javap: purely additive, exactly
 # get/setAppStatusNotifyEnabled and get/setPhoneScreenWidth|Height|Rotation on
 # api.MobileConfig; api.MobileSession and api.Api byte-identical.
-source_note=ridelink-phase1
+source_note=ridelink-phase2
