@@ -457,7 +457,11 @@ private fun BluetoothStatusRows() {
     }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { refresh++ }
+    ) { granted ->
+        // A capture already parked for want of this grant has no broadcast to wake it.
+        if (granted) MediaButtonBridge.bluetoothPermissionGranted()
+        refresh++
+    }
     val current = status
     // A2DP/HEADSET "connected device" only means something for an AVRCP dash - a HID remote
     // pairs as a keyboard and never shows up in that list, so current.describe() would call an

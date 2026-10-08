@@ -8,6 +8,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import io.motohub.android.session.MotorcycleProfile
+import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.session.TBoxConnectionMode
 import io.motohub.android.tbox.TBoxModelProfile
 import java.security.KeyStore
@@ -34,9 +35,11 @@ class MotorcycleProfileStore(context: Context) {
     fun loadAll(): List<MotorcycleProfile> {
         val serialized = preferences.getString(KEY_PROFILES, null)
         if (!serialized.isNullOrBlank()) {
-            return runCatching { decodeProfiles(JSONArray(serialized)) }
+            // Never clear() on a read: this used to wipe every motorcycle, its password, photo
+            // and the active id whenever ONE entry failed - one Keystore hiccup was enough.
+            return runCatching { decodeProfiles(JSONArray(serialized), ::decrypt, ::logUnreadable) }
                 .getOrElse {
-                    clear()
+                    logUnreadable("Motorcycle profiles are not a JSON array; none loaded.", it)
                     emptyList()
                 }
         }
@@ -83,10 +86,6 @@ class MotorcycleProfileStore(context: Context) {
         }
     }
 
-    fun clear() {
-        preferences.edit().clear().apply()
-    }
-
     private fun saveAll(profiles: List<MotorcycleProfile>, activeId: String?) {
         val array = JSONArray()
         profiles.forEach { profile ->
@@ -116,34 +115,8 @@ class MotorcycleProfileStore(context: Context) {
         ) { "Android did not save the motorcycle profiles." }
     }
 
-    private fun decodeProfiles(array: JSONArray): List<MotorcycleProfile> = buildList {
-        for (index in 0 until array.length()) {
-            val item = array.getJSONObject(index)
-            val ssid = item.optString(KEY_SSID).trim()
-            if (ssid.isEmpty()) continue
-            add(
-                MotorcycleProfile(
-                    id = item.optString(KEY_PROFILE_ID).ifBlank { UUID.randomUUID().toString() },
-                    ssid = ssid,
-                    password = decrypt(
-                        item.getString(KEY_PASSWORD_IV),
-                        item.getString(KEY_PASSWORD_CIPHERTEXT)
-                    ),
-                    // A profile saved before its dash had a profile of its own (the KOVE 625X's
-                    // QR names no model) earns the id its network name carries, on every
-                    // load, so an existing rider is recognised without pairing again.
-                    modelId = item.optNullableString(KEY_MODEL_ID)
-                        ?: TBoxModelProfile.modelIdForSsid(ssid),
-                    displayName = item.optNullableString(KEY_DISPLAY_NAME),
-                    photoPath = item.optNullableString(KEY_PHOTO_PATH),
-                    fuelTankRangeKm = item.optDouble(KEY_FUEL_TANK_RANGE_KM, 0.0).takeIf { it > 0 },
-                    profileOverrideKey = item.optNullableString(KEY_PROFILE_OVERRIDE_KEY),
-                    connectionMode = item.optString(KEY_CONNECTION_MODE)
-                        .let { raw -> TBoxConnectionMode.entries.firstOrNull { it.name == raw } }
-                        ?: TBoxConnectionMode.AUTO
-                )
-            )
-        }
+    private fun logUnreadable(message: String, failure: Throwable?) {
+        ProjectionEventLog.warning("GARAGE", message, failure)
     }
 
     private fun migrateLegacyProfile(): MotorcycleProfile? {
@@ -207,15 +180,64 @@ class MotorcycleProfileStore(context: Context) {
         put(key, value ?: JSONObject.NULL)
     }
 
-    private fun JSONObject.optNullableString(key: String): String? =
-        if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
-
     private data class EncryptedValue(
         val iv: String,
         val ciphertext: String
     )
 
-    private companion object {
+    internal companion object {
+        /**
+         * Decodes each entry on its own, so one bad entry costs that entry and nothing else.
+         *
+         * A password that will not decrypt (AEADBadTagException, KeyStoreException) keeps the
+         * motorcycle with a blank password: the rider types it again or rescans the QR, rather
+         * than losing the bike, its photo and its settings. Only an element that is not a JSON
+         * object at all is skipped, and it carries nothing a later save could have kept.
+         */
+        fun decodeProfiles(
+            array: JSONArray,
+            decrypt: (iv: String, ciphertext: String) -> String,
+            logUnreadable: (message: String, failure: Throwable?) -> Unit
+        ): List<MotorcycleProfile> = buildList {
+            for (index in 0 until array.length()) {
+                val item = array.optJSONObject(index)
+                if (item == null) {
+                    logUnreadable("Motorcycle profile #$index is not a JSON object; skipped.", null)
+                    continue
+                }
+                val ssid = item.optString(KEY_SSID).trim()
+                if (ssid.isEmpty()) continue
+                val password = runCatching {
+                    decrypt(item.getString(KEY_PASSWORD_IV), item.getString(KEY_PASSWORD_CIPHERTEXT))
+                }.getOrElse {
+                    logUnreadable("The Wi-Fi password of $ssid could not be decrypted; kept it blank.", it)
+                    ""
+                }
+                add(
+                    MotorcycleProfile(
+                        id = item.optString(KEY_PROFILE_ID).ifBlank { UUID.randomUUID().toString() },
+                        ssid = ssid,
+                        password = password,
+                        // A profile saved before its dash had a profile of its own (the KOVE
+                        // 625X's QR names no model) earns the id its network name carries, on
+                        // every load, so an existing rider is recognised without pairing again.
+                        modelId = item.optNullableString(KEY_MODEL_ID)
+                            ?: TBoxModelProfile.modelIdForSsid(ssid),
+                        displayName = item.optNullableString(KEY_DISPLAY_NAME),
+                        photoPath = item.optNullableString(KEY_PHOTO_PATH),
+                        fuelTankRangeKm = item.optDouble(KEY_FUEL_TANK_RANGE_KM, 0.0).takeIf { it > 0 },
+                        profileOverrideKey = item.optNullableString(KEY_PROFILE_OVERRIDE_KEY),
+                        connectionMode = item.optString(KEY_CONNECTION_MODE)
+                            .let { raw -> TBoxConnectionMode.entries.firstOrNull { it.name == raw } }
+                            ?: TBoxConnectionMode.AUTO
+                    )
+                )
+            }
+        }
+
+        private fun JSONObject.optNullableString(key: String): String? =
+            if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
+
         /**
          * Every write is read-modify-write of one JSON array, and the store is built fresh by
          * each caller - the UI, the AIDL binder threads a companion app calls in on. Without
