@@ -195,12 +195,29 @@ android {
     }
 }
 
-val androidAutoIdentityDir = rootProject.projectDir.resolve("../../tooling/private/android-auto")
+// A git worktree has no tooling/private of its own (it is gitignored), so a build there would
+// silently ship without the Android Auto identity: borrow the main checkout's.
+val androidAutoIdentityDir = rootProject.projectDir.resolve("../../tooling/private/android-auto").let { local ->
+    if (local.isDirectory) return@let local
+    val gitFile = rootProject.projectDir.resolve("../../.git")
+    val mainCheckout = gitFile.takeIf { it.isFile }?.readText()?.substringAfter("gitdir:")?.trim()
+        ?.let { File(it).parentFile?.parentFile?.parentFile } // <main>/.git/worktrees/<name>
+    mainCheckout?.resolve("tooling/private/android-auto")?.takeIf { it.isDirectory } ?: local
+}
 val androidAutoIdentityOutputDir = layout.buildDirectory.dir("generated/res/android-auto-identity/main")
 val translationResourceOutputDir = layout.buildDirectory.dir("generated/res/translations/main")
 val includeAndroidAutoIdentity = providers.gradleProperty("includeAndroidAutoIdentity")
     .map(String::toBoolean)
     .orElse(false)
+
+if (includeAndroidAutoIdentity.get() &&
+    !(androidAutoIdentityDir.resolve("aa_cert").isFile && androidAutoIdentityDir.resolve("aa_identity_data").isFile)
+) {
+    logger.warn(
+        "w: includeAndroidAutoIdentity=true but $androidAutoIdentityDir has no aa_cert/aa_identity_data: " +
+            "this APK will not run Android Auto. See README to fetch them."
+    )
+}
 
 val cleanAndroidAutoIdentity by tasks.registering(Delete::class) {
     delete(androidAutoIdentityOutputDir)
