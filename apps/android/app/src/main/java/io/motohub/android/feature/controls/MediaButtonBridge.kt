@@ -211,6 +211,9 @@ class MediaButtonBridge(
             trackDownAt.clear()
             cancelPendingTaps()
             disableCapture()
+            // Not left to disableCapture(): a capture still waiting for Bluetooth was never
+            // active, so that returns before reaching it and the receiver outlived the bridge.
+            cancelBluetoothWait()
             unregisterVolumeObserver()
             stopWatchingBluetoothPeers()
             try { session?.isActive = false } catch (_: Throwable) {}
@@ -453,7 +456,9 @@ class MediaButtonBridge(
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
         }
         runCatching {
-            ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            // EXPORTED: ACL broadcasts come from the Bluetooth app, not the system, so NOT_EXPORTED
+            // drops them; they are protected broadcasts, so nothing else can send them.
+            ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
             bluetoothPeerReceiver = receiver
         }.onFailure { log("[BTN] could not watch Bluetooth connections: ${it.message}") }
     }

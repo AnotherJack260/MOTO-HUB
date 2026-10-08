@@ -180,13 +180,15 @@ object TBoxSessionRegistry {
     @Synchronized
     fun releaseAndClear(consumer: String, handle: TBoxSessionHandle? = null): Boolean {
         val wasLast = consumers.releaseIsLast(consumer)
-        if (handle != null && activeHandle !== handle) return false
         if (activeHandle == null) {
             // No session left, and this mode is done with it: a link some recovery kept has now
             // outlived the recovery that kept it, and this is the last moment anyone will look.
+            // Checked before the stale-handle guard below: a failed recovery's mode releases the
+            // very handle the recovery cleared, which never matches, so the link used to leak.
             releaseRetainedRecoveryLink()
             return false
         }
+        if (handle != null && activeHandle !== handle) return false
         if (!wasLast) {
             ProjectionEventLog.record(
                 "SESSION",
@@ -215,16 +217,20 @@ object TBoxSessionRegistry {
             consumers.clear()
             if (previous != null) {
                 if (retainLinkForRecovery) {
+                    // The session's lease stays with the kept link and goes where it goes (the
+                    // install's adopt is idempotent, [releaseRetainedRecoveryLink] drops it).
+                    // Releasing it here, with the Hub UI already gone, disconnected the connector
+                    // and left the recovery waiting out its whole rejoin window for nothing.
                     recoveryLink.retain(previous.link)
                 } else {
                     previous.link.disconnect()
+                    // Registry monitor -> connector-owner lock, never the reverse; see the
+                    // ordering note on TBoxNetworkConnectors. The session's interest goes with the
+                    // session: when it was the last one, this is the release that actually drops
+                    // the Wi-Fi request - previously nothing here touched the connector, and a
+                    // cleared session's request could keep hunting for three more minutes.
+                    TBoxNetworkConnectors.releaseSession()
                 }
-                // Registry monitor -> connector-owner lock, never the reverse; see the ordering
-                // note on TBoxNetworkConnectors. The session's interest goes with the session:
-                // when it was the last one, this is the release that actually drops the Wi-Fi
-                // request - previously nothing here touched the connector, and a cleared
-                // session's request could keep hunting for three more minutes.
-                TBoxNetworkConnectors.releaseSession()
                 ProjectionEventLog.record(
                     "SESSION",
                     if (retainLinkForRecovery) {
@@ -243,6 +249,8 @@ object TBoxSessionRegistry {
     private fun releaseRetainedRecoveryLink() {
         val link = recoveryLink.takeUnclaimed() ?: return
         link.disconnect()
+        // The session lease [clear] kept along with the link.
+        TBoxNetworkConnectors.releaseSession()
         ProjectionEventLog.record(
             "SESSION",
             "Releasing the link a recovery had kept: no session came of it."
