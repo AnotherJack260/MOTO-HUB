@@ -501,19 +501,7 @@ class AaReceiver(
             androidAutoCapabilityProfile = capabilityProfile
         )
         t.nightMode = AndroidAutoNightModeStore(context).load()
-        t.onQuit = { clean ->
-            val userExit = t.wasUserExit
-            sessionLive = false
-            log("[AA] transport quit (clean=$clean, userExit=$userExit)")
-            AaInputBridge.clear(input)
-            input = null
-            transport = null
-            try { conn.disconnect() } catch (_: Exception) {}
-            connection = null
-            releaseSession()
-            onSessionEnded(clean, userExit)
-        }
-       transport = t
+        transport = t
         t.microphone = AaMicrophone(context, t, log)
 
         // Bike touchscreen → Android Auto: EasyConnProber decodes dash touches (PXC cmdType 32) and
@@ -529,9 +517,24 @@ class AaReceiver(
             transport = null
             try { conn.disconnect() } catch (_: Exception) {}
             connection = null
-            // Nothing else will: onQuit only fires for a transport that started.
+            // The only cleanup a failed handshake gets: its quit() ran before onQuit was
+            // installed, so the session owner hears nothing about a session that never was.
             releaseSession()
             return false
+        }
+        // Installed only now: a failed handshake calls quit() too, and with this already in place
+        // it reported onSessionEnded(false, false) - a "drop" of a session that never started.
+        t.onQuit = { clean ->
+            val userExit = t.wasUserExit
+            sessionLive = false
+            log("[AA] transport quit (clean=$clean, userExit=$userExit)")
+            AaInputBridge.clear(input)
+            input = null
+            transport = null
+            try { conn.disconnect() } catch (_: Exception) {}
+            connection = null
+            releaseSession()
+            onSessionEnded(clean, userExit)
         }
         sessionLive = true
         AaInputBridge.install(checkNotNull(input))

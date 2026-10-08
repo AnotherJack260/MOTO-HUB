@@ -117,6 +117,7 @@ class AaMicrophone(
             )
             if (activeRecorder.state != AudioRecord.STATE_INITIALIZED) {
                 activeRecorder.release()
+                releaseBluetoothRoute()
                 log("[MIC] AudioRecord initialization failed")
                 return
             }

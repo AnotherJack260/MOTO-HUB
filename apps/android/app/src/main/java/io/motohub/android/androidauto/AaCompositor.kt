@@ -199,6 +199,9 @@ class AaCompositor(
             }
         }
         latch.await()
+        // A half-built EGL context and the HandlerThread would otherwise outlive a caller that
+        // just drops the instance; release() is safe to call again.
+        if (!initialized) release()
         return initialized
     }
 

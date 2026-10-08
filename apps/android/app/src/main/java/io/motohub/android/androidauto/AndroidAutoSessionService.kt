@@ -163,7 +163,29 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         }
         // A stop that never reached a running service must not name the session about to start.
         AndroidAutoStopReason.clear()
-        if (AndroidAutoRuntime.isActive()) return START_STICKY
+        if (AndroidAutoRuntime.isActive()) {
+            if (receiverPreparationJob != null) return START_STICKY
+            // Someone else's session is live - the phone-only bridge publishes to the same
+            // runtime - and this instance has none. It was still started with
+            // startForegroundService, so it owes Android a startForeground or the app dies with
+            // ForegroundServiceDidNotStartInTimeException. Pay that and leave; `stopping` keeps
+            // onDestroy's stopSession from publishing Stopped over the session that is running.
+            ProjectionEventLog.record(
+                "ANDROID AUTO",
+                "Android Auto is already running in another session; not starting a second one."
+            )
+            stopping = true
+            createNotificationChannel()
+            runCatching {
+                startForeground(
+                    NOTIFICATION_ID,
+                    createNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+                )
+            }
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         ProjectionEventLog.record("ANDROID AUTO", "Preparing local AAP receiver.")
         createNotificationChannel()
@@ -358,6 +380,13 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                 contentMargins = capabilityProfile.aspectMargins
             )
             check(activeCompositor.start()) { "Android Auto compositor failed to initialize (EGL/GL)" }
+            // Not a suspend function, so cancelling receiverPreparationJob cannot stop it. A Stop
+            // that landed during the EGL bring-up has already run stopSession, which had nothing
+            // to release yet; whatever is built past this point would outlive the service.
+            if (stopping) {
+                activeCompositor.release()
+                return
+            }
             val decoderSurface = activeCompositor.inputSurface
                 ?: error("Android Auto compositor did not create the video surface")
             compositor = activeCompositor
@@ -409,6 +438,12 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     "Android Auto identity is not included in this build. " +
                         "Build with -PincludeAndroidAutoIdentity=true for a private sideload APK."
                 )
+            }
+            // Same as after the compositor: past here the port, the ownership and ReceiverReady
+            // would all be claimed for a service that is already gone. Releasing twice is safe.
+            if (stopping) {
+                activeCompositor.release()
+                return
             }
             AndroidAutoReceiverOwnership.claim(this@AndroidAutoSessionService, "real-session") {
                 stopSession("Superseded by a new Android Auto session.")

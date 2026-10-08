@@ -344,7 +344,8 @@ class AoaExternalService : Service() {
 
     companion object {
         private const val CHANNEL_ID = "aoa_external_display_v1"
-        private const val NOTIFICATION_ID = 4201
+        // Not 4201: AndroidAutoSessionService posts that one, and the two can run together.
+        private const val NOTIFICATION_ID = 4202
         private const val ACTION_STOP = "io.motohub.android.action.STOP_AOA"
         private const val EXTRA_RESULT_CODE = "result_code"
         private const val EXTRA_RESULT_DATA = "result_data"
@@ -355,11 +356,24 @@ class AoaExternalService : Service() {
         private const val EXTERNAL_FRAMERATE = 30
         private const val EXTERNAL_BITRATE = 4_194_304
 
-        fun start(context: Context, resultCode: Int, resultData: Intent) {
+        /**
+         * False when Android refuses the start (ForegroundServiceStartNotAllowedException), which
+         * would otherwise crash the app; same as ProjectionSessionService.start.
+         */
+        fun start(context: Context, resultCode: Int, resultData: Intent): Boolean {
             val intent = Intent(context, AoaExternalService::class.java)
                 .putExtra(EXTRA_RESULT_CODE, resultCode)
                 .putExtra(EXTRA_RESULT_DATA, resultData)
-            ContextCompat.startForegroundService(context, intent)
+            return runCatching { ContextCompat.startForegroundService(context, intent) }
+                .onFailure { failure ->
+                    ProjectionEventLog.error(
+                        "AOA_SERVICE",
+                        "Android refused to start the AOA external display service " +
+                            "(${failure.javaClass.simpleName}: ${failure.message}).",
+                        failure
+                    )
+                }
+                .isSuccess
         }
 
         fun stop(context: Context) {
