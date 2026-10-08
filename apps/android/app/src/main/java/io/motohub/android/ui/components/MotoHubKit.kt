@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Vincenzo Buonomano and the MOTO-HUB contributors.
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package io.motohub.android.ui.components
 
 import android.os.SystemClock
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
