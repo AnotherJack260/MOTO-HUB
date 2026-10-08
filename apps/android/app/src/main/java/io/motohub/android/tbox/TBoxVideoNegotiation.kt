@@ -106,16 +106,18 @@ data class CarbitVideoPlan(
 
 /**
  * This profile encoding to Carbit's [plan]: its size, its GOP on plain IDRs (Carbit uses no intra
- * refresh), CBR only when the dash asked for it, and its bitrate as the base the rider's [quality]
- * scales. The frame rate never rises above this profile's, which is Android Auto's source rate;
- * the adaptive controller's thermal and link caps then work under both, as for any profile.
+ * refresh), CBR only when the dash asked for it, and its bitrate as a ceiling the rider's
+ * [quality] can lower but never raise: Sharper turned the Zontes 350D's 8.4 Mbps plan into 13.4
+ * Mbps, and bigger frames are what a polling dash falls behind on (rider log, 2026-10-08). The
+ * frame rate never rises above this profile's, which is Android Auto's source rate; the adaptive
+ * controller's thermal and link caps then work under both, as for any profile.
  */
 internal fun EncoderProfile.followingCarbitPlan(plan: CarbitVideoPlan, quality: VideoQuality): EncoderProfile =
     copy(
         width = plan.width,
         height = plan.height,
         frameRate = plan.fps.coerceAtMost(frameRate),
-        bitRate = quality.bitrateFor(plan.bitRate),
+        bitRate = quality.bitrateFor(plan.bitRate).coerceAtMost(plan.bitRate),
         keyframeIntervalSeconds = plan.iFrameSeconds,
         plainGopWithoutIntraRefresh = true,
         variableBitrate = !plan.cbr

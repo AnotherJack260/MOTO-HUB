@@ -88,12 +88,13 @@ class TBoxVideoNegotiationTest {
             ),
             base.followingCarbitPlan(plan, VideoQuality.BALANCED)
         )
-        // A slower dash keeps its own rate, CBR only when it asked, and the rider's quality scales
-        // the plan's bitrate as it scales every profile's.
+        // A slower dash keeps its own rate, CBR only when it asked, and the plan's bitrate is a
+        // ceiling: Sharper cannot raise it, a lower quality still lowers it.
         val slow = base.followingCarbitPlan(plan.copy(fps = 20, cbr = true), VideoQuality.SHARPER)
         assertEquals(20, slow.frameRate)
         assertEquals(false, slow.variableBitrate)
-        assertEquals(4_800_000, slow.bitRate)
+        assertEquals(3_000_000, slow.bitRate)
+        assertEquals(2_100_000, base.followingCarbitPlan(plan, VideoQuality.SMOOTHER).bitRate)
     }
 
     @Test
