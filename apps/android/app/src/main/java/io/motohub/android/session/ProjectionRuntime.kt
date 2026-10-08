@@ -32,8 +32,9 @@ object ProjectionRuntime {
     /**
      * The rider stopped streaming, disconnected or cancelled by hand, so nothing automatic
      * (auto-connect, autostart) may start a connection or a mode until they connect again
-     * ([io.motohub.android.feature.home.HubViewModel.connectAndDiscover] clears it). In memory
-     * on purpose: a cold launch is a new ride. Recovery the rider did not cause never sets it.
+     * ([io.motohub.android.feature.home.HubViewModel.connectAndDiscover] clears it, and so does
+     * a fresh MainActivity). In memory on purpose: reopening the app is a new ride. Recovery the
+     * rider did not cause never sets it.
      */
     @Volatile
     var riderStopped: Boolean = false
