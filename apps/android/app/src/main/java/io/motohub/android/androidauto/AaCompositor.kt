@@ -4,6 +4,8 @@
 package io.motohub.android.androidauto
 
 import android.graphics.SurfaceTexture
+import io.motohub.android.encoding.frameDue
+import io.motohub.android.encoding.nextFrameDeadline
 import io.motohub.android.feature.controls.HandlebarPressHud
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -119,7 +121,8 @@ class AaCompositor(
     @Volatile private var pendingFrame = false
     private var lastDrawMs = 0L
     @Volatile private var frameCap = DEFAULT_FRAME_CAP
-    @Volatile private var lastSourceFrameNanos = 0L
+    /** The pacing slot the next source frame is drawn in (see [frameDue]); 0 draws the next one. */
+    @Volatile private var nextDrawNanos = 0L
 
     /**
      * Cumulative milliseconds this compositor has spent inside `eglSwapBuffers` on the encoder
@@ -270,7 +273,7 @@ class AaCompositor(
     /** Caps source redraws during thermal/link adaptation; keep-alive redraws remain enabled. */
     fun setFrameCap(frameRate: Int) {
         frameCap = frameRate.coerceIn(1, DEFAULT_FRAME_CAP)
-        lastSourceFrameNanos = 0L
+        nextDrawNanos = 0L
         pendingFrame = false
     }
 
@@ -524,29 +527,34 @@ class AaCompositor(
         }
         hasContent = true
         framesIn++
+        // updateTexImage just replaced a frame still waiting for its slot: that one is never seen.
+        if (pendingFrame) framesCoalesced++
         val now = System.nanoTime()
-        val interval = 1_000_000_000L / frameCap.coerceAtLeast(1)
-        val idleMs = android.os.SystemClock.uptimeMillis() - lastDrawMs
-        if (lastSourceFrameNanos == 0L || idleMs >= interval / 1_000_000L) {
-            lastSourceFrameNanos = now
-            pendingFrame = false
-            drawFrame()
-        } else {
-            // SurfaceTexture already contains the newest frame; flush it on the next pacing tick.
+        if (frameDue(now, nextDrawNanos, frameCap)) {
+            drawPaced(now)
+        } else if (!pendingFrame) {
+            // SurfaceTexture already holds the newest frame; draw it the moment its slot opens.
+            // Leaving it to the 150 ms keep-alive tick instead is what dropped a third of a 30 fps
+            // source: the next frame had replaced it by then (rider log, 2026-10-08).
             pendingFrame = true
-            framesCoalesced++
+            handler.postDelayed(drawPending, (nextDrawNanos - now + 999_999L) / 1_000_000L)
         }
+    }
+
+    private val drawPending = Runnable { if (pendingFrame) drawPaced(System.nanoTime()) }
+
+    private fun drawPaced(now: Long) {
+        pendingFrame = false
+        handler.removeCallbacks(drawPending)
+        nextDrawNanos = nextFrameDeadline(now, nextDrawNanos, frameCap)
+        drawFrame()
     }
 
     private val keepAlive = object : Runnable {
         override fun run() {
             if (hasContent && encoderWindowSurface != EGL14.EGL_NO_SURFACE) {
                 val idleMs = android.os.SystemClock.uptimeMillis() - lastDrawMs
-                val intervalMs = 1_000L / frameCap.coerceAtLeast(1)
-                if (pendingFrame && idleMs >= intervalMs) {
-                    pendingFrame = false
-                    drawFrame()
-                } else if (idleMs >= idleRedrawMs) {
+                if (idleMs >= idleRedrawMs) {
                     keepAliveRedraws++
                     drawFrame()
                 }
@@ -718,6 +726,7 @@ class AaCompositor(
     fun release() {
         handler.removeCallbacks(keepAlive)
         handler.post {
+            handler.removeCallbacks(drawPending)
             runCatching { inputSurface?.release() }
             inputSurface = null
             runCatching { if (::surfaceTexture.isInitialized) surfaceTexture.release() }

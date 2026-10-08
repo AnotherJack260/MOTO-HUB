@@ -709,8 +709,8 @@ class AvcEncoder(
         val cap = frameCap.coerceIn(1, profile.frameRate)
         if (cap >= profile.frameRate) return true
         val now = System.nanoTime()
-        if (now < nextFrameDeadlineNanos) return false
-        nextFrameDeadlineNanos = now + 1_000_000_000L / cap
+        if (!frameDue(now, nextFrameDeadlineNanos, cap)) return false
+        nextFrameDeadlineNanos = nextFrameDeadline(now, nextFrameDeadlineNanos, cap)
         return true
     }
 
@@ -898,6 +898,31 @@ internal const val ALL_INTRA_REPEAT_FRAME_AFTER_US = 900_000L
 internal fun repeatFrameAfterUs(effectiveKeyframeIntervalSeconds: Int): Long =
     if (effectiveKeyframeIntervalSeconds > 0) GOP_REPEAT_FRAME_AFTER_US
     else ALL_INTRA_REPEAT_FRAME_AFTER_US
+
+/**
+ * Whether a frame at [nowNanos] may go out under [frameCap], given the slot [deadlineNanos] the
+ * previous one left (0 before the first frame).
+ *
+ * A source at the cap is never exactly on it. Android Auto decodes ~29.5 fps with a few ms of
+ * jitter, and a strict "a whole interval since the last draw" test held back every frame that came
+ * a millisecond early - a third of them, at an uneven cadence (rider log, 2026-10-08: in=895
+ * drawn=600 coalesced=370 per 30 s, 20 fps reaching the Zontes). A frame up to a quarter interval
+ * (at least 4 ms) early for its slot therefore goes now.
+ */
+internal fun frameDue(nowNanos: Long, deadlineNanos: Long, frameCap: Int): Boolean =
+    nowNanos >= deadlineNanos - maxOf(4_000_000L, frameIntervalNanos(frameCap) / 4)
+
+/**
+ * The slot after a frame that went out at [nowNanos]. Counted from the frame's own slot when it
+ * went early, not from [nowNanos]: that is what keeps the tolerance in [frameDue] from letting a
+ * faster source past the cap. A 30 fps source under Balanced's 24 cap sails through a plain
+ * "elapsed >= interval - tolerance" test. Counted from [nowNanos] when it went late, so a
+ * stalled source does not come back as a burst.
+ */
+internal fun nextFrameDeadline(nowNanos: Long, deadlineNanos: Long, frameCap: Int): Long =
+    maxOf(deadlineNanos, nowNanos) + frameIntervalNanos(frameCap)
+
+private fun frameIntervalNanos(frameCap: Int): Long = 1_000_000_000L / frameCap.coerceAtLeast(1)
 
 private const val AVC_NAL_IDR = 5
 private const val AVC_NAL_SPS = 7
