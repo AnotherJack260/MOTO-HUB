@@ -1,16 +1,17 @@
 # Generated dependency record. Update this file whenever hudlib.aar is rebuilt.
 source_repository=https://github.com/AnotherJack260/ridedaemon-lib
-source_commit=3802910d72059a99c48f60eecb041a9e3e033f15
+source_commit=47dd9016b816f6e6373d7a70614293ef24d973fc
 source_dirty=false
 source_checkout=refs/ridedaemon-lib-motohub
 gomobile_android_api=31
 artifact=apps/android/app/libs/hudlib.aar
-sha256=bfb3d2cc652552239107ffc754e94c3df29b3406a7a533ab3ed7b9203c2c9d61
+sha256=f01bc2a9512cd0ca03da9ef0d5594cc8877c7329c8e57449b9944a02843c2490
 license=GPL-3.0-only
 
-# Rebuilt 2026-10-08 (RideLink lib phase 2): branch ridelink-phase2 at source_commit, on top of
-# the phase-1 build below. Not pushed to the fork yet, so CI's locked RideDaemon checkout cannot
-# fetch source_commit until it is.
+# Rebuilt 2026-10-08 (RideLink lib phase 2b): branch ridelink-phase2 at source_commit (3802910 plus
+# the fixes from the Codex gpt-6.1-sol review: write deadlines, ReleaseDash queue, bounded feature
+# queue, media-control TLS, unindexed JPEG/movie framing, MCU-Lite/USB stalls), on top of the
+# phase-1 build below.
 #
 # Same build shape: -androidapi 31, 4 ABIs. Binding surface diffed with javap: purely additive.
 # What the app uses: MobileSession.releaseDash / setCarbitExactMediaControl / captureConfig,
