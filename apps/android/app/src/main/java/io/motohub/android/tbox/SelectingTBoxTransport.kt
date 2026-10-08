@@ -151,8 +151,12 @@ class SelectingTBoxTransport(context: Context) : TBoxTransport {
 
     override fun offerAccessUnit(avcc: ByteArray): Boolean = active.offerAccessUnit(avcc)
 
-    override fun showNavigation(guidance: io.motohub.android.aa.AaNavigationGuidance.Snapshot) =
-        active.showNavigation(guidance)
+    override val sessionToken: Long get() = active.sessionToken
+
+    override fun showNavigation(
+        guidance: io.motohub.android.aa.AaNavigationGuidance.Snapshot,
+        sessionToken: Long
+    ) = active.showNavigation(guidance, sessionToken)
 
     override fun carbitVideoPlan(): CarbitVideoPlan? = active.carbitVideoPlan()
 
@@ -164,11 +168,15 @@ class SelectingTBoxTransport(context: Context) : TBoxTransport {
         yunmo.stop()
     }
 
-    override suspend fun release() {
-        // Only EasyConn has a dash to hand back; the other two stop exactly as in [stop].
-        easyConn.release()
-        thinkerRide.stop()
-        yunmo.stop()
+    override suspend fun release(sessionToken: Long) {
+        // Only an EasyConn session carries a token, and has a dash to hand back; the other two
+        // stop exactly as in [stop]. Nothing generic here, so a stale release stops nothing new.
+        if (sessionToken != 0L) {
+            easyConn.release(sessionToken)
+        } else {
+            thinkerRide.stop()
+            yunmo.stop()
+        }
     }
 
     companion object {

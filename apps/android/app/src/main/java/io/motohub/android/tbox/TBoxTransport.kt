@@ -97,19 +97,27 @@ interface TBoxTransport {
     suspend fun stop()
 
     /**
-     * [stop] for an orderly end the rider or the app chose while the link is still up: a
-     * transport that can hand the dash back its own UI first (EasyConn's ReleaseDash) does so.
-     * Never for a link that is already lost: that is [stop], or the stop waits out the dash's
-     * answers on a dead socket first.
+     * The native session running right now, for a later [release] or [showNavigation] to name:
+     * read it synchronously where the decision is made, before anything is dispatched, so a
+     * session installed in the meantime can never be the one acted on. 0 when there is none, and
+     * always 0 for a transport without such sessions.
      */
-    suspend fun release() = stop()
+    val sessionToken: Long get() = 0L
 
     /**
-     * Android Auto's turn-by-turn for the dash's own arrows, where the wire has them (EasyConn).
-     * Never blocks: the transport sends from its own worker for the running session, newest state
-     * only, and drops what a stopped session never got to send.
+     * [stop] for an orderly end the rider or the app chose while the link is still up: a
+     * transport that can hand the dash back its own UI first (EasyConn's ReleaseDash) does so.
+     * Acts only on the session [sessionToken] named. Never for a link that is already lost: that
+     * is [stop], or the stop waits out the dash's answers on a dead socket first.
      */
-    fun showNavigation(guidance: AaNavigationGuidance.Snapshot) = Unit
+    suspend fun release(sessionToken: Long) = stop()
+
+    /**
+     * Android Auto's turn-by-turn for the dash's own arrows, where the wire has them (EasyConn),
+     * for the session [sessionToken] named and no other. Never blocks: the transport sends from
+     * that session's own worker, newest state only, and drops what it never got to send.
+     */
+    fun showNavigation(guidance: AaNavigationGuidance.Snapshot, sessionToken: Long) = Unit
 
     /** Carbit's encoder plan for this session's CAPTURE_CONFIG, for a Carbit-exact profile only. */
     fun carbitVideoPlan(): CarbitVideoPlan? = null

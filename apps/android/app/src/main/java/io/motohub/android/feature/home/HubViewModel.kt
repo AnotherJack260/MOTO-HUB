@@ -986,8 +986,11 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
     fun disconnect() {
         ProjectionEventLog.record("CONNECTION", "User disconnected from the T-Box.")
         ProjectionRuntime.riderStopped = true
+        // The session the rider is leaving, named before the coroutine runs: a connect queued
+        // behind this tap must not be the one released.
+        val leaving = transport.sessionToken
         viewModelScope.launch {
-            transport.release()
+            transport.release(leaving)
             TBoxSessionRegistry.clear()
             TBoxNetworkConnectors.release(HUB_UI_NETWORK_OWNER)
             mutableUiState.value = mutableUiState.value.copy(

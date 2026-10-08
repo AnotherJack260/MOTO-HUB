@@ -823,8 +823,9 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         // from its own worker for this native session, newest state only. Only EasyConn has
         // arrows; the other transports ignore it.
         navigationJob?.cancel()
+        val navigationSession = handle.transport.sessionToken
         navigationJob = serviceScope.launch {
-            AaNavigationGuidance.state.collect(handle.transport::showNavigation)
+            AaNavigationGuidance.state.collect { handle.transport.showNavigation(it, navigationSession) }
         }
         try {
             backpressureGuard = VideoBackpressureGuard()
@@ -1576,13 +1577,18 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         // happened to be active - in practice a streaming Ride Dashboard - and tear it down.
         val releasedHandle = tBoxHandle
         tBoxHandle = null
+        // Named now, before anything is dispatched: by the time the cleanup below runs, a new
+        // connect may have put another session on the same transport.
+        val releasedSession = releasedHandle?.transport?.sessionToken ?: 0L
         if (releasedHandle != null) {
             serviceScope.launch {
                 try {
                     // Guidance ends with Android Auto, even where another mode keeps the session,
                     // and only after the collector is gone, so no turn can follow the end frame.
                     navigationToStop?.join()
-                    if (orderly) releasedHandle.transport.showNavigation(AaNavigationGuidance.Snapshot.INACTIVE)
+                    if (orderly) {
+                        releasedHandle.transport.showNavigation(AaNavigationGuidance.Snapshot.INACTIVE, releasedSession)
+                    }
                     // Another mode may still be streaming on this session; only the last one out
                     // stops the transport and drops the network - the network last, since the
                     // transport's release still talks to the dash over it. The registry decides
@@ -1590,7 +1596,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     // the AIDL bridge) still needs it.
                     if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle, keepLink = true)) {
                         try {
-                            if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
+                            if (orderly) releasedHandle.transport.release(releasedSession) else releasedHandle.transport.stop()
                         } finally {
                             TBoxSessionRegistry.dropKeptLink(releasedHandle)
                         }

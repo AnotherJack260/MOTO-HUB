@@ -643,6 +643,9 @@ class ProjectionSessionService : Service() {
         // that never started tear down whatever session happened to be active.
         val releasedHandle = tBoxHandle
         tBoxHandle = null
+        // Named now, before anything is dispatched: by the time the cleanup below runs, a new
+        // connect may have put another session on the same transport.
+        val releasedSession = releasedHandle?.transport?.sessionToken ?: 0L
         if (releasedHandle != null) {
             handleCleanupJob = serviceScope.launch {
                 // Another mode may still be streaming on this session. The network goes last: the
@@ -651,7 +654,7 @@ class ProjectionSessionService : Service() {
                 // AIDL bridge) still needs it.
                 if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle, keepLink = true)) {
                     try {
-                        if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
+                        if (orderly) releasedHandle.transport.release(releasedSession) else releasedHandle.transport.stop()
                     } finally {
                         TBoxSessionRegistry.dropKeptLink(releasedHandle)
                     }

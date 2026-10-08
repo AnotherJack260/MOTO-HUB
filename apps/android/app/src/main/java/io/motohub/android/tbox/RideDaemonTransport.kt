@@ -1024,12 +1024,14 @@ class RideDaemonTransport(
     /**
      * Hands the dash back its own UI the way the official app does when the rider disconnects -
      * any guidance ended, then switchEc2Background and STOP_SERVICE - and then stops the native
-     * session. All of it is for the session that was current when this was called: a session
-     * installed meanwhile is never touched. The dash gets [RELEASE_BUDGET_MS] in all; whatever
+     * session. All of it is for the session [sessionToken] named: a session installed since is
+     * never touched. The dash gets [RELEASE_BUDGET_MS] in all; whatever
      * it has not answered by then, the native session is stopped regardless.
      */
-    override suspend fun release() = withContext(Dispatchers.IO) {
-        val generation = activeSessionGeneration
+    override val sessionToken: Long get() = activeSessionGeneration
+
+    override suspend fun release(sessionToken: Long) = withContext(Dispatchers.IO) {
+        val generation = sessionToken
         synchronized(releaseLock) {
             val (target, worker) = synchronized(sessionLock) {
                 if (generation == 0L || activeSessionGeneration != generation) return@withContext
@@ -1101,9 +1103,9 @@ class RideDaemonTransport(
         markNativeSessionStopped()
     }
 
-    /** Hands Android Auto's guidance to the current session's [DashWorker]; never blocks. */
-    override fun showNavigation(guidance: AaNavigationGuidance.Snapshot) {
-        dashWorker?.offer(guidance)
+    /** Hands Android Auto's guidance to the named session's [DashWorker]; never blocks. */
+    override fun showNavigation(guidance: AaNavigationGuidance.Snapshot, sessionToken: Long) {
+        dashWorker?.takeIf { it.generation == sessionToken }?.offer(guidance)
     }
 
     /**
@@ -1113,9 +1115,12 @@ class RideDaemonTransport(
      * ([generation]) is no longer the current one.
      *
      * The library's senders take no timeout of their own (each waits up to the dash's, about 9s);
-     * what bounds them is [release]'s budget and the native stop that follows it.
+     * what bounds them is [release]'s budget and the native stop that follows it. A command the
+     * dash never answers makes the library retire the phone channel, which the dash reopens: the
+     * library reports that as a non-fatal error, logged as a warning and never a session failure,
+     * and the failed send here is logged once and tried again with the next update.
      */
-    private inner class DashWorker(private val generation: Long, private val features: DashFeatures) {
+    private inner class DashWorker(val generation: Long, private val features: DashFeatures) {
         private val executor = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "RideLinkDashWorker").apply { isDaemon = true }
         }
@@ -1126,6 +1131,7 @@ class RideDaemonTransport(
         // Touched on the worker thread only.
         private var naviActive = false
         private var firstFrameLogged = false
+        /** Set by a failed send, cleared by the next one that goes through: one line per outage. */
         private var failureLogged = false
 
         fun offer(guidance: AaNavigationGuidance.Snapshot) {
@@ -1174,8 +1180,9 @@ class RideDaemonTransport(
                     return@runCatching
                 }
                 if (!naviActive) {
-                    naviActive = true
+                    // Marked only once the dash has it, so a channel that was retired gets it again.
                     features.sendNaviStatus(true)
+                    naviActive = true
                 }
                 val maneuver = dashManeuverFor(guidance.maneuverType, guidance.roundaboutExitAngle)
                 val sent = features.sendNaviInfo(
@@ -1197,13 +1204,16 @@ class RideDaemonTransport(
                             "${guidance.maneuverType}, dash icon count ${features.maxNaviIcon()})."
                     )
                 }
+            }.onSuccess {
+                failureLogged = false
             }.onFailure {
                 if (!failureLogged) {
                     failureLogged = true
                     ProjectionEventLog.warning(
                         "TBOX",
-                        "Turn-by-turn to the dashboard failed: ${it.message}. Later failures this " +
-                            "session are not logged."
+                        "Turn-by-turn to the dashboard failed: ${it.message}. Video carries on; " +
+                            "the next update tries again, and failures until one goes through are " +
+                            "not logged."
                     )
                 }
             }

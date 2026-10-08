@@ -96,11 +96,18 @@ object TBoxSessionRegistry {
      * that decides whether the session is evidence about the video format or not.
      */
     private val consumersSeen = linkedSetOf<String>()
+    /**
+     * The session a [releaseAndClear] with keepLink cleared, whose link and lease its caller still
+     * owns. An [install] takes both over, so from then on [dropKeptLink] leaves them alone - the
+     * new session, or the recovery it starts, may be relying on them.
+     */
+    private var keptLink: TBoxSessionHandle? = null
 
     @Synchronized
     fun install(handle: TBoxSessionHandle) {
         activeHandle = handle
         recoveryLink.handOver()
+        keptLink = null
         consumers.clear()
         consumersSeen.clear()
         // The installed session holds its own interest in the shared network connector, released
@@ -209,11 +216,13 @@ object TBoxSessionRegistry {
 
     /**
      * The network half of a [releaseAndClear] that kept the link. Skipped when a session has been
-     * installed since: that one now holds the session lease, and may be riding the same network.
+     * installed since, whether it is running or recovering now: it holds the session lease, and
+     * may be riding the same network.
      */
     @Synchronized
     fun dropKeptLink(handle: TBoxSessionHandle) {
-        if (activeHandle != null) return
+        if (keptLink !== handle) return
+        keptLink = null
         handle.link.disconnect()
         TBoxNetworkConnectors.releaseSession()
         ProjectionEventLog.record("SESSION", "T-Box network link released after the transport's release.")
@@ -239,6 +248,7 @@ object TBoxSessionRegistry {
             activeHandle = null
             consumers.clear()
             if (previous != null) {
+                if (keepLink) keptLink = previous
                 if (retainLinkForRecovery) {
                     // The session's lease stays with the kept link and goes where it goes (the
                     // install's adopt is idempotent, [releaseRetainedRecoveryLink] drops it).
