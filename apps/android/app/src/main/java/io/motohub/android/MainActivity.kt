@@ -308,6 +308,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ProjectionEventLog.record("UI", "Main activity created.")
+        // Reopening the app is a new ride; a rotation or other recreation is not.
+        if (savedInstanceState == null && ProjectionRuntime.riderStopped) {
+            ProjectionRuntime.riderStopped = false
+            ProjectionEventLog.debug("UI", "Fresh launch: the manual-stop latch is cleared.")
+        }
         // Nothing is sent without consent: this only decides whether there is a reason to ask.
         DiagnosticReportScheduler.onAppStarted(this, CrashRecovery.previousCrashRecovered)
         // Always light icons: the app is dark whatever the phone's theme is, and the platform
@@ -684,7 +689,15 @@ class MainActivity : ComponentActivity() {
                 // in the background, and Android 12+ refuses a foreground start from there
                 // (WB-28: it used to crash the app). A refused start is held and tried once more
                 // when the rider brings the app back - see the resume observer by the autostart.
-                val androidAutoStart = remember { ResumeRetryingStart<Unit> { startAndroidAuto() } }
+                val androidAutoStart = remember {
+                    ResumeRetryingStart<Unit> {
+                        // A phone-only session that ended by itself (a call, Android Auto closing)
+                        // leaves the flag set, and Stop would then go to the bridge instead of this
+                        // session. The service refuses to start over a live one, so only then.
+                        if (!AndroidAutoRuntime.isActive()) androidAutoPreviewIsPhoneOnly = false
+                        startAndroidAuto()
+                    }
+                }
                 val startAndroidAutoOrHold: () -> Unit = {
                     if (!androidAutoStart.request(Unit)) {
                         ProjectionEventLog.warning(
@@ -1626,7 +1639,7 @@ class MainActivity : ComponentActivity() {
                                 androidAutoPreviewIsPhoneOnly = false
                             } else {
                                 // A manual stop wins: nothing reconnects or restarts by itself
-                                // until the rider taps Connect (or the app starts cold).
+                                // until the rider taps Connect (or reopens the app).
                                 ProjectionRuntime.riderStopped = true
                                 AndroidAutoSessionService.stop(
                                     context,
@@ -1916,7 +1929,13 @@ class MainActivity : ComponentActivity() {
                 }
                 // The rider had to be on the motorcycle to answer this, so it is asked when they
                 // are back at the phone rather than the instant the session ended.
-                androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refreshWireQuestion() }
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshWireQuestion()
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
                 val wireQuestion = state.wireQuestionFor
                 if (overlay == StartupOverlay.WIRE_VERDICT && wireQuestion != null) {
                     WireVerdictDialog(

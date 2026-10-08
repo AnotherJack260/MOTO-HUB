@@ -369,7 +369,13 @@ fun HubHomeScreen(
                                     }
                                 }
                             ) {
-                                if (motorcycle == null) {
+                                if (motorcycle == null && destination == HubDestination.ACTIVE_SESSION) {
+                                    // Android Auto on this phone, no motorcycle saved: the hero names the mode.
+                                    val chip = rideChip(destination, ready, riderStep != null)
+                                    RideHero(title = modeName(androidAutoActive, externalDisplayActive), photo = null) {
+                                        MhStatusChip(chip.first, chip.second)
+                                    }
+                                } else if (motorcycle == null) {
                                     RideHero(title = motoHubText("Connect your motorcycle"), photo = null) {
                                         Text(
                                             motoHubText("Scan the QR code on your dashboard to save its Wi-Fi details."),

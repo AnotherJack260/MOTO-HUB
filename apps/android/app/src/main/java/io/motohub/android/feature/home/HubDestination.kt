@@ -20,6 +20,8 @@ internal fun resolveHubDestination(
     featureSessionActive: Boolean = false,
     externalDisplayActive: Boolean = false
 ): HubDestination = when {
+    // Android Auto on this phone runs with no motorcycle saved, and its Stop is on ACTIVE_SESSION.
+    session.motorcycle == null && (androidAutoActive || externalDisplayActive) -> HubDestination.ACTIVE_SESSION
     session.motorcycle == null -> HubDestination.PAIRING
     session.phase == SessionPhase.CONNECTING_NETWORK ||
         session.phase == SessionPhase.DISCOVERING_TBOX -> HubDestination.CONNECTING

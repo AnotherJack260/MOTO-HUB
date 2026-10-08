@@ -23,7 +23,7 @@ object DiagnosticLogShare {
         )
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "MOTO-HUB diagnostics")
+            putExtra(Intent.EXTRA_SUBJECT, "RideLink diagnostics")
             putExtra(Intent.EXTRA_STREAM, uri)
             clipData = ClipData.newUri(context.contentResolver, file.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -34,13 +34,16 @@ object DiagnosticLogShare {
         val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date(nowMillis))
-        return "MOTO-HUB-diagnostics-$stamp.txt"
+        return "RideLink-diagnostics-$stamp.txt"
     }
 
     private fun writeLogFile(context: Context, text: String, nowMillis: Long): File {
         val directory = File(context.cacheDir, "shared-diagnostics").apply { mkdirs() }
         directory.listFiles()
-            ?.filter { it.isFile && it.name.startsWith("MOTO-HUB-diagnostics-") }
+            // The MOTO-HUB- prefix is what builds before the rename left behind.
+            ?.filter {
+                it.isFile && (it.name.startsWith("RideLink-diagnostics-") || it.name.startsWith("MOTO-HUB-diagnostics-"))
+            }
             ?.forEach { runCatching { it.delete() } }
         return File(directory, fileName(nowMillis)).apply {
             writeText(text, Charsets.UTF_8)
