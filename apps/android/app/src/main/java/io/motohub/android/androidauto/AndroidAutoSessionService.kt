@@ -21,6 +21,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import io.motohub.android.MainActivity
 import io.motohub.android.R
+import io.motohub.android.aa.AaNavigationGuidance
 import io.motohub.android.aa.AaReceiver
 import io.motohub.android.androidauto.AaInputBridge
 import io.motohub.android.aa.SingleKeyKeyManager
@@ -90,6 +91,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
     private var recoveryJob: Job? = null
     private var androidAutoReattachJob: Job? = null
     private var networkLossJob: Job? = null
+    private var navigationJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val streamingLocks = TBoxStreamingLocks(this, "Android Auto")
     private var mediaButtonBridge: MediaButtonBridge? = null
@@ -802,6 +804,13 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             "Area Android Auto ${encoderProfile.width}x${encoderProfile.height}; " +
                 "quality=${quality.name}, bitrate=${encoderProfile.bitRate}."
         )
+        // The dash's own turn arrows, from one worker per native session: each send blocks on the
+        // dash, and a StateFlow collector that falls behind skips straight to the newest state.
+        // Only EasyConn has arrows; the other transports ignore it.
+        navigationJob?.cancel()
+        navigationJob = serviceScope.launch(Dispatchers.IO.limitedParallelism(1)) {
+            AaNavigationGuidance.state.collect(handle.transport::showNavigation)
+        }
         try {
             backpressureGuard = VideoBackpressureGuard()
             // A session being (re)built around a profile is a new question, so the rider may be
@@ -1479,6 +1488,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         recoveryJob?.cancel()
         androidAutoReattachJob?.cancel()
         networkLossJob?.cancel()
+        navigationJob?.cancel()
+        navigationJob = null
         transportEventsJob = null
         networkEventsJob = null
         receiverPreparationJob = null
@@ -1519,6 +1530,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         if (releasedHandle != null) {
             serviceScope.launch {
                 try {
+                    // Guidance ends with Android Auto, even where another mode keeps the session.
+                    if (orderly) releasedHandle.transport.showNavigation(AaNavigationGuidance.Snapshot.INACTIVE)
                     // Another mode may still be streaming on this session; only the last one out
                     // stops the transport and drops the network.
                     if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle)) {

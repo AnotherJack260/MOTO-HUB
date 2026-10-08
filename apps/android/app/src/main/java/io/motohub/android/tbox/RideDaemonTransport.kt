@@ -15,8 +15,12 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
 import api.Api
+import api.DashFeatures
 import api.MobileCallback
 import api.MobileSession
+import api.NaviInfo
+import io.motohub.android.aa.AaNavigationGuidance
+import io.motohub.android.aa.proto.NavigationStatus.NavigationManeuver.NavigationType
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.ProjectionEventLog
@@ -443,6 +447,13 @@ class RideDaemonTransport(
     @Volatile
     private var sessionJpegStills = false
     private val releaseLock = Any()
+    /** One per native session; the library feeds it the dash's PXC events itself. */
+    @Volatile
+    private var dashFeatures: DashFeatures? = null
+    /** Whether this session told the dash guidance is running, so it is told when it stops. */
+    private val naviActive = AtomicBoolean(false)
+    private val naviSendLogged = AtomicBoolean(false)
+    private val naviFailureLogged = AtomicBoolean(false)
 
     override fun configureProtocolProfile(profile: TBoxModelProfile, motorcycle: MotorcycleProfile?) {
         protocolProfile = profile
@@ -684,8 +695,15 @@ class RideDaemonTransport(
                 mobileConfig,
                 SessionCallback(generation)
             )
+            // Before StartSession, so it hears the dash's 0x10040 icon count. No listener: dash
+            // keys, notifications and the rest stay unhandled for now.
+            val features = Api.newDashFeatures(createdSession, null)
+            naviActive.set(false)
+            naviSendLogged.set(false)
+            naviFailureLogged.set(false)
             synchronized(sessionLock) {
                 session = createdSession
+                dashFeatures = features
                 sessionLink = link
                 activeSessionGeneration = generation
             }
@@ -955,6 +973,7 @@ class RideDaemonTransport(
         synchronized(releaseLock) {
             val activeSession = session
             if (activeSession != null && nativeStartAttempted.get() && activeSession.isRunning) {
+                showNavigation(AaNavigationGuidance.Snapshot.INACTIVE)
                 ProjectionEventLog.record(
                     "TBOX",
                     "Releasing the dashboard before stopping (switchEc2Background, then STOP_SERVICE)."
@@ -982,6 +1001,7 @@ class RideDaemonTransport(
             activeSessionGeneration = 0L
             sessionToStop = session
             session = null
+            dashFeatures = null
             sessionLink = null
         }
         if (sessionToStop != null) {
@@ -994,6 +1014,53 @@ class RideDaemonTransport(
         sessionToStop?.runCatching { stopSession() }
             ?.onFailure { ProjectionEventLog.warning("TBOX", "RideDaemon stopSession failed.", it) }
         markNativeSessionStopped()
+    }
+
+    /**
+     * One Android Auto guidance state onto the dash's arrows: NAVI_STATUS when guidance starts, a
+     * HUD frame per update (the library sends at most one a second and drops the rest), and the
+     * end frame then NAVI_STATUS false when it stops. Each send blocks until the dash answers.
+     */
+    override fun showNavigation(guidance: AaNavigationGuidance.Snapshot) {
+        val features = dashFeatures ?: return
+        runCatching {
+            if (!guidance.active) {
+                if (naviActive.compareAndSet(true, false)) {
+                    features.sendNaviEnd()
+                    features.sendNaviStatus(false)
+                    ProjectionEventLog.record("TBOX", "Turn-by-turn ended on the dashboard.")
+                }
+            } else {
+                if (naviActive.compareAndSet(false, true)) features.sendNaviStatus(true)
+                val maneuver = dashManeuverFor(guidance.maneuverType, guidance.roundaboutExitAngle)
+                val sent = features.sendNaviInfo(
+                    NaviInfo().apply {
+                        maneuverKind = maneuver.kind
+                        maneuverDirection = maneuver.direction
+                        roundaboutClockwise = maneuver.clockwise
+                        nextRoad = guidance.road
+                        distanceToManeuver = guidance.distanceToManeuverMeters.toLong()
+                        remainingDistance = guidance.distanceRemainingMeters.toLong()
+                        remainingTime = guidance.timeToArrivalSeconds
+                    }
+                )
+                if (sent && naviSendLogged.compareAndSet(false, true)) {
+                    ProjectionEventLog.record(
+                        "TBOX",
+                        "First turn-by-turn frame sent to the dashboard (Android Auto maneuver " +
+                            "${guidance.maneuverType}, dash icon count ${features.maxNaviIcon()})."
+                    )
+                }
+            }
+        }.onFailure {
+            if (naviFailureLogged.compareAndSet(false, true)) {
+                ProjectionEventLog.warning(
+                    "TBOX",
+                    "Turn-by-turn to the dashboard failed: ${it.message}. Later failures this " +
+                        "session are not logged."
+                )
+            }
+        }
     }
 
     /**
@@ -2927,6 +2994,76 @@ internal class KeyframeAskCollapser(
         folded = 0
         foldedDropped = 0L
         return line
+    }
+}
+
+/** A maneuver as api.NaviInfo takes it. */
+internal data class DashManeuver(
+    val kind: Long,
+    val direction: Long = Api.DirectionUnspecified,
+    val clockwise: Boolean = false
+)
+
+/**
+ * Android Auto's NavigationType (the raw value [AaNavigationGuidance.Snapshot.maneuverType]
+ * carries) as the library's maneuver, by the table on api.NaviInfo. A roundabout that does not
+ * say which way it turns is taken as counterclockwise, as on right-hand-traffic roads.
+ * [roundaboutDirection] is Api.roundaboutDirection, a parameter only so tests need no native code.
+ */
+internal fun dashManeuverFor(
+    navigationType: Int,
+    roundaboutExitAngle: Int,
+    roundaboutDirection: (Double) -> Long = Api::roundaboutDirection
+): DashManeuver {
+    fun exit(): Long =
+        if (roundaboutExitAngle >= 0) roundaboutDirection(roundaboutExitAngle.toDouble()) else Api.DirectionUnspecified
+    return when (navigationType) {
+        NavigationType.DEPART_VALUE -> DashManeuver(Api.ManeuverDepart)
+        NavigationType.NAME_CHANGE_VALUE -> DashManeuver(Api.ManeuverNameChange)
+        NavigationType.KEEP_LEFT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionKeepLeft)
+        NavigationType.KEEP_RIGHT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionKeepRight)
+        NavigationType.TURN_SLIGHT_LEFT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionSlightLeft)
+        NavigationType.TURN_SLIGHT_RIGHT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionSlightRight)
+        NavigationType.TURN_NORMAL_LEFT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionLeft)
+        NavigationType.TURN_NORMAL_RIGHT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionRight)
+        NavigationType.TURN_SHARP_LEFT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionSharpLeft)
+        NavigationType.TURN_SHARP_RIGHT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionSharpRight)
+        NavigationType.U_TURN_LEFT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionUTurnLeft)
+        NavigationType.U_TURN_RIGHT_VALUE -> DashManeuver(Api.ManeuverTurn, Api.DirectionUTurnRight)
+        NavigationType.ON_RAMP_SLIGHT_LEFT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionSlightLeft)
+        NavigationType.ON_RAMP_SLIGHT_RIGHT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionSlightRight)
+        NavigationType.ON_RAMP_NORMAL_LEFT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionLeft)
+        NavigationType.ON_RAMP_NORMAL_RIGHT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionRight)
+        NavigationType.ON_RAMP_SHARP_LEFT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionSharpLeft)
+        NavigationType.ON_RAMP_SHARP_RIGHT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionSharpRight)
+        NavigationType.ON_RAMP_U_TURN_LEFT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionUTurnLeft)
+        NavigationType.ON_RAMP_U_TURN_RIGHT_VALUE -> DashManeuver(Api.ManeuverOnRamp, Api.DirectionUTurnRight)
+        NavigationType.OFF_RAMP_SLIGHT_LEFT_VALUE -> DashManeuver(Api.ManeuverOffRamp, Api.DirectionSlightLeft)
+        NavigationType.OFF_RAMP_SLIGHT_RIGHT_VALUE -> DashManeuver(Api.ManeuverOffRamp, Api.DirectionSlightRight)
+        NavigationType.OFF_RAMP_NORMAL_LEFT_VALUE -> DashManeuver(Api.ManeuverOffRamp, Api.DirectionLeft)
+        NavigationType.OFF_RAMP_NORMAL_RIGHT_VALUE -> DashManeuver(Api.ManeuverOffRamp, Api.DirectionRight)
+        NavigationType.FORK_LEFT_VALUE -> DashManeuver(Api.ManeuverFork, Api.DirectionLeft)
+        NavigationType.FORK_RIGHT_VALUE -> DashManeuver(Api.ManeuverFork, Api.DirectionRight)
+        NavigationType.MERGE_LEFT_VALUE -> DashManeuver(Api.ManeuverMerge, Api.DirectionLeft)
+        NavigationType.MERGE_RIGHT_VALUE -> DashManeuver(Api.ManeuverMerge, Api.DirectionRight)
+        NavigationType.MERGE_SIDE_UNSPECIFIED_VALUE -> DashManeuver(Api.ManeuverMerge)
+        NavigationType.ROUNDABOUT_ENTER_VALUE -> DashManeuver(Api.ManeuverRoundabout)
+        NavigationType.ROUNDABOUT_EXIT_VALUE -> DashManeuver(Api.ManeuverRoundaboutExit)
+        NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW_VALUE ->
+            DashManeuver(Api.ManeuverRoundabout, clockwise = true)
+        NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW_WITH_ANGLE_VALUE ->
+            DashManeuver(Api.ManeuverRoundabout, exit(), clockwise = true)
+        NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW_VALUE -> DashManeuver(Api.ManeuverRoundabout)
+        NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW_WITH_ANGLE_VALUE ->
+            DashManeuver(Api.ManeuverRoundabout, exit())
+        NavigationType.STRAIGHT_VALUE -> DashManeuver(Api.ManeuverStraight)
+        NavigationType.FERRY_BOAT_VALUE -> DashManeuver(Api.ManeuverFerryBoat)
+        NavigationType.FERRY_TRAIN_VALUE -> DashManeuver(Api.ManeuverFerryTrain)
+        NavigationType.DESTINATION_VALUE -> DashManeuver(Api.ManeuverDestination)
+        NavigationType.DESTINATION_STRAIGHT_VALUE -> DashManeuver(Api.ManeuverDestination, Api.DirectionStraight)
+        NavigationType.DESTINATION_LEFT_VALUE -> DashManeuver(Api.ManeuverDestination, Api.DirectionLeft)
+        NavigationType.DESTINATION_RIGHT_VALUE -> DashManeuver(Api.ManeuverDestination, Api.DirectionRight)
+        else -> DashManeuver(Api.ManeuverUnknown)
     }
 }
 

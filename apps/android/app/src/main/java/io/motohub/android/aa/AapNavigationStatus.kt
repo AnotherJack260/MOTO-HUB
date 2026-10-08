@@ -6,6 +6,9 @@
 package io.motohub.android.aa
 
 import io.motohub.android.aa.proto.NavigationStatus
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Latest turn-by-turn guidance parsed from the Android Auto navigation-status channel,
@@ -23,6 +26,8 @@ object AaNavigationGuidance {
         val rerouting: Boolean = false,
         val maneuverType: Int = -1,
         val roundaboutExitNumber: Int = 0,
+        /** Degrees, 180 straight through; -1 unless the maneuver is a *_WITH_ANGLE roundabout. */
+        val roundaboutExitAngle: Int = -1,
         val road: String = "",
         val distanceToManeuverMeters: Int = -1,
         val timeToManeuverSeconds: Int = -1,
@@ -35,9 +40,13 @@ object AaNavigationGuidance {
         }
     }
 
-    @Volatile
-    var latest: Snapshot = Snapshot.INACTIVE
-        private set
+    private val mutableState = MutableStateFlow(Snapshot.INACTIVE)
+
+    /** The same snapshots as [latest], for a consumer that only wants the newest one. */
+    val state: StateFlow<Snapshot> = mutableState.asStateFlow()
+
+    val latest: Snapshot
+        get() = mutableState.value
 
     @Volatile
     private var listener: ((Snapshot) -> Unit)? = null
@@ -48,7 +57,7 @@ object AaNavigationGuidance {
     }
 
     internal fun publish(snapshot: Snapshot) {
-        latest = snapshot
+        mutableState.value = snapshot
         listener?.invoke(snapshot)
     }
 
@@ -138,6 +147,8 @@ internal class AapControlNavigation : AapControl {
                         maneuverType = maneuver?.type?.number ?: current.maneuverType,
                         roundaboutExitNumber = maneuver
                             ?.takeIf { it.hasRoundaboutExitNumber() }?.roundaboutExitNumber ?: 0,
+                        roundaboutExitAngle = maneuver
+                            ?.takeIf { it.hasRoundaboutExitAngle() }?.roundaboutExitAngle ?: -1,
                         road = road.ifBlank { current.road }
                     )
                 )

@@ -151,6 +151,9 @@ class SelectingTBoxTransport(context: Context) : TBoxTransport {
 
     override fun offerAccessUnit(avcc: ByteArray): Boolean = active.offerAccessUnit(avcc)
 
+    override fun showNavigation(guidance: io.motohub.android.aa.AaNavigationGuidance.Snapshot) =
+        active.showNavigation(guidance)
+
     override suspend fun stop() {
         // Stopping all three is deliberate: a routing change between sessions must never leave the
         // previous family's sockets or BLE link alive, and stop() is a no-op on an idle transport.

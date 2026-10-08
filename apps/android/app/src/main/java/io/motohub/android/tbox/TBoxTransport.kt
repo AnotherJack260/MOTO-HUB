@@ -3,6 +3,7 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.tbox
 
+import io.motohub.android.aa.AaNavigationGuidance
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -99,6 +100,12 @@ interface TBoxTransport {
      * answers on a dead socket first.
      */
     suspend fun release() = stop()
+
+    /**
+     * Android Auto's turn-by-turn for the dash's own arrows, where the wire has them (EasyConn).
+     * Blocks until the dash answers: call it from one worker, newest state only.
+     */
+    fun showNavigation(guidance: AaNavigationGuidance.Snapshot) = Unit
     val events: Flow<TBoxEvent>
 }
 

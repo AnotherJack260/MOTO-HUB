@@ -3,6 +3,8 @@
 // Part of MOTO-HUB. Free software under the GNU AGPL v3; see LICENSE.
 package io.motohub.android.tbox
 
+import api.Api
+import io.motohub.android.aa.proto.NavigationStatus.NavigationManeuver.NavigationType
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import org.junit.Assert.assertEquals
@@ -299,6 +301,50 @@ class RideDaemonTransportTest {
         assertTrue(
             TBoxModelProfile.entries.none { it.yunmoJpegVideo && it.easyConnJpegStills }
         )
+    }
+
+    @Test
+    fun `Android Auto maneuvers map onto the dash's turn, ramp, fork, merge and destination arrows`() {
+        fun map(type: NavigationType) = dashManeuverFor(type.number, -1) { error("not a roundabout") }
+        assertEquals(DashManeuver(Api.ManeuverTurn, Api.DirectionKeepLeft), map(NavigationType.KEEP_LEFT))
+        assertEquals(DashManeuver(Api.ManeuverTurn, Api.DirectionSharpRight), map(NavigationType.TURN_SHARP_RIGHT))
+        assertEquals(DashManeuver(Api.ManeuverTurn, Api.DirectionUTurnLeft), map(NavigationType.U_TURN_LEFT))
+        assertEquals(DashManeuver(Api.ManeuverOnRamp, Api.DirectionUTurnRight), map(NavigationType.ON_RAMP_U_TURN_RIGHT))
+        assertEquals(DashManeuver(Api.ManeuverOffRamp, Api.DirectionLeft), map(NavigationType.OFF_RAMP_NORMAL_LEFT))
+        assertEquals(DashManeuver(Api.ManeuverFork, Api.DirectionRight), map(NavigationType.FORK_RIGHT))
+        assertEquals(DashManeuver(Api.ManeuverMerge), map(NavigationType.MERGE_SIDE_UNSPECIFIED))
+        assertEquals(DashManeuver(Api.ManeuverDestination, Api.DirectionLeft), map(NavigationType.DESTINATION_LEFT))
+        assertEquals(DashManeuver(Api.ManeuverFerryTrain), map(NavigationType.FERRY_TRAIN))
+        assertEquals(DashManeuver(Api.ManeuverUnknown), dashManeuverFor(-1, -1) { error("unused") })
+        // Every type Android Auto names has an arrow; only UNKNOWN falls through.
+        assertEquals(
+            listOf(NavigationType.UNKNOWN),
+            NavigationType.values().filter { map(it).kind == Api.ManeuverUnknown }
+        )
+    }
+
+    @Test
+    fun `a roundabout takes its exit from the angle and its turn from CW or CCW`() {
+        val fromAngle = { degrees: Double -> if (degrees == 90.0) Api.DirectionRight else error("$degrees") }
+        assertEquals(
+            DashManeuver(Api.ManeuverRoundabout, Api.DirectionRight, clockwise = true),
+            dashManeuverFor(NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW_WITH_ANGLE.number, 90, fromAngle)
+        )
+        assertEquals(
+            DashManeuver(Api.ManeuverRoundabout, Api.DirectionRight),
+            dashManeuverFor(NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW_WITH_ANGLE.number, 90, fromAngle)
+        )
+        // No angle, or a type that carries none: the exit is unknown, never guessed.
+        assertEquals(
+            DashManeuver(Api.ManeuverRoundabout),
+            dashManeuverFor(NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW_WITH_ANGLE.number, -1, fromAngle)
+        )
+        assertEquals(
+            DashManeuver(Api.ManeuverRoundabout, clockwise = true),
+            dashManeuverFor(NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW.number, 90, fromAngle)
+        )
+        assertEquals(DashManeuver(Api.ManeuverRoundabout), dashManeuverFor(NavigationType.ROUNDABOUT_ENTER.number, -1))
+        assertEquals(DashManeuver(Api.ManeuverRoundaboutExit), dashManeuverFor(NavigationType.ROUNDABOUT_EXIT.number, -1))
     }
 
     private fun captureRequest(width: Int, height: Int): ByteArray = ByteBuffer
