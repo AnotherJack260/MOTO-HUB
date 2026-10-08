@@ -986,7 +986,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         ProjectionEventLog.record("CONNECTION", "User disconnected from the T-Box.")
         ProjectionRuntime.riderStopped = true
         viewModelScope.launch {
-            transport.stop()
+            transport.release()
             TBoxSessionRegistry.clear()
             TBoxNetworkConnectors.release(HUB_UI_NETWORK_OWNER)
             mutableUiState.value = mutableUiState.value.copy(

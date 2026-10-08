@@ -159,6 +159,13 @@ class SelectingTBoxTransport(context: Context) : TBoxTransport {
         yunmo.stop()
     }
 
+    override suspend fun release() {
+        // Only EasyConn has a dash to hand back; the other two stop exactly as in [stop].
+        easyConn.release()
+        thinkerRide.stop()
+        yunmo.stop()
+    }
+
     companion object {
         /**
          * What [configureProtocolProfile] may publish through [activeProtocolProfile]: the profile

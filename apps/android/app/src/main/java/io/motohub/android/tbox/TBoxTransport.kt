@@ -32,6 +32,9 @@ sealed interface TBoxEvent {
     data class Warning(val message: String) : TBoxEvent
     data class FatalError(val message: String) : TBoxEvent
     data object Stopped : TBoxEvent
+
+    /** The dash asked the phone to disconnect (EasyConn 0x106F0): end the mode as a rider Stop does. */
+    data object DashDisconnect : TBoxEvent
 }
 
 /**
@@ -88,6 +91,14 @@ interface TBoxTransport {
      */
     fun offerStillFrame(jpeg: ByteArray, frameId: Int): Boolean = false
     suspend fun stop()
+
+    /**
+     * [stop] for an orderly end the rider or the app chose while the link is still up: a
+     * transport that can hand the dash back its own UI first (EasyConn's ReleaseDash) does so.
+     * Never for a link that is already lost: that is [stop], or the stop waits out the dash's
+     * answers on a dead socket first.
+     */
+    suspend fun release() = stop()
     val events: Flow<TBoxEvent>
 }
 

@@ -552,6 +552,8 @@ class ProjectionSessionService : Service() {
                     is TBoxEvent.Warning -> ProjectionEventLog.record("T-BOX", event.message)
                     is TBoxEvent.FatalError -> onTBoxFailureEvent("T-Box error: ${event.message}")
                     TBoxEvent.Stopped -> onTBoxFailureEvent("The T-Box ended the session.")
+                    TBoxEvent.DashDisconnect ->
+                        stopSession(stopProjection = true, reason = "Streaming stopped by the user.")
                     is TBoxEvent.VideoArea -> Unit
                     is TBoxEvent.Touch -> Unit
                 }
@@ -581,6 +583,8 @@ class ProjectionSessionService : Service() {
     private fun stopSession(stopProjection: Boolean, reason: String) {
         if (stopping) return
         stopping = true
+        // fail() publishes Failed first: a broken link has no dash left to hand back.
+        val orderly = ProjectionRuntime.state.value !is ProjectionRuntimeState.Failed
         ProjectionEventLog.record(
             "SERVICE",
             "Stopping mirroring session: stopProjection=$stopProjection, reason=$reason, frames=${framesAccepted.get()}."
@@ -618,7 +622,7 @@ class ProjectionSessionService : Service() {
             handleCleanupJob = serviceScope.launch {
                 // Another mode may still be streaming on this session.
                 if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle)) {
-                    releasedHandle.transport.stop()
+                    if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
                     // The network itself is the registry's to drop: clear() released the
                     // session's lease on the shared connector, which disconnects only when
                     // no other owner (the Hub UI, the AIDL bridge) still needs it.

@@ -20,6 +20,7 @@ import api.MobileSession
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.ProjectionEventLog
+import io.motohub.android.session.ProjectionRuntime
 import io.motohub.android.session.ProjectionSourceHealth
 import java.io.InputStream
 import java.io.OutputStream
@@ -441,6 +442,7 @@ class RideDaemonTransport(
     /** Whether this session negotiated JPEG stills, which have no sync frame to ask for. */
     @Volatile
     private var sessionJpegStills = false
+    private val releaseLock = Any()
 
     override fun configureProtocolProfile(profile: TBoxModelProfile, motorcycle: MotorcycleProfile?) {
         protocolProfile = profile
@@ -730,6 +732,11 @@ class RideDaemonTransport(
                         "gives up - the wait a rider sees here is that one, not any shorter " +
                         "timeout named on the calling side."
                 )
+                ProjectionEventLog.record(
+                    "TBOX",
+                    "Flavor-51 lifecycle is on (the library default): APPSTATUS announcements, " +
+                        "switchEc2Front on STREAM_START and no reply to 0x102B0 for a flavor-51 dash."
+                )
                 startWithNetworkSocket(activeSession, host, activeLink)
                 ProjectionEventLog.record("TBOX", "RideDaemon startSessionWithSocketFd returned successfully.")
                 sessionStartedElapsed.set(SystemClock.elapsedRealtime())
@@ -934,6 +941,35 @@ class RideDaemonTransport(
 
     override suspend fun stop() = withContext(Dispatchers.IO) {
         stopSession()
+    }
+
+    /**
+     * Hands the dash back its own UI the way the official app does when the rider disconnects -
+     * switchEc2Background, then STOP_SERVICE, each waiting at most a second for the dash - and
+     * only then stops the native session. Skipped for a session that never started or that the
+     * dash already closed: nobody is left to answer.
+     */
+    override suspend fun release() = withContext(Dispatchers.IO) {
+        // One at a time: the rider's Disconnect and a mode's own teardown can both land here, and
+        // the second must find the session gone rather than stop it under the first one's release.
+        synchronized(releaseLock) {
+            val activeSession = session
+            if (activeSession != null && nativeStartAttempted.get() && activeSession.isRunning) {
+                ProjectionEventLog.record(
+                    "TBOX",
+                    "Releasing the dashboard before stopping (switchEc2Background, then STOP_SERVICE)."
+                )
+                activeSession.runCatching { releaseDash() }
+                    .onSuccess { ProjectionEventLog.record("TBOX", "The dashboard answered STOP_SERVICE.") }
+                    .onFailure {
+                        ProjectionEventLog.warning(
+                            "TBOX",
+                            "Releasing the dashboard did not complete (${it.message}); stopping anyway."
+                        )
+                    }
+            }
+            stopSession()
+        }
     }
 
     private fun stopSession() {
@@ -2068,6 +2104,29 @@ class RideDaemonTransport(
                     onKeyframeNeeded(payload)
                     return
                 }
+                if (command == DASH_DISCONNECT_COMMAND) {
+                    if (!isCurrentRideDaemonSession(generation, activeSessionGeneration)) return
+                    ProjectionEventLog.record(
+                        "TBOX",
+                        "The dashboard asked to disconnect (0x106F0): stopping the way a rider " +
+                            "Stop does, and nothing reconnects until the rider connects again."
+                    )
+                    ProjectionRuntime.riderStopped = true
+                    mutableEvents.tryEmit(TBoxEvent.DashDisconnect)
+                    return
+                }
+                // Logged only for now; what the app does with them is still to be decided.
+                if (command == DASH_UI_FRONT_COMMAND) {
+                    ProjectionEventLog.record("TBOX", "The dashboard brought its own UI to the front (0x10490).")
+                    return
+                }
+                if (command == DASH_SWITCH_PAGE_COMMAND) {
+                    val page = payload?.takeIf { it.size >= 8 }?.let {
+                        ByteBuffer.wrap(it).run { "type=${getInt(0)}, channel=${getInt(4)}" }
+                    } ?: "no page"
+                    ProjectionEventLog.record("TBOX", "The dashboard asked to open an app page (0x103F0): $page.")
+                    return
+                }
                 if (command == TRANSPORT_VIDEO_FRAMING_COMMAND) {
                     val extendByte = payload?.getOrNull(0)?.toInt() ?: -1
                     val plainApplied = payload?.getOrNull(1)?.toInt() == 1
@@ -2596,6 +2655,10 @@ class RideDaemonTransport(
         const val APP_STATUS_BACKGROUND = 2
         /** Payload: 4 bytes big-endian, frames dropped since the last ask. See [onKeyframeNeeded]. */
         const val TRANSPORT_KEYFRAME_NEEDED_COMMAND = 5L
+        /** The dash's own requests, numbered by their PXC command (hud/api/doc.go). */
+        const val DASH_SWITCH_PAGE_COMMAND = 0x103F0L
+        const val DASH_UI_FRONT_COMMAND = 0x10490L
+        const val DASH_DISCONNECT_COMMAND = 0x106F0L
         /** Bounds for the always-on first-occurrence dump of unknown protocol commands. */
         const val UNKNOWN_COMMAND_LOG_LIMIT = 32
         const val UNKNOWN_COMMAND_PREVIEW_BYTES = 64

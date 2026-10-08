@@ -1024,6 +1024,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     is TBoxEvent.Warning -> ProjectionEventLog.record("T-BOX", event.message)
                     is TBoxEvent.FatalError -> onTBoxFailureEvent("T-Box error: ${event.message}")
                     TBoxEvent.Stopped -> onTBoxFailureEvent("The T-Box ended Android Auto.")
+                    TBoxEvent.DashDisconnect -> stopSession("Android Auto stopped by the user.")
                     is TBoxEvent.VideoArea -> Unit
                 }
             }
@@ -1462,6 +1463,9 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         touchFilter = null
         if (stopping) return
         stopping = true
+        // fail() publishes Failed first: those ends are the link (or the session) breaking, and a
+        // dash on a lost link has nobody to be handed back to. Every other stop is orderly.
+        val orderly = AndroidAutoRuntime.state.value !is AndroidAutoRuntimeState.Failed
         ProjectionEventLog.record(
             "ANDROID AUTO",
             "Stopping session: reason=$reason, framesSent=${framesAccepted.get()}."
@@ -1518,7 +1522,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     // Another mode may still be streaming on this session; only the last one out
                     // stops the transport and drops the network.
                     if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle)) {
-                        releasedHandle.transport.stop()
+                        if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
                         // The network itself is the registry's to drop: clear() released the
                         // session's lease on the shared connector, which disconnects only when
                         // no other owner (the Hub UI, the AIDL bridge) still needs it.
