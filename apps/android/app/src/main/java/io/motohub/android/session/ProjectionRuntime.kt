@@ -38,4 +38,13 @@ object ProjectionRuntime {
      */
     @Volatile
     var riderStopped: Boolean = false
+
+    /**
+     * The dash asked to disconnect (EasyConn 0x106F0) since the rider last connected. Set with
+     * [riderStopped], but cleared only by the next explicit connect, so a recovery that was
+     * already running when the request came - its event collector gone - still sees it before
+     * each step and stops instead of reconnecting.
+     */
+    @Volatile
+    var dashAskedToDisconnect: Boolean = false
 }

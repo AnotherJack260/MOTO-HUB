@@ -106,7 +106,8 @@ interface TBoxTransport {
 
     /**
      * Android Auto's turn-by-turn for the dash's own arrows, where the wire has them (EasyConn).
-     * Blocks until the dash answers: call it from one worker, newest state only.
+     * Never blocks: the transport sends from its own worker for the running session, newest state
+     * only, and drops what a stopped session never got to send.
      */
     fun showNavigation(guidance: AaNavigationGuidance.Snapshot) = Unit
 

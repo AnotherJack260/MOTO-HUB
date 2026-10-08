@@ -173,12 +173,19 @@ object TBoxSessionRegistry {
     /**
      * Ends [consumer]'s use of [handle] and tears the session down only if nothing else holds it.
      *
+     * @param keepLink clears the session at once, so nothing new can claim it, but leaves its
+     *   network up for the transport's own goodbye to the dash; the caller then hands it back with
+     *   [dropKeptLink], whatever that goodbye did.
      * @return true when the session was actually cleared, so the caller may also stop the
      *   transport and drop the network. False means another mode is still streaming on it and
      *   the caller must leave the transport alone.
      */
     @Synchronized
-    fun releaseAndClear(consumer: String, handle: TBoxSessionHandle? = null): Boolean {
+    fun releaseAndClear(
+        consumer: String,
+        handle: TBoxSessionHandle? = null,
+        keepLink: Boolean = false
+    ): Boolean {
         val wasLast = consumers.releaseIsLast(consumer)
         if (activeHandle == null) {
             // No session left, and this mode is done with it: a link some recovery kept has now
@@ -196,8 +203,20 @@ object TBoxSessionRegistry {
             )
             return false
         }
-        clear(handle)
+        clear(handle, keepLink = keepLink)
         return true
+    }
+
+    /**
+     * The network half of a [releaseAndClear] that kept the link. Skipped when a session has been
+     * installed since: that one now holds the session lease, and may be riding the same network.
+     */
+    @Synchronized
+    fun dropKeptLink(handle: TBoxSessionHandle) {
+        if (activeHandle != null) return
+        handle.link.disconnect()
+        TBoxNetworkConnectors.releaseSession()
+        ProjectionEventLog.record("SESSION", "T-Box network link released after the transport's release.")
     }
 
     /**
@@ -210,7 +229,11 @@ object TBoxSessionRegistry {
      *   recovery, the next ordinary [clear] puts the link back.
      */
     @Synchronized
-    fun clear(handle: TBoxSessionHandle? = null, retainLinkForRecovery: Boolean = false) {
+    fun clear(
+        handle: TBoxSessionHandle? = null,
+        retainLinkForRecovery: Boolean = false,
+        keepLink: Boolean = false
+    ) {
         if (handle == null || activeHandle === handle) {
             val previous = activeHandle
             activeHandle = null
@@ -222,7 +245,8 @@ object TBoxSessionRegistry {
                     // Releasing it here, with the Hub UI already gone, disconnected the connector
                     // and left the recovery waiting out its whole rejoin window for nothing.
                     recoveryLink.retain(previous.link)
-                } else {
+                } else if (!keepLink) {
+                    // A kept link is let go in [dropKeptLink], once the transport is done with it.
                     previous.link.disconnect()
                     // Registry monitor -> connector-owner lock, never the reverse; see the
                     // ordering note on TBoxNetworkConnectors. The session's interest goes with the
@@ -233,10 +257,10 @@ object TBoxSessionRegistry {
                 }
                 ProjectionEventLog.record(
                     "SESSION",
-                    if (retainLinkForRecovery) {
-                        "T-Box registry cleared for a recovery; the network link is kept."
-                    } else {
-                        "T-Box registry cleared."
+                    when {
+                        retainLinkForRecovery -> "T-Box registry cleared for a recovery; the network link is kept."
+                        keepLink -> "T-Box registry cleared; the network link stays up for the transport's release."
+                        else -> "T-Box registry cleared."
                     }
                 )
             }

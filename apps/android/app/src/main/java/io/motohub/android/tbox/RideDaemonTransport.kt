@@ -446,14 +446,11 @@ class RideDaemonTransport(
     /** Whether this session negotiated JPEG stills, which have no sync frame to ask for. */
     @Volatile
     private var sessionJpegStills = false
+    /** One release at a time, so a second one finds its session already gone. */
     private val releaseLock = Any()
-    /** One per native session; the library feeds it the dash's PXC events itself. */
+    /** The running native session's [DashWorker]; swapped with [session], under [sessionLock]. */
     @Volatile
-    private var dashFeatures: DashFeatures? = null
-    /** Whether this session told the dash guidance is running, so it is told when it stops. */
-    private val naviActive = AtomicBoolean(false)
-    private val naviSendLogged = AtomicBoolean(false)
-    private val naviFailureLogged = AtomicBoolean(false)
+    private var dashWorker: DashWorker? = null
     /** Whether this session's profile answers the media channel as Carbit does; see [carbitVideoPlan]. */
     @Volatile
     private var sessionCarbitExact = false
@@ -749,17 +746,14 @@ class RideDaemonTransport(
             )
             // Before StartSession, so it hears the dash's 0x10040 icon count. No listener: dash
             // keys, notifications and the rest stay unhandled for now.
-            val features = Api.newDashFeatures(createdSession, null)
+            val worker = DashWorker(generation, Api.newDashFeatures(createdSession, null))
             sessionCarbitExact = profile.carbitExactVideo
             loggedCarbitPlan.set(null)
             carbitMovieModeLogged.set(false)
             if (profile.carbitExactVideo) createdSession.setCarbitExactMediaControl(true)
-            naviActive.set(false)
-            naviSendLogged.set(false)
-            naviFailureLogged.set(false)
             synchronized(sessionLock) {
                 session = createdSession
-                dashFeatures = features
+                dashWorker = worker
                 sessionLink = link
                 activeSessionGeneration = generation
             }
@@ -1020,47 +1014,70 @@ class RideDaemonTransport(
 
     /**
      * Hands the dash back its own UI the way the official app does when the rider disconnects -
-     * switchEc2Background, then STOP_SERVICE, each waiting at most a second for the dash - and
-     * only then stops the native session. Skipped for a session that never started or that the
-     * dash already closed: nobody is left to answer.
+     * any guidance ended, then switchEc2Background and STOP_SERVICE - and then stops the native
+     * session. All of it is for the session that was current when this was called: a session
+     * installed meanwhile is never touched. The dash gets [RELEASE_BUDGET_MS] in all; whatever
+     * it has not answered by then, the native session is stopped regardless.
      */
     override suspend fun release() = withContext(Dispatchers.IO) {
-        // One at a time: the rider's Disconnect and a mode's own teardown can both land here, and
-        // the second must find the session gone rather than stop it under the first one's release.
+        val generation = activeSessionGeneration
         synchronized(releaseLock) {
-            val activeSession = session
-            if (activeSession != null && nativeStartAttempted.get() && activeSession.isRunning) {
-                showNavigation(AaNavigationGuidance.Snapshot.INACTIVE)
-                ProjectionEventLog.record(
-                    "TBOX",
-                    "Releasing the dashboard before stopping (switchEc2Background, then STOP_SERVICE)."
-                )
-                activeSession.runCatching { releaseDash() }
-                    .onSuccess { ProjectionEventLog.record("TBOX", "The dashboard answered STOP_SERVICE.") }
-                    .onFailure {
+            val (target, worker) = synchronized(sessionLock) {
+                if (generation == 0L || activeSessionGeneration != generation) return@withContext
+                session to dashWorker
+            }
+            try {
+                // A session that never started, or that the dash already closed, has nobody to answer.
+                if (target != null && worker != null && nativeStartAttempted.get() && target.isRunning) {
+                    ProjectionEventLog.record(
+                        "TBOX",
+                        "Releasing the dashboard before stopping (switchEc2Background, then STOP_SERVICE)."
+                    )
+                    val released = worker.close {
+                        target.runCatching { releaseDash() }
+                            .onSuccess { ProjectionEventLog.record("TBOX", "The dashboard answered STOP_SERVICE.") }
+                            .onFailure {
+                                ProjectionEventLog.warning(
+                                    "TBOX",
+                                    "Releasing the dashboard did not complete (${it.message}); stopping anyway."
+                                )
+                            }
+                    }
+                    try {
+                        released?.get(RELEASE_BUDGET_MS, TimeUnit.MILLISECONDS)
+                    } catch (_: java.util.concurrent.TimeoutException) {
                         ProjectionEventLog.warning(
                             "TBOX",
-                            "Releasing the dashboard did not complete (${it.message}); stopping anyway."
+                            "The dashboard did not answer the release within ${RELEASE_BUDGET_MS}ms; " +
+                                "stopping anyway."
                         )
+                    } catch (_: Exception) {
+                        // Dropped with its session, or the worker is gone: nothing left to wait for.
                     }
+                }
+            } finally {
+                stopSession(onlyGeneration = generation)
             }
-            stopSession()
         }
     }
 
-    private fun stopSession() {
-        EcBtpClockChannel.onSessionStopped()
-        cancelPxcWatchdog()
+    /** Stops the native session, or with [onlyGeneration] only that one if it is still current. */
+    private fun stopSession(onlyGeneration: Long = 0L) {
         val sessionToStop: MobileSession?
+        val workerToStop: DashWorker?
         synchronized(sessionLock) {
+            if (onlyGeneration != 0L && activeSessionGeneration != onlyGeneration) return
             // Invalidate callbacks before asking the native session to stop. RideDaemon can
             // report the socket close asynchronously after stopSession() has been called.
             activeSessionGeneration = 0L
             sessionToStop = session
+            workerToStop = dashWorker
             session = null
-            dashFeatures = null
+            dashWorker = null
             sessionLink = null
         }
+        EcBtpClockChannel.onSessionStopped()
+        cancelPxcWatchdog()
         if (sessionToStop != null) {
             ProjectionEventLog.record("TBOX", "Stopping RideDaemon session. ${protocolSnapshot()}")
             // A ride the rider ended is the ladder's best evidence: it is the only way a rung
@@ -1070,25 +1087,87 @@ class RideDaemonTransport(
         }
         sessionToStop?.runCatching { stopSession() }
             ?.onFailure { ProjectionEventLog.warning("TBOX", "RideDaemon stopSession failed.", it) }
+        // After the native stop, which fails whatever send the worker is still blocked in.
+        workerToStop?.shutdown()
         markNativeSessionStopped()
     }
 
-    /**
-     * One Android Auto guidance state onto the dash's arrows: NAVI_STATUS when guidance starts, a
-     * HUD frame per update (the library sends at most one a second and drops the rest), and the
-     * end frame then NAVI_STATUS false when it stops. Each send blocks until the dash answers.
-     */
+    /** Hands Android Auto's guidance to the current session's [DashWorker]; never blocks. */
     override fun showNavigation(guidance: AaNavigationGuidance.Snapshot) {
-        val features = dashFeatures ?: return
-        runCatching {
-            if (!guidance.active) {
-                if (naviActive.compareAndSet(true, false)) {
-                    features.sendNaviEnd()
-                    features.sendNaviStatus(false)
-                    ProjectionEventLog.record("TBOX", "Turn-by-turn ended on the dashboard.")
+        dashWorker?.offer(guidance)
+    }
+
+    /**
+     * The one thread that waits on the dash's answers for one native session: Android Auto's
+     * guidance, then the release, in that order. Guidance is a newest-only mailbox, so a slow dash
+     * is sent the current turn rather than a backlog, and every task is dropped once its session
+     * ([generation]) is no longer the current one.
+     *
+     * The library's senders take no timeout of their own (each waits up to the dash's, about 9s);
+     * what bounds them is [release]'s budget and the native stop that follows it.
+     */
+    private inner class DashWorker(private val generation: Long, private val features: DashFeatures) {
+        private val executor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "RideLinkDashWorker").apply { isDaemon = true }
+        }
+        private val pendingGuidance = java.util.concurrent.atomic.AtomicReference<AaNavigationGuidance.Snapshot?>(null)
+        @Volatile
+        private var acceptingGuidance = true
+
+        // Touched on the worker thread only.
+        private var naviActive = false
+        private var firstFrameLogged = false
+        private var failureLogged = false
+
+        fun offer(guidance: AaNavigationGuidance.Snapshot) {
+            if (!acceptingGuidance) return
+            if (pendingGuidance.getAndSet(guidance) == null) {
+                submit { pendingGuidance.getAndSet(null)?.let(::send) }
+            }
+        }
+
+        /** Takes no more guidance, ends any on the dash, then runs [last]: all after what is queued. */
+        fun close(last: () -> Unit): java.util.concurrent.Future<*>? {
+            acceptingGuidance = false
+            pendingGuidance.set(null)
+            return submit {
+                send(AaNavigationGuidance.Snapshot.INACTIVE)
+                last()
+            }
+        }
+
+        fun shutdown() {
+            acceptingGuidance = false
+            // Queued tasks are cancelled, not just dropped, so a release waiting on one returns.
+            executor.shutdownNow().forEach { (it as? java.util.concurrent.Future<*>)?.cancel(false) }
+            runCatching { executor.awaitTermination(DASH_WORKER_JOIN_MS, TimeUnit.MILLISECONDS) }
+        }
+
+        private fun submit(task: () -> Unit): java.util.concurrent.Future<*>? = try {
+            executor.submit { if (generation == activeSessionGeneration) task() }
+        } catch (_: RejectedExecutionException) {
+            null
+        }
+
+        /**
+         * NAVI_STATUS when guidance starts, a HUD frame per update (the library sends at most one a
+         * second and drops the rest), and the end frame then NAVI_STATUS false when it stops.
+         */
+        private fun send(guidance: AaNavigationGuidance.Snapshot) {
+            runCatching {
+                if (!guidance.active) {
+                    if (naviActive) {
+                        naviActive = false
+                        features.sendNaviEnd()
+                        features.sendNaviStatus(false)
+                        ProjectionEventLog.record("TBOX", "Turn-by-turn ended on the dashboard.")
+                    }
+                    return@runCatching
                 }
-            } else {
-                if (naviActive.compareAndSet(false, true)) features.sendNaviStatus(true)
+                if (!naviActive) {
+                    naviActive = true
+                    features.sendNaviStatus(true)
+                }
                 val maneuver = dashManeuverFor(guidance.maneuverType, guidance.roundaboutExitAngle)
                 val sent = features.sendNaviInfo(
                     NaviInfo().apply {
@@ -1101,21 +1180,23 @@ class RideDaemonTransport(
                         remainingTime = guidance.timeToArrivalSeconds
                     }
                 )
-                if (sent && naviSendLogged.compareAndSet(false, true)) {
+                if (sent && !firstFrameLogged) {
+                    firstFrameLogged = true
                     ProjectionEventLog.record(
                         "TBOX",
                         "First turn-by-turn frame sent to the dashboard (Android Auto maneuver " +
                             "${guidance.maneuverType}, dash icon count ${features.maxNaviIcon()})."
                     )
                 }
-            }
-        }.onFailure {
-            if (naviFailureLogged.compareAndSet(false, true)) {
-                ProjectionEventLog.warning(
-                    "TBOX",
-                    "Turn-by-turn to the dashboard failed: ${it.message}. Later failures this " +
-                        "session are not logged."
-                )
+            }.onFailure {
+                if (!failureLogged) {
+                    failureLogged = true
+                    ProjectionEventLog.warning(
+                        "TBOX",
+                        "Turn-by-turn to the dashboard failed: ${it.message}. Later failures this " +
+                            "session are not logged."
+                    )
+                }
             }
         }
     }
@@ -2242,6 +2323,7 @@ class RideDaemonTransport(
                             "Stop does, and nothing reconnects until the rider connects again."
                     )
                     ProjectionRuntime.riderStopped = true
+                    ProjectionRuntime.dashAskedToDisconnect = true
                     mutableEvents.tryEmit(TBoxEvent.DashDisconnect)
                     return
                 }
@@ -2788,6 +2870,10 @@ class RideDaemonTransport(
         /** Payload: the dash's CAPTURE_CONFIG as JSON; read typed through MobileSession.captureConfig. */
         const val TRANSPORT_CAPTURE_CONFIG_COMMAND = 16L
         const val CARBIT_CODEC_H264 = 2
+        /** What an orderly stop gives the dash to answer, ending guidance and releasing it included. */
+        const val RELEASE_BUDGET_MS = 3_000L
+        /** How long a stopped session's worker gets to unwind after the native stop failed its send. */
+        const val DASH_WORKER_JOIN_MS = 1_000L
         /** The dash's own requests, numbered by their PXC command (hud/api/doc.go). */
         const val DASH_SWITCH_PAGE_COMMAND = 0x103F0L
         const val DASH_UI_FRONT_COMMAND = 0x10490L

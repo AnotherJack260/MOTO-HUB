@@ -57,6 +57,7 @@ import io.motohub.android.tbox.TBoxSessionHandle
 import io.motohub.android.tbox.TBoxSessionRegistry
 import io.motohub.android.tbox.TBoxStreamingLocks
 import io.motohub.android.tbox.TBoxTouchTransform
+import io.motohub.android.tbox.TBoxTransport
 import io.motohub.android.tbox.tBoxFailureOwnedByHandshake
 import io.motohub.android.tbox.TBoxTouchFilter
 import io.motohub.android.tbox.TBoxVideoAreaSource
@@ -71,6 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -817,11 +819,11 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             "Area Android Auto ${encoderProfile.width}x${encoderProfile.height}; " +
                 "quality=${quality.name}, bitrate=${encoderProfile.bitRate}."
         )
-        // The dash's own turn arrows, from one worker per native session: each send blocks on the
-        // dash, and a StateFlow collector that falls behind skips straight to the newest state.
-        // Only EasyConn has arrows; the other transports ignore it.
+        // The dash's own turn arrows. Handing guidance over never blocks: the transport sends it
+        // from its own worker for this native session, newest state only. Only EasyConn has
+        // arrows; the other transports ignore it.
         navigationJob?.cancel()
-        navigationJob = serviceScope.launch(Dispatchers.IO.limitedParallelism(1)) {
+        navigationJob = serviceScope.launch {
             AaNavigationGuidance.state.collect(handle.transport::showNavigation)
         }
         try {
@@ -1308,6 +1310,15 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     recoveryRequested.set(false)
                     throw cancelled
                 } catch (failure: Throwable) {
+                    if (ProjectionRuntime.dashAskedToDisconnect) {
+                        recoveryRequested.set(false)
+                        ProjectionEventLog.record(
+                            "WATCHDOG",
+                            "Not reconnecting Android Auto: the dashboard asked to disconnect."
+                        )
+                        stopSession("Android Auto stopped by the user.")
+                        return@launch
+                    }
                     ProjectionEventLog.warning(
                         "WATCHDOG",
                         "Android Auto recovery attempt $attempt failed: ${failure.message}"
@@ -1337,6 +1348,10 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
 
     private suspend fun recoverTBoxStream(reason: String) {
         val previousHandle = tBoxHandle ?: error("No T-Box session is available for recovery")
+        // Nothing from the old session may reach the dash's arrows once a new one is coming.
+        navigationJob?.cancelAndJoin()
+        navigationJob = null
+        abortIfDashAskedToDisconnect()
         AndroidAutoRuntime.publish(AndroidAutoRuntimeState.ReceiverReady)
         ProjectionRuntime.publish(ProjectionRuntimeState.Starting)
         ProjectionEventLog.record(
@@ -1384,6 +1399,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             link,
             previousHandle.motorcycle.modelId
         ).getOrThrow()
+        abortIfDashAskedToDisconnect(discovered = previousHandle.transport)
         val recoveredHandle = TBoxSessionHandle(
             transport = previousHandle.transport,
             host = host,
@@ -1398,11 +1414,22 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         TBoxSessionRegistry.claim(SESSION_CONSUMER)
         capabilityStore.recordDiscovery(previousHandle.motorcycle, host)
         observeActiveSession(recoveredHandle)
+        abortIfDashAskedToDisconnect()
         startBikeStream(recoveredHandle)
         check(AndroidAutoRuntime.state.value is AndroidAutoRuntimeState.Streaming) {
             "Recovered T-Box handshake did not return to streaming"
         }
         ProjectionEventLog.record("WATCHDOG", "Android Auto TFT stream recovered successfully.")
+    }
+
+    /**
+     * Ends a recovery step for a dash that asked to disconnect (see
+     * [ProjectionRuntime.dashAskedToDisconnect]); [discovered] is a session it had already found.
+     */
+    private suspend fun abortIfDashAskedToDisconnect(discovered: TBoxTransport? = null) {
+        if (!ProjectionRuntime.dashAskedToDisconnect) return
+        discovered?.stop()
+        error("The dashboard asked to disconnect.")
     }
 
     /**
@@ -1510,7 +1537,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         recoveryJob?.cancel()
         androidAutoReattachJob?.cancel()
         networkLossJob?.cancel()
-        navigationJob?.cancel()
+        val navigationToStop = navigationJob?.also { it.cancel() }
         navigationJob = null
         transportEventsJob = null
         networkEventsJob = null
@@ -1552,15 +1579,21 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         if (releasedHandle != null) {
             serviceScope.launch {
                 try {
-                    // Guidance ends with Android Auto, even where another mode keeps the session.
+                    // Guidance ends with Android Auto, even where another mode keeps the session,
+                    // and only after the collector is gone, so no turn can follow the end frame.
+                    navigationToStop?.join()
                     if (orderly) releasedHandle.transport.showNavigation(AaNavigationGuidance.Snapshot.INACTIVE)
                     // Another mode may still be streaming on this session; only the last one out
-                    // stops the transport and drops the network.
-                    if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle)) {
-                        if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
-                        // The network itself is the registry's to drop: clear() released the
-                        // session's lease on the shared connector, which disconnects only when
-                        // no other owner (the Hub UI, the AIDL bridge) still needs it.
+                    // stops the transport and drops the network - the network last, since the
+                    // transport's release still talks to the dash over it. The registry decides
+                    // whether the connector itself goes: only when no other owner (the Hub UI,
+                    // the AIDL bridge) still needs it.
+                    if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle, keepLink = true)) {
+                        try {
+                            if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
+                        } finally {
+                            TBoxSessionRegistry.dropKeptLink(releasedHandle)
+                        }
                     }
                 } finally {
                     // Last thing this service ever does: the scope outlived stopSelf() before,

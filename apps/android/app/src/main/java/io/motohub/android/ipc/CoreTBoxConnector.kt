@@ -12,6 +12,7 @@ import android.content.Context
 import io.motohub.android.data.MotorcycleProfileStore
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.ProjectionEventLog
+import io.motohub.android.session.ProjectionRuntime
 import io.motohub.android.session.TBoxConnectionMode
 import io.motohub.android.tbox.FormedP2pGroup
 import io.motohub.android.tbox.ProfileOverride
@@ -101,6 +102,8 @@ class CoreTBoxConnector(private val context: Context) {
         // then eleven rejoin attempts refused by Android in 2-10ms before it gave up 3.5 minutes
         // later. Refusing here costs that rider one clear sentence instead.
         CoreConnectFailureRecord.clear()
+        // An explicit connect, like the hub's: a dash's earlier request to disconnect is answered.
+        ProjectionRuntime.dashAskedToDisconnect = false
         // Asked of the CONSUMERS, not of the connector identity. The first version of this guard
         // compared holder.networkConnector against ours, which can never differ: both come from
         // TBoxNetworkConnectors.shared(), one instance per process. So the refusal never fired -

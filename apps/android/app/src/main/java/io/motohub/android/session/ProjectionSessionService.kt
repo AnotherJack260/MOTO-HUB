@@ -44,6 +44,7 @@ import io.motohub.android.tbox.TBoxSessionHandle
 import io.motohub.android.tbox.tBoxFailureOwnedByHandshake
 import io.motohub.android.tbox.TBoxSessionRegistry
 import io.motohub.android.tbox.TBoxStreamingLocks
+import io.motohub.android.tbox.TBoxTransport
 import io.motohub.android.tbox.TBoxVideoAreaSource
 import io.motohub.android.tbox.negotiateVideoConfiguration
 import kotlinx.coroutines.CancellationException
@@ -468,6 +469,15 @@ class ProjectionSessionService : Service() {
                     recoveryRequested.set(false)
                     throw cancelled
                 } catch (failure: Throwable) {
+                    if (ProjectionRuntime.dashAskedToDisconnect) {
+                        recoveryRequested.set(false)
+                        ProjectionEventLog.record(
+                            "WATCHDOG",
+                            "Not reconnecting mirroring: the dashboard asked to disconnect."
+                        )
+                        stopSession(stopProjection = true, reason = "Streaming stopped by the user.")
+                        return@launch
+                    }
                     ProjectionEventLog.warning(
                         "WATCHDOG",
                         "Mirroring recovery attempt $attempt failed: ${failure.message}"
@@ -487,6 +497,7 @@ class ProjectionSessionService : Service() {
 
     private suspend fun recoverTBoxStream(reason: String, attempt: Int) {
         val previousHandle = tBoxHandle ?: error("No T-Box session is available for recovery")
+        abortIfDashAskedToDisconnect()
         ProjectionEventLog.record(
             "WATCHDOG",
             "Reconnecting mirroring EasyConn, attempt=$attempt, reason=$reason."
@@ -519,12 +530,24 @@ class ProjectionSessionService : Service() {
             previousHandle.motorcycle
         )
         val host = previousHandle.transport.discover(link, previousHandle.motorcycle.modelId).getOrThrow()
+        abortIfDashAskedToDisconnect(discovered = previousHandle.transport)
         val recoveredHandle = previousHandle.copy(host = host, link = link)
         tBoxHandle = recoveredHandle
         TBoxSessionRegistry.claim(SESSION_CONSUMER)
         TBoxSessionRegistry.install(recoveredHandle)
         observeActiveSession(recoveredHandle)
+        abortIfDashAskedToDisconnect()
         recoveredHandle.transport.start(host).getOrThrow()
+    }
+
+    /**
+     * Ends a recovery step for a dash that asked to disconnect (see
+     * [ProjectionRuntime.dashAskedToDisconnect]); [discovered] is a session it had already found.
+     */
+    private suspend fun abortIfDashAskedToDisconnect(discovered: TBoxTransport? = null) {
+        if (!ProjectionRuntime.dashAskedToDisconnect) return
+        discovered?.stop()
+        error("The dashboard asked to disconnect.")
     }
 
     private fun observeActiveSession(handle: TBoxSessionHandle) {
@@ -622,12 +645,16 @@ class ProjectionSessionService : Service() {
         tBoxHandle = null
         if (releasedHandle != null) {
             handleCleanupJob = serviceScope.launch {
-                // Another mode may still be streaming on this session.
-                if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle)) {
-                    if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
-                    // The network itself is the registry's to drop: clear() released the
-                    // session's lease on the shared connector, which disconnects only when
-                    // no other owner (the Hub UI, the AIDL bridge) still needs it.
+                // Another mode may still be streaming on this session. The network goes last: the
+                // transport's release still talks to the dash over it. The registry decides
+                // whether the connector itself goes: only when no other owner (the Hub UI, the
+                // AIDL bridge) still needs it.
+                if (TBoxSessionRegistry.releaseAndClear(SESSION_CONSUMER, releasedHandle, keepLink = true)) {
+                    try {
+                        if (orderly) releasedHandle.transport.release() else releasedHandle.transport.stop()
+                    } finally {
+                        TBoxSessionRegistry.dropKeptLink(releasedHandle)
+                    }
                 }
             }
         } else {

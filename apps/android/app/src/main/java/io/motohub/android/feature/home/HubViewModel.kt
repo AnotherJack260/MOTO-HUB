@@ -574,6 +574,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
         riderCancelledConnect = false
         cancelledWithDashInReach = false
         ProjectionRuntime.riderStopped = false
+        ProjectionRuntime.dashAskedToDisconnect = false
         // "Is Wi-Fi on" is the wrong question for a dash that joins a network the phone hosts:
         // tethering turns the station radio off, so that check reports false for the whole life
         // of a working PHONE_HOTSPOT session and used to block every connect through here -
