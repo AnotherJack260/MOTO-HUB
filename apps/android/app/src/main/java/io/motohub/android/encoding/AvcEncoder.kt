@@ -314,6 +314,12 @@ class AvcEncoder(
                 )
             }
             setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
+            // A surface source faster than the stream - mirroring's virtual display follows the
+            // panel at 60-120 Hz - is thinned before encoding, where dropping is free. Afterwards
+            // a GOP stream cannot lose a P-frame, and a polling dash reading ~35 frames a second
+            // falls behind until RideDaemon drops to the next keyframe: a freeze every second or
+            // two (rider log, 2026-10-08: 2515 frames offered in 40 s, 1408 pulled).
+            setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, profile.frameRate.toFloat())
             // The floor under a stalled pixel source, not idle pacing. When the source stops
             // - an Android Auto decoder stall, seconds at a time, is the common case - this
             // interval is the only thing still feeding the dash, because the codec re-submits
