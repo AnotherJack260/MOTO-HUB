@@ -43,6 +43,7 @@ import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.session.ProjectionSourceHealth
 import io.motohub.android.session.ProjectionRuntime
 import io.motohub.android.session.ProjectionRuntimeState
+import io.motohub.android.tbox.CarbitVideoPlan
 import io.motohub.android.tbox.TBoxEvent
 import io.motohub.android.tbox.TBoxLinkResolver
 import io.motohub.android.tbox.ProfileOverride
@@ -59,6 +60,7 @@ import io.motohub.android.tbox.TBoxTouchTransform
 import io.motohub.android.tbox.tBoxFailureOwnedByHandshake
 import io.motohub.android.tbox.TBoxTouchFilter
 import io.motohub.android.tbox.TBoxVideoAreaSource
+import io.motohub.android.tbox.followingCarbitPlan
 import io.motohub.android.tbox.negotiateVideoConfiguration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -92,6 +94,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
     private var androidAutoReattachJob: Job? = null
     private var networkLossJob: Job? = null
     private var navigationJob: Job? = null
+    /** The Carbit plan the running encoder was built to; see [TBoxEvent.CarbitPlan]. */
+    @Volatile private var carbitPlanInUse: CarbitVideoPlan? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val streamingLocks = TBoxStreamingLocks(this, "Android Auto")
     private var mediaButtonBridge: MediaButtonBridge? = null
@@ -631,7 +635,15 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         }
         if (stopping) return
 
-        val configuration = configurationResult.getOrThrow()
+        // Read here rather than off event 16: the library stores the plan in the same step that
+        // relays the area this CAPTURE_CONFIG produced, so it is in hand by now. Its size is the
+        // canvas the touch mapping and the compositor follow too.
+        val carbitPlan = handle.transport.carbitVideoPlan()
+        val configuration = configurationResult.getOrThrow().let { negotiated ->
+            carbitPlan?.let {
+                negotiated.copy(encoderProfile = negotiated.encoderProfile.copy(width = it.width, height = it.height))
+            } ?: negotiated
+        }
         val quality = MotoHubSettings.videoQuality(this)
         val sessionModelProfile = resolveSessionProfile(handle)
         // What this dash is actually being sent. Identical to the profile's own fields for every
@@ -671,7 +683,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             } else {
                 configuration.encoderProfile.height
             }
-        )
+        ).let { profile -> carbitPlan?.let { profile.followingCarbitPlan(it, quality) } ?: profile }
+        carbitPlanInUse = carbitPlan
         val negotiatedArea = configuration.rawArea
         val actualGeometry = DisplayGeometry(encoderProfile.width, encoderProfile.height)
         tBoxTouchTransform = TBoxTouchTransform.forVideoConfiguration(configuration)
@@ -1034,6 +1047,15 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                     is TBoxEvent.FatalError -> onTBoxFailureEvent("T-Box error: ${event.message}")
                     TBoxEvent.Stopped -> onTBoxFailureEvent("The T-Box ended Android Auto.")
                     TBoxEvent.DashDisconnect -> stopSession("Android Auto stopped by the user.")
+                    // ponytail: a new picture shape re-runs the whole hand-off through recovery,
+                    // which encodes to the plan it then reads; swap only the encoder if dashes
+                    // turn out to do this mid-ride.
+                    is TBoxEvent.CarbitPlan -> if (encoder != null && event.plan.needsNewEncoder(carbitPlanInUse)) {
+                        requestTBoxRecovery(
+                            "The dash asked for a ${event.plan.width}x${event.plan.height} picture; " +
+                                "restarting the encoder on Carbit's new plan."
+                        )
+                    }
                     is TBoxEvent.VideoArea -> Unit
                 }
             }

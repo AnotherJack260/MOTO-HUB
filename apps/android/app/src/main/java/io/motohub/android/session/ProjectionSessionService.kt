@@ -556,6 +556,8 @@ class ProjectionSessionService : Service() {
                         stopSession(stopProjection = true, reason = "Streaming stopped by the user.")
                     is TBoxEvent.VideoArea -> Unit
                     is TBoxEvent.Touch -> Unit
+                    // Mirroring streams the Carbit profile's own fields; the plan is Android Auto's.
+                    is TBoxEvent.CarbitPlan -> Unit
                 }
             }
         }

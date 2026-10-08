@@ -69,6 +69,12 @@ enum class ProfileOverride(
         "The GOP test on variable bitrate, exactly as Carbit Ride encodes it",
         experimental = true
     ),
+    ZONTES_350D_CARBIT(
+        "zontes_350d_carbit",
+        "Zontes 350D (Carbit)",
+        "The VBR test plus Carbit Ride's media answers and its encoder plan for the dash's request",
+        experimental = true
+    ),
     VOGE_TEST(
         "voge_test",
         "Voge (test)",
@@ -149,6 +155,7 @@ enum class ProfileOverride(
         ZONTES_368G_TEST_B -> TBoxModelProfile.ZONTES_368G_TEST_B
         ZONTES_350D_GOP_TEST -> TBoxModelProfile.ZONTES_350D_GOP_TEST
         ZONTES_350D_VBR_TEST -> TBoxModelProfile.ZONTES_350D_VBR_TEST
+        ZONTES_350D_CARBIT -> TBoxModelProfile.ZONTES_350D_CARBIT
         VOGE_TEST -> TBoxModelProfile.VOGE_TEST
         QJ_SRK921_RR -> TBoxModelProfile.QJ_SRK921_RR
         KOVE_800X -> TBoxModelProfile.KOVE_800X

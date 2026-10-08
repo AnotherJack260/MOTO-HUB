@@ -4,6 +4,7 @@
 package io.motohub.android.tbox
 
 import io.motohub.android.encoding.EncoderProfile
+import io.motohub.android.feature.settings.VideoQuality
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -67,6 +68,42 @@ class TBoxVideoNegotiationTest {
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("no saved or fallback geometry"))
+    }
+
+    @Test
+    fun `the encoder follows Carbit's plan without outrunning Android Auto's frame rate`() {
+        // The Zontes 350D polls (wantFps 0) and names no bitrate: Carbit plans 36 fps at 3 Mbps.
+        val plan = CarbitVideoPlan(1024, 464, 3_000_000, 36, 3, cbr = false, landscape = true, codec = 2)
+        val base = EncoderProfile(width = 1024, height = 464, frameRate = 30, bitRate = 2_500_000)
+
+        assertEquals(
+            EncoderProfile(
+                width = 1024,
+                height = 464,
+                frameRate = 30,
+                bitRate = 3_000_000,
+                keyframeIntervalSeconds = 3,
+                plainGopWithoutIntraRefresh = true,
+                variableBitrate = true
+            ),
+            base.followingCarbitPlan(plan, VideoQuality.BALANCED)
+        )
+        // A slower dash keeps its own rate, CBR only when it asked, and the rider's quality scales
+        // the plan's bitrate as it scales every profile's.
+        val slow = base.followingCarbitPlan(plan.copy(fps = 20, cbr = true), VideoQuality.SHARPER)
+        assertEquals(20, slow.frameRate)
+        assertEquals(false, slow.variableBitrate)
+        assertEquals(4_800_000, slow.bitRate)
+    }
+
+    @Test
+    fun `only a new picture shape restarts the encoder`() {
+        val plan = CarbitVideoPlan(1024, 464, 3_000_000, 36, 3, cbr = false, landscape = true, codec = 2)
+
+        assertEquals(false, plan.copy(bitRate = 6_000_000, fps = 20).needsNewEncoder(plan))
+        assertEquals(true, plan.copy(width = 800).needsNewEncoder(plan))
+        assertEquals(true, plan.copy(landscape = false).needsNewEncoder(plan))
+        assertEquals(true, plan.needsNewEncoder(null))
     }
 
     private class FakeTransport(

@@ -36,6 +36,9 @@ sealed interface TBoxEvent {
 
     /** The dash asked the phone to disconnect (EasyConn 0x106F0): end the mode as a rider Stop does. */
     data object DashDisconnect : TBoxEvent
+
+    /** A Carbit-exact session's dash sent (or updated) its CAPTURE_CONFIG; see [CarbitVideoPlan]. */
+    data class CarbitPlan(val plan: CarbitVideoPlan) : TBoxEvent
 }
 
 /**
@@ -106,6 +109,9 @@ interface TBoxTransport {
      * Blocks until the dash answers: call it from one worker, newest state only.
      */
     fun showNavigation(guidance: AaNavigationGuidance.Snapshot) = Unit
+
+    /** Carbit's encoder plan for this session's CAPTURE_CONFIG, for a Carbit-exact profile only. */
+    fun carbitVideoPlan(): CarbitVideoPlan? = null
     val events: Flow<TBoxEvent>
 }
 

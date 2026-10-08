@@ -97,6 +97,13 @@ enum class TBoxModelProfile(
     /** Leave a GOP stream on the codec's default VBR instead of CBR (see EncoderProfile.variableBitrate). */
     val encoderVariableBitrate: Boolean = false,
     /**
+     * Answer the media-control channel exactly as Carbit Ride 2.4 does (the library's
+     * SetCarbitExactMediaControl) and, in Android Auto, encode to the plan Carbit would configure
+     * for the dash's CAPTURE_CONFIG ([CarbitVideoPlan]). The other encoder fields above are what
+     * a session streams when no plan is in hand.
+     */
+    val carbitExactVideo: Boolean = false,
+    /**
      * Send the phone-to-car page sequence once the dash says STREAM_START.
      *
      * **Off for every dashboard, including the one it was written for.** It puts three
@@ -445,6 +452,26 @@ enum class TBoxModelProfile(
         encoderKeyframeIntervalSeconds = 3,
         encoderPlainGopWithoutIntraRefresh = true,
         encoderVariableBitrate = true
+    ),
+    /**
+     * [ZONTES_350D_VBR_TEST] taken the rest of the way to CarbitRide: the media channel answers
+     * exactly as Carbit does, and Android Auto encodes to Carbit's own plan for the dash's
+     * CAPTURE_CONFIG - its size, its bitrate (3 Mbps unless the dash asks), its frame rate (up to
+     * Android Auto's), the 3s GOP and CBR only when the dash asks. Without a plan it streams
+     * exactly as the VBR test. Manual selection only, like its siblings.
+     */
+    ZONTES_350D_CARBIT(
+        key = "zontes_350d_carbit",
+        displayName = "Zontes 350D (Carbit)",
+        modelIds = emptySet(),
+        mapTilesRequireCellular = true,
+        fallbackTBoxVideoArea = TBoxEvent.VideoArea(1024, 464),
+        allowsPlainVideoFraming = true,
+        requiresProactivePxcHeartbeat = true,
+        encoderKeyframeIntervalSeconds = 3,
+        encoderPlainGopWithoutIntraRefresh = true,
+        encoderVariableBitrate = true,
+        carbitExactVideo = true
     ),
     /**
      * Compatibility experiment for the Voge dashes (flavor 51, channel 37504, 592x752 portrait
@@ -1152,6 +1179,7 @@ enum class TBoxModelProfile(
                 ZONTES_368G_TEST_B -> 0
                 ZONTES_350D_GOP_TEST -> 0
                 ZONTES_350D_VBR_TEST -> 0
+                ZONTES_350D_CARBIT -> 0
                 // Same rule for the Voge stream experiment: a Voge that streams fine today
                 // must never be moved off all-intra by detection.
                 VOGE_TEST -> 0

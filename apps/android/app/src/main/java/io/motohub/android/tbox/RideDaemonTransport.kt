@@ -454,6 +454,12 @@ class RideDaemonTransport(
     private val naviActive = AtomicBoolean(false)
     private val naviSendLogged = AtomicBoolean(false)
     private val naviFailureLogged = AtomicBoolean(false)
+    /** Whether this session's profile answers the media channel as Carbit does; see [carbitVideoPlan]. */
+    @Volatile
+    private var sessionCarbitExact = false
+    /** The plan last logged this session, so each one is written once. */
+    private val loggedCarbitPlan = java.util.concurrent.atomic.AtomicReference<CarbitVideoPlan?>(null)
+    private val carbitMovieModeLogged = AtomicBoolean(false)
 
     override fun configureProtocolProfile(profile: TBoxModelProfile, motorcycle: MotorcycleProfile?) {
         protocolProfile = profile
@@ -605,6 +611,52 @@ class RideDaemonTransport(
         mutableEvents.tryEmit(TBoxEvent.KeyframeNeeded(opensStall))
     }
 
+    override fun carbitVideoPlan(): CarbitVideoPlan? {
+        if (!sessionCarbitExact) return null
+        val config = session?.captureConfig() ?: return null
+        val plan = Api.carbitEncoderPlan(config) ?: return null
+        return CarbitVideoPlan(
+            width = config.captureWidth.toInt(),
+            height = config.captureHeight.toInt(),
+            bitRate = plan.bitRate.toInt(),
+            fps = plan.fps.toInt(),
+            iFrameSeconds = plan.iFrameSeconds.toInt(),
+            cbr = plan.cbr,
+            landscape = plan.landscape,
+            codec = plan.codec.toInt()
+        ).takeIf { it.width > 0 && it.height > 0 }
+    }
+
+    /**
+     * Transport event 16: the dash sent a CAPTURE_CONFIG, or its 0x60 updated one. Each new plan
+     * is logged once and handed to the session, which restarts its encoder if the shape changed.
+     */
+    private fun onCarbitCaptureConfig() {
+        val plan = carbitVideoPlan() ?: return
+        if (loggedCarbitPlan.getAndSet(plan) != plan) {
+            val line = "Carbit encoder plan for this dash: ${plan.width}x${plan.height}, " +
+                "${plan.fps} fps, ${plan.bitRate} bps, I-frame every ${plan.iFrameSeconds}s, " +
+                (if (plan.cbr) "CBR" else "codec default rate mode") + ", " +
+                (if (plan.landscape) "landscape" else "portrait") + ", codec ${plan.codec}."
+            if (plan.codec == CARBIT_CODEC_H264) {
+                ProjectionEventLog.record("TBOX", line)
+            } else {
+                ProjectionEventLog.warning(
+                    "TBOX",
+                    "$line This profile only streams H.264 (codec 2), so the dash may not paint it."
+                )
+            }
+        }
+        if (session?.captureConfig()?.movieMode == true && carbitMovieModeLogged.compareAndSet(false, true)) {
+            ProjectionEventLog.warning(
+                "TBOX",
+                "MOVIE MODE is on for this dash (its 0x60 asked for it and was answered as Carbit " +
+                    "does). Never tested on the bike: if the picture breaks from here, suspect this first."
+            )
+        }
+        mutableEvents.tryEmit(TBoxEvent.CarbitPlan(plan))
+    }
+
     /** Whether the command reached the socket. Nothing here says the dashboard liked it. */
     private fun probeOutcome(delivered: Boolean): String =
         if (delivered) "." else "; the write failed and the experiment stopped here."
@@ -698,6 +750,10 @@ class RideDaemonTransport(
             // Before StartSession, so it hears the dash's 0x10040 icon count. No listener: dash
             // keys, notifications and the rest stay unhandled for now.
             val features = Api.newDashFeatures(createdSession, null)
+            sessionCarbitExact = profile.carbitExactVideo
+            loggedCarbitPlan.set(null)
+            carbitMovieModeLogged.set(false)
+            if (profile.carbitExactVideo) createdSession.setCarbitExactMediaControl(true)
             naviActive.set(false)
             naviSendLogged.set(false)
             naviFailureLogged.set(false)
@@ -717,6 +773,7 @@ class RideDaemonTransport(
                     "supportFunction=${profile.advertisedSupportFunction}; " +
                     "wire=${wire.signature}; " +
                     "proactivePxcHeartbeat=${wire.requiresProactivePxcHeartbeat}; " +
+                    "carbitExactMediaControl=${profile.carbitExactVideo}; " +
                     "plainVideoFramingAllowed=${wire.allowsPlainVideoFraming}; " +
                     "timeZone=${java.util.TimeZone.getDefault().id}."
             )
@@ -2171,6 +2228,12 @@ class RideDaemonTransport(
                     onKeyframeNeeded(payload)
                     return
                 }
+                if (command == TRANSPORT_CAPTURE_CONFIG_COMMAND) {
+                    if (sessionCarbitExact && isCurrentRideDaemonSession(generation, activeSessionGeneration)) {
+                        onCarbitCaptureConfig()
+                    }
+                    return
+                }
                 if (command == DASH_DISCONNECT_COMMAND) {
                     if (!isCurrentRideDaemonSession(generation, activeSessionGeneration)) return
                     ProjectionEventLog.record(
@@ -2722,6 +2785,9 @@ class RideDaemonTransport(
         const val APP_STATUS_BACKGROUND = 2
         /** Payload: 4 bytes big-endian, frames dropped since the last ask. See [onKeyframeNeeded]. */
         const val TRANSPORT_KEYFRAME_NEEDED_COMMAND = 5L
+        /** Payload: the dash's CAPTURE_CONFIG as JSON; read typed through MobileSession.captureConfig. */
+        const val TRANSPORT_CAPTURE_CONFIG_COMMAND = 16L
+        const val CARBIT_CODEC_H264 = 2
         /** The dash's own requests, numbered by their PXC command (hud/api/doc.go). */
         const val DASH_SWITCH_PAGE_COMMAND = 0x103F0L
         const val DASH_UI_FRONT_COMMAND = 0x10490L

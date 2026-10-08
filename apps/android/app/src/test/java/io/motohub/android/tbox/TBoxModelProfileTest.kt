@@ -357,6 +357,7 @@ class TBoxModelProfileTest {
                 TBoxModelProfile.ZONTES_368G_TEST_B,
                 TBoxModelProfile.ZONTES_350D_GOP_TEST,
                 TBoxModelProfile.ZONTES_350D_VBR_TEST,
+                TBoxModelProfile.ZONTES_350D_CARBIT,
                 TBoxModelProfile.VOGE_TEST,
                 TBoxModelProfile.QJ_SRK921_RR,
                 TBoxModelProfile.GENERIC
@@ -660,11 +661,30 @@ class TBoxModelProfileTest {
     fun `the Zontes 350D variable-bitrate test is the GOP test on the codec's own rate control`() {
         val vbr = TBoxModelProfile.ZONTES_350D_VBR_TEST
         assertEquals(TBoxModelProfile.ZONTES_350D_GOP_TEST.wireConfig, vbr.wireConfig)
-        // The one delta, and nothing else in the table may pick it up.
-        assertEquals(listOf(vbr), TBoxModelProfile.entries.filter { it.encoderVariableBitrate })
+        // The one delta, and nothing else in the table may pick it up but its Carbit sibling.
+        assertEquals(
+            listOf(vbr, TBoxModelProfile.ZONTES_350D_CARBIT),
+            TBoxModelProfile.entries.filter { it.encoderVariableBitrate }
+        )
         val pin = ProfileOverride.byKey("zontes_350d_vbr_test")
         assertEquals(vbr, pin.resolve())
         assertEquals(true, pin.experimental)
         assertEquals(TBoxModelProfile.GENERIC, TBoxModelProfile.resolve("21321", null))
+    }
+
+    @Test
+    fun `the Zontes 350D Carbit profile is the VBR test plus Carbit's media answers and plan, by hand only`() {
+        val carbit = TBoxModelProfile.ZONTES_350D_CARBIT
+        val vbr = TBoxModelProfile.ZONTES_350D_VBR_TEST
+        assertEquals(vbr.wireConfig, carbit.wireConfig)
+        assertEquals(vbr.encoderVariableBitrate, carbit.encoderVariableBitrate)
+        assertEquals(vbr.fallbackTBoxVideoArea, carbit.fallbackTBoxVideoArea)
+        assertEquals(listOf(carbit), TBoxModelProfile.entries.filter { it.carbitExactVideo })
+        val pin = ProfileOverride.byKey("zontes_350d_carbit")
+        assertEquals(carbit, pin.resolve())
+        assertEquals("Zontes 350D (Carbit)", pin.label)
+        assertEquals(true, pin.experimental)
+        val jcdz21 = TBoxCapabilities(huName = "JCDZ21-E42b", flavor = "51", channel = "21321")
+        assertEquals(TBoxModelProfile.GENERIC, TBoxModelProfile.resolve("21321", jcdz21))
     }
 }
