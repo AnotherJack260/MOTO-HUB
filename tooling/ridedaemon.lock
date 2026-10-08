@@ -1,12 +1,27 @@
 # Generated dependency record. Update this file whenever hudlib.aar is rebuilt.
 source_repository=https://github.com/AnotherJack260/ridedaemon-lib
-source_commit=a2b9191b1be854f45c53117222456b64aec03654
+source_commit=ebd060eddac4967fc22eaabe46f2156a42d975d5
 source_dirty=false
 source_checkout=refs/ridedaemon-lib-motohub
 gomobile_android_api=31
 artifact=apps/android/app/libs/hudlib.aar
-sha256=0c7dfaf9210528bb7a52bcad583f7d4f6d8c599b42df58b5b201d8fb41dc45e9
+sha256=2090c14a08482ee092b0deb6e996213b10359ff1a175954f5ce0a250e7774e85
 license=GPL-3.0-only
+
+# Rebuilt 2026-10-08 (RideLink lib phase 1): branch ridelink-phase1, seven commits on top of
+# a2b9191 (the p2c-channel-routing build below). Not pushed to the fork yet, so CI's locked
+# RideDaemon checkout cannot fetch source_commit until it is.
+#
+# Same build shape: -androidapi 31, 4 ABIs. Binding surface diffed with javap: purely
+# additive, exactly MobileSession.sendPhoneCommand(long, byte[], long) and the new
+# api.PhoneCommandReply (get/setCommand, get/setBody). Nothing in the app calls
+# sendPhoneCommand yet; phase 2 does.
+#
+# New transport event cmd 5 (core.TransportCmdKeyframeNeeded), payload a 4-byte big-endian
+# count of dropped frames: the live queue overflowed with no IDR left in it and now drops to
+# the next one, so the dash's picture is frozen until it arrives. Raised at most once a second
+# and again each second the IDR is still owed; never for JPEG stills. RideDaemonTransport
+# answers it with an encoder sync-frame request.
 
 # Rebuilt 2026-10-06 (issue #12): phone-originated PXC commands go out on the phone channel.
 #
@@ -58,4 +73,4 @@ license=GPL-3.0-only
 # diffed against the old AAR with javap: purely additive, exactly
 # get/setAppStatusNotifyEnabled and get/setPhoneScreenWidth|Height|Rotation on
 # api.MobileConfig; api.MobileSession and api.Api byte-identical.
-source_note=p2c-channel-routing
+source_note=ridelink-phase1
