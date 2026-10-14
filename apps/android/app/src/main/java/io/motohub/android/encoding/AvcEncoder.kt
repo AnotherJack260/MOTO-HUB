@@ -34,7 +34,10 @@ data class EncoderProfile(
     /** Leaves a GOP stream on the codec's default (VBR) rate control instead of CBR, the way
      *  CarbitRide encodes the Zontes 350D. Experimental: see [gopUsesCbr] for why CBR is the
      *  default. */
-    val variableBitrate: Boolean = false
+    val variableBitrate: Boolean = false,
+    /** The most a live bitrate change may raise the stream to; null keeps [bitRate] the ceiling.
+     *  Automatic image is configured at [bitRate] and raised from there toward this. */
+    val maxBitRate: Int? = null
 ) {
     companion object {
         fun forTBoxArea(width: Int, height: Int): EncoderProfile = EncoderProfile(
@@ -111,6 +114,13 @@ class AvcEncoder(
      *  congestion they signal is invisible to [AdaptiveVideoController]. */
     private val transportDroppedFrames = AtomicLong(0L)
 
+    /** Everything the codec emitted, so the adaptive log can show what it really produced. */
+    private val outputBytes = AtomicLong(0L)
+
+    /** What [setEncoderBitrate] may ask for: [EncoderProfile.maxBitRate] inside the configured
+     *  codec's advertised bitrate range, else the configured rate. */
+    @Volatile private var bitrateCeiling = profile.maxBitRate ?: profile.bitRate
+
     /** The interval the codec was actually configured with; see [effectiveKeyframeIntervalSeconds].
      *  Everything downstream of configure() reads the real stream shape, not the requested one. */
     @Volatile private var streamKeyframeIntervalSeconds = profile.keyframeIntervalSeconds
@@ -139,6 +149,8 @@ class AvcEncoder(
 
     fun transportDroppedFramesTotal(): Long = transportDroppedFrames.get()
 
+    fun outputBytesTotal(): Long = outputBytes.get()
+
     /** A frame the transport discarded after accepting it - the CORE video pipe drops the oldest
      *  queued frame under congestion and still reports the offer as accepted. Counted whatever the
      *  stream shape, because the congestion it signals is what [AdaptiveVideoController] must back
@@ -154,7 +166,9 @@ class AvcEncoder(
         ProjectionEventLog.record(
             "ENCODER",
             "Configuring AVC encoder ${profile.width}x${profile.height}@${profile.frameRate}, " +
-                "bitrate=${profile.bitRate}, I-frame interval=${profile.keyframeIntervalSeconds}s" +
+                "bitrate=${profile.bitRate}, " +
+                (profile.maxBitRate?.let { "max bitrate=$it, " } ?: "") +
+                "I-frame interval=${profile.keyframeIntervalSeconds}s" +
                 if (profile.keyframeIntervalSeconds == 0) " (all-intra)." else " (GOP)."
         )
         try {
@@ -387,6 +401,10 @@ class AvcEncoder(
             // Only the stream shape that was actually accepted may drive the drain loop.
             streamKeyframeIntervalSeconds = streamInterval
             intraRefreshActive = attempt.intraRefresh
+            bitrateCeiling = profile.maxBitRate?.let { max ->
+                runCatching { capabilities?.videoCapabilities?.bitrateRange?.clamp(max) }
+                    .getOrNull() ?: max
+            } ?: profile.bitRate
             ProjectionEventLog.record(
                 "ENCODER",
                 "Configured H.264 ${attempt.describe()} on ${configuredCodec.name}."
@@ -514,18 +532,20 @@ class AvcEncoder(
         })
     }
 
-    /** Adjust the running H.264 bitrate without recreating the codec. */
-    fun setEncoderBitrate(bitRate: Int) {
-        val activeCodec = codec ?: return
-        val clamped = bitRate.coerceIn(1, profile.bitRate)
-        runCatching {
+    /** Adjust the running H.264 bitrate without recreating the codec. False when there is no codec
+     *  or it refused the change; a codec may also accept it and quietly ignore it, which only
+     *  [outputBytesTotal] shows. */
+    fun setEncoderBitrate(bitRate: Int): Boolean {
+        val activeCodec = codec ?: return false
+        val clamped = bitRate.coerceIn(1, bitrateCeiling)
+        return runCatching {
             activeCodec.setParameters(Bundle().apply {
                 putInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE, clamped)
             })
             ProjectionEventLog.record("ENCODER", "AVC bitrate adjusted to ${clamped / 1000}kbps.")
         }.onFailure {
             ProjectionEventLog.warning("ENCODER", "AVC bitrate adjustment failed.", it)
-        }
+        }.isSuccess
     }
 
     /** Cap forwarded access units; the encoder remains surface-driven and the cap is live. */
@@ -556,6 +576,7 @@ class AvcEncoder(
                     else -> if (index >= 0) {
                         try {
                             if (bufferInfo.size > 0) {
+                                outputBytes.addAndGet(bufferInfo.size.toLong())
                                 val sample = activeCodec.getOutputBuffer(index)?.copyRange(
                                     bufferInfo.offset,
                                     bufferInfo.size
