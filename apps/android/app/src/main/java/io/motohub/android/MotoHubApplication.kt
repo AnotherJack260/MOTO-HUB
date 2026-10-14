@@ -5,6 +5,7 @@ package io.motohub.android
 
 import android.app.Application
 import android.app.UiModeManager
+import io.motohub.android.data.PerBikeSettingsMigration
 import io.motohub.android.i18n.MotoHubStrings
 import io.motohub.android.session.CrashRecovery
 import io.motohub.android.session.ProcessExitReport
@@ -23,6 +24,10 @@ class MotoHubApplication : Application() {
         MotoHubStrings.initialize(this)
         SentryIntegration.initialize(this)
         ProjectionEventLog.initialize(this)
+        // Before any service in this process reads a setting. A failure only means the globals
+        // are still read, which is the same session: see PerBikeSettingsMigration.
+        runCatching { PerBikeSettingsMigration.run(this) }
+            .onFailure { ProjectionEventLog.warning("SETTINGS", "Per-motorcycle settings migration failed; retrying next launch.", it) }
         CrashRecovery.install(this)
         CrashRecovery.restorePreviousCrash(this)
         // After the crash report, and covering what it cannot: a process that was killed rather

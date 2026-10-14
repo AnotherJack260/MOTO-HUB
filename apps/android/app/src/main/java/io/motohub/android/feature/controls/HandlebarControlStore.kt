@@ -119,11 +119,12 @@ enum class HandlebarGesture(
 
 object HandlebarControlStore {
     private const val PREFERENCES = "handlebar_controls"
-    private const val ENABLED = "enabled"
+    // Internal for PerBikeSettingsMigration, which copies them onto every motorcycle.
+    internal const val ENABLED = "enabled"
     private const val MANAGED_BY_COMPANION = "managed_by_companion"
-    private const val DASHBOARD_REPORTS_HOLDS = "dashboard_reports_holds"
+    internal const val DASHBOARD_REPORTS_HOLDS = "dashboard_reports_holds"
     private const val CALIBRATION_PREFIX = "calibrated_"
-    private const val INPUT_MODE = "input_mode"
+    internal const val INPUT_MODE = "input_mode"
     /** Bumped when [defaultAction] values change — auto-migrates stored overrides. */
     private const val DEFAULTS_VER = 3
 
@@ -203,7 +204,8 @@ object HandlebarControlStore {
         HandlebarGesture.entries.forEach { setAction(context, it, it.defaultAction) }
     }
 
-    private fun ensureDefaultsMigrated(context: Context) {
+    /** Internal so PerBikeSettingsMigration runs it first: V2 only ever reached the global keys. */
+    internal fun ensureDefaultsMigrated(context: Context) {
         val p = preferences(context)
         // Each step is gated on the version the install is coming FROM, not just on being behind
         // the current one: re-running V2 on an install that already passed it would delete an

@@ -8,6 +8,7 @@ import io.motohub.android.i18n.motoHubText
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.motohub.android.data.MotorcycleProfileStore
+import io.motohub.android.feature.controls.MotorcycleScope
 import io.motohub.android.feature.pairing.ManualSsidVerdict
 import io.motohub.android.feature.pairing.manualSsidVerdict
 import io.motohub.android.feature.pairing.withModelIdForConnectionMode
@@ -531,6 +532,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
             return GarageResult.FAILED
         }
         capabilityStore.delete(profileId)
+        MotorcycleScope.forget(getApplication(), profileId)
         val remaining = current.motorcycles.filterNot { it.id == profileId }
         val active = profileStore.load()
         mutableUiState.value = if (active == null) {

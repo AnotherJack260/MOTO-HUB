@@ -6,6 +6,7 @@ package io.motohub.android.feature.settings
 import android.content.Context
 import io.motohub.android.R
 import io.motohub.android.androidauto.AndroidAutoVideoPreset
+import io.motohub.android.feature.controls.MotorcycleScope
 import kotlin.math.roundToInt
 
 enum class VideoQuality(
@@ -36,13 +37,14 @@ enum class VideoPowerMode(
 }
 
 /**
- * Every coded source the Android Auto protocol defines, plus AUTO.
+ * The coded sources a rider can pick under Size › Custom, plus AUTO.
  *
- * The list is deliberately complete rather than curated: MOTO-HUB is the head unit, so whatever
+ * Almost every source the Android Auto protocol defines: MOTO-HUB is the head unit, so whatever
  * the protocol can ask the phone for is a resolution some dashboard out there could want, and a
  * rider who knows their panel is a better judge of it than a table of the dashes we have seen.
  * What the app does NOT do is choose the unvalidated ones by itself - see
- * [AndroidAutoVideoPreset.autoSelectable].
+ * [AndroidAutoVideoPreset.autoSelectable]. The two QHD sources were retired (owner decision,
+ * 2026-10-14); a stored QHD name now reads as Size Standard ([AndroidAutoSize.fromStoredPair]).
  */
 enum class AndroidAutoResolutionMode(
     val label: String,
@@ -79,13 +81,6 @@ enum class AndroidAutoResolutionMode(
         R.string.android_auto_resolution_landscape_fhd_description,
         AndroidAutoVideoPreset.LANDSCAPE_1920X1080
     ),
-    LANDSCAPE_QHD(
-        "Landscape 2560 x 1440",
-        "Quad HD landscape source. Heavy on the phone and not validated on any known dashboard.",
-        R.string.android_auto_resolution_landscape_qhd,
-        R.string.android_auto_resolution_landscape_qhd_description,
-        AndroidAutoVideoPreset.LANDSCAPE_2560X1440
-    ),
     LANDSCAPE_UHD(
         "Landscape 3840 x 2160",
         "4K landscape source. The phone encodes and decodes 4K at once; expect heat and drops.",
@@ -106,13 +101,6 @@ enum class AndroidAutoResolutionMode(
         R.string.android_auto_resolution_portrait_hd,
         R.string.android_auto_resolution_portrait_hd_description,
         AndroidAutoVideoPreset.PORTRAIT_1080X1920
-    ),
-    PORTRAIT_QHD(
-        "Portrait 1440 x 2560",
-        "Quad HD portrait source. Heavy on the phone and not validated on any known dashboard.",
-        R.string.android_auto_resolution_portrait_qhd,
-        R.string.android_auto_resolution_portrait_qhd_description,
-        AndroidAutoVideoPreset.PORTRAIT_1440X2560
     ),
     PORTRAIT_UHD(
         "Portrait 2160 x 3840",
@@ -226,6 +214,81 @@ enum class AndroidAutoAspectMatchingMode(
 }
 
 /**
+ * How big Android Auto draws on one motorcycle's dashboard. The dashboard decides the orientation;
+ * the rider only picks the size. [STANDARD] is exactly the old AUTO resolution at AUTO density,
+ * and [CUSTOM] replays the stored [AndroidAutoResolutionMode] and [AndroidAutoDensityMode] as
+ * they always were. Read when Android Auto starts, so a change applies on the next start.
+ */
+enum class AndroidAutoSize {
+    COMPACT, STANDARD, LARGE, CUSTOM;
+
+    /** The override preset and dpi handed to AndroidAutoCapabilityProfiles.select; (null, null) is AUTO. */
+    fun resolve(
+        portrait: Boolean,
+        custom: AndroidAutoResolutionMode,
+        customDpi: AndroidAutoDensityMode
+    ): Pair<AndroidAutoVideoPreset?, Int?> = when (this) {
+        // 1920x1080 at 240 dpi: the layout of 1280x720 at 160, drawn sharper. The owner's setup.
+        COMPACT -> (if (portrait) AndroidAutoVideoPreset.PORTRAIT_1080X1920 else AndroidAutoVideoPreset.LANDSCAPE_1920X1080) to 240
+        STANDARD -> null to null
+        // ponytail: unvalidated on a bike (a 640x290 dp layout on a 1024x464 dash); becomes
+        // 1280x720 at 240 if Android Auto crops or refuses it.
+        LARGE -> (if (portrait) AndroidAutoVideoPreset.PORTRAIT_720X1280 else AndroidAutoVideoPreset.LANDSCAPE_1280X720) to 320
+        CUSTOM -> custom.preset to customDpi.dpi
+    }
+
+    companion object {
+        /** Retired from the resolution list. A rider on one gets today's AUTO, not SD at its dpi. */
+        private val RETIRED_RESOLUTIONS = setOf("LANDSCAPE_QHD", "PORTRAIT_QHD")
+
+        /**
+         * The Size a motorcycle with no stored Size reads, from its raw resolution and density
+         * names: AUTO/AUTO (or nothing) and a retired QHD name are Standard, anything else is
+         * Custom, which replays the stored pair exactly. So the session never changes, migrated
+         * or not.
+         */
+        fun fromStoredPair(rawRes: String?, rawDpi: String?): AndroidAutoSize = when {
+            rawRes in RETIRED_RESOLUTIONS -> STANDARD
+            (rawRes == null || rawRes == "AUTO") && (rawDpi == null || rawDpi == "AUTO") -> STANDARD
+            else -> CUSTOM
+        }
+
+        /**
+         * Migration only: a named size when the stored pair is exactly that size's pair for a
+         * dashboard whose orientation is proven ([portrait] non-null), else [fromStoredPair].
+         */
+        fun fromLegacy(rawRes: String?, rawDpi: String?, portrait: Boolean?): AndroidAutoSize =
+            portrait?.let { proven ->
+                listOf(COMPACT, LARGE).firstOrNull { it.storedPair(proven) == (rawRes to rawDpi) }
+            } ?: fromStoredPair(rawRes, rawDpi)
+
+        /** The resolution and density names whose Custom pair resolves the same as [this]. */
+        private fun AndroidAutoSize.storedPair(portrait: Boolean): Pair<String?, String?> {
+            val (preset, dpi) = resolve(portrait, AndroidAutoResolutionMode.AUTO, AndroidAutoDensityMode.AUTO)
+            return AndroidAutoResolutionMode.entries.firstOrNull { it.preset == preset }?.name to
+                AndroidAutoDensityMode.entries.firstOrNull { it.dpi == dpi }?.name
+        }
+    }
+}
+
+/**
+ * The picture one motorcycle streams. Sharper and Smoother are the top and the bottom of
+ * Automatic's bitrate range, held fixed ([VideoQuality] keeps the multipliers).
+ */
+enum class ImageQuality {
+    AUTOMATIC, SHARPER, SMOOTHER;
+
+    companion object {
+        /** The old video_quality: Sharper and Smoother keep their meaning, anything else is Automatic. */
+        fun fromLegacy(raw: String?): ImageQuality = when (raw) {
+            VideoQuality.SHARPER.name -> SHARPER
+            VideoQuality.SMOOTHER.name -> SMOOTHER
+            else -> AUTOMATIC
+        }
+    }
+}
+
+/**
  * The screen MOTO-HUB puts on the TFT by itself once the motorcycle link comes up, when
  * autostart is enabled.
  *
@@ -262,29 +325,44 @@ enum class RoutePreference(val label: String, val description: String, val label
     SCENIC("Scenic", "Bias toward back roads and away from motorways.", R.string.route_preference_scenic, R.string.route_preference_scenic_description)
 }
 
+/**
+ * App settings, plus one motorcycle's settings.
+ *
+ * The per-motorcycle ones (Android Auto size and fit, touch, image, frame rate, the Advanced
+ * overrides, autostart, the clocks, Wi-Fi Direct) are stored as `"<key>#<motorcycleId>"` and read
+ * through [MotorcycleScope]: an explicit [io.motohub.android.feature.controls.MotorcycleContext]
+ * first, else the live session's motorcycle, else the garage's active one. Pass the caller's
+ * context through as it is - never `applicationContext`, which would drop that wrapper.
+ */
 object MotoHubSettings {
-    private const val PREFERENCES = "moto_hub_settings"
-    private const val KEY_VIDEO_QUALITY = "video_quality"
-    private const val KEY_VIDEO_POWER_MODE = "video_power_mode"
-    private const val KEY_DISABLE_TOUCHSCREEN = "disable_touchscreen"
+    // Internal: PerBikeSettingsMigration moves the per-motorcycle ones and needs their names.
+    internal const val PREFERENCES = "moto_hub_settings"
+    /** Legacy, read only to derive [KEY_IMAGE_QUALITY] until the migration deletes it. */
+    internal const val KEY_VIDEO_QUALITY = "video_quality"
+    internal const val KEY_IMAGE_QUALITY = "image_quality"
+    internal const val KEY_VIDEO_POWER_MODE = "video_power_mode"
+    internal const val KEY_DISABLE_TOUCHSCREEN = "disable_touchscreen"
     private const val KEY_SEAMLESS_RESUME = "seamless_resume"
-    private const val KEY_ANDROID_AUTO_RESOLUTION = "android_auto_resolution"
-    private const val KEY_ANDROID_AUTO_DENSITY = "android_auto_density"
-    private const val KEY_ANDROID_AUTO_ASPECT_MATCHING = "android_auto_aspect_matching"
+    internal const val KEY_ANDROID_AUTO_SIZE = "android_auto_size"
+    internal const val KEY_ANDROID_AUTO_RESOLUTION = "android_auto_resolution"
+    internal const val KEY_ANDROID_AUTO_DENSITY = "android_auto_density"
+    internal const val KEY_ANDROID_AUTO_ASPECT_MATCHING = "android_auto_aspect_matching"
     private const val KEY_AUTO_CONNECT = "auto_connect"
-    private const val KEY_AUTOSTART_ENABLED = "autostart_enabled"
-    private const val KEY_AUTOSTART_SERVICE = "autostart_service"
+    internal const val KEY_AUTOSTART_ENABLED = "autostart_enabled"
+    internal const val KEY_AUTOSTART_SERVICE = "autostart_service"
     private const val KEY_AUTO_RECOVERY = "auto_recovery"
-    private const val KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT = "keep_wifi_direct_on_disconnect"
-    private const val KEY_BLUETOOTH_CLOCK_SYNC = "bluetooth_clock_sync"
-    private const val KEY_DASH_CLOCK_SYNC = "dash_clock_sync"
+    internal const val KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT = "keep_wifi_direct_on_disconnect"
+    internal const val KEY_BLUETOOTH_CLOCK_SYNC = "bluetooth_clock_sync"
+    internal const val KEY_DASH_CLOCK_SYNC = "dash_clock_sync"
+    private const val KEY_BASE_BITRATE = "base_bitrate_bps"
+    private const val KEY_KEYFRAME_INTERVAL = "keyframe_interval_s"
+    private const val KEY_CARBIT_EXACT = "carbit_exact"
     private const val KEY_AUTO_RECORD_TRIPS = "auto_record_trips"
     private const val KEY_SHOW_RECORDED_TRACK = "show_recorded_track_on_dashboard"
     private const val KEY_DISTANCE_UNITS = "distance_units"
     private const val KEY_ROUTE_PREFERENCE = "route_preference"
     private const val KEY_NAV_VOICE_ENABLED = "nav_voice_enabled"
     private const val KEY_USE_DEMO_ROUTING_SERVER = "use_demo_routing_server"
-    private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
     private const val KEY_SAFETY_DISCLAIMER_ACKNOWLEDGED = "safety_disclaimer_acknowledged"
     private const val KEY_PERMISSION_PRIMER_SEEN = "permission_primer_seen"
     private const val KEY_VERBOSE_TBOX_LOGGING = "verbose_tbox_logging"
@@ -329,32 +407,67 @@ object MotoHubSettings {
         preferences(context).edit().putBoolean(KEY_USE_DEMO_ROUTING_SERVER, enabled).apply()
     }
 
-    fun videoQuality(context: Context): VideoQuality = enumPreference(
-        context = context,
-        key = KEY_VIDEO_QUALITY,
-        default = VideoQuality.BALANCED
-    )
+    /** Per motorcycle. Absent, it is derived from the motorcycle's old video_quality. */
+    fun imageQuality(context: Context): ImageQuality =
+        scopedEnumOrNull<ImageQuality>(context, KEY_IMAGE_QUALITY)
+            ?: ImageQuality.fromLegacy(scopedString(context, KEY_VIDEO_QUALITY))
 
-    fun setVideoQuality(context: Context, quality: VideoQuality) {
-        preferences(context).edit().putString(KEY_VIDEO_QUALITY, quality.name).apply()
+    fun setImageQuality(context: Context, quality: ImageQuality) {
+        putScoped(context, KEY_IMAGE_QUALITY, quality.name)
     }
 
-    fun videoPowerMode(context: Context): VideoPowerMode = enumPreference(
-        context = context,
-        key = KEY_VIDEO_POWER_MODE,
-        default = VideoPowerMode.AUTO
-    )
+    /** Per motorcycle: the frame-rate cap (Advanced › Frame rate). */
+    fun videoPowerMode(context: Context): VideoPowerMode =
+        scopedEnum(context, KEY_VIDEO_POWER_MODE, VideoPowerMode.AUTO)
 
     fun setVideoPowerMode(context: Context, mode: VideoPowerMode) {
-        preferences(context).edit().putString(KEY_VIDEO_POWER_MODE, mode.name).apply()
+        putScoped(context, KEY_VIDEO_POWER_MODE, mode.name)
     }
 
-    /** Force Android Auto to use focus/handlebar controls instead of advertising touch input. */
+    /**
+     * Per motorcycle, Advanced › Base bitrate in bps: the value Sharper and Smoother scale; null
+     * is Auto (the Carbit plan, the dashboard profile, or the negotiated rate).
+     */
+    fun baseBitrateOverride(context: Context): Int? = scopedInt(context, KEY_BASE_BITRATE)
+
+    fun setBaseBitrateOverride(context: Context, bitsPerSecond: Int?) {
+        putScopedOrRemove(context, KEY_BASE_BITRATE, bitsPerSecond?.toString())
+    }
+
+    /** Per motorcycle, Advanced › I-frame interval in seconds, 0 for every frame; null is Auto. */
+    fun keyframeIntervalOverride(context: Context): Int? = scopedInt(context, KEY_KEYFRAME_INTERVAL)
+
+    fun setKeyframeIntervalOverride(context: Context, seconds: Int?) {
+        putScopedOrRemove(context, KEY_KEYFRAME_INTERVAL, seconds?.toString())
+    }
+
+    /**
+     * Per motorcycle, Advanced › Carbit-exact media; null is Auto (the dashboard profile's own
+     * carbitExactVideo). It moves the Carbit encoder plan with it: a dash answered Carbit's way is
+     * sent Carbit's picture size.
+     */
+    fun carbitExactOverride(context: Context): Boolean? = when (scopedString(context, KEY_CARBIT_EXACT)) {
+        CARBIT_ON -> true
+        CARBIT_OFF -> false
+        else -> null
+    }
+
+    fun setCarbitExactOverride(context: Context, exact: Boolean?) {
+        putScopedOrRemove(context, KEY_CARBIT_EXACT, exact?.let { if (it) CARBIT_ON else CARBIT_OFF })
+    }
+
+    private const val CARBIT_ON = "on"
+    private const val CARBIT_OFF = "off"
+
+    /**
+     * Per motorcycle: force Android Auto to use focus/handlebar controls instead of advertising
+     * touch input.
+     */
     fun disableTouchscreen(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_DISABLE_TOUCHSCREEN, false)
+        scopedBoolean(context, KEY_DISABLE_TOUCHSCREEN, false)
 
     fun setDisableTouchscreen(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_DISABLE_TOUCHSCREEN, enabled).apply()
+        putScoped(context, KEY_DISABLE_TOUCHSCREEN, enabled)
     }
 
     fun seamlessResume(context: Context): Boolean =
@@ -364,34 +477,44 @@ object MotoHubSettings {
         preferences(context).edit().putBoolean(KEY_SEAMLESS_RESUME, enabled).apply()
     }
 
-    fun androidAutoResolution(context: Context): AndroidAutoResolutionMode = enumPreference(
-        context = context,
-        key = KEY_ANDROID_AUTO_RESOLUTION,
-        default = AndroidAutoResolutionMode.AUTO
-    )
+    /**
+     * Per motorcycle. Absent, it is derived from the motorcycle's raw resolution and density
+     * (which still fall back to the pre-garage globals until the migration removes them), so the
+     * session is the same whether or not the migration has run.
+     */
+    fun androidAutoSize(context: Context): AndroidAutoSize =
+        scopedEnumOrNull<AndroidAutoSize>(context, KEY_ANDROID_AUTO_SIZE)
+            ?: AndroidAutoSize.fromStoredPair(
+                scopedString(context, KEY_ANDROID_AUTO_RESOLUTION),
+                scopedString(context, KEY_ANDROID_AUTO_DENSITY)
+            )
+
+    fun setAndroidAutoSize(context: Context, size: AndroidAutoSize) {
+        putScoped(context, KEY_ANDROID_AUTO_SIZE, size.name)
+    }
+
+    /** Per motorcycle, used only when [androidAutoSize] is Custom. */
+    fun androidAutoResolution(context: Context): AndroidAutoResolutionMode =
+        scopedEnum(context, KEY_ANDROID_AUTO_RESOLUTION, AndroidAutoResolutionMode.AUTO)
 
     fun setAndroidAutoResolution(context: Context, mode: AndroidAutoResolutionMode) {
-        preferences(context).edit().putString(KEY_ANDROID_AUTO_RESOLUTION, mode.name).apply()
+        putScoped(context, KEY_ANDROID_AUTO_RESOLUTION, mode.name)
     }
 
-    fun androidAutoDensity(context: Context): AndroidAutoDensityMode = enumPreference(
-        context = context,
-        key = KEY_ANDROID_AUTO_DENSITY,
-        default = AndroidAutoDensityMode.AUTO
-    )
+    /** Per motorcycle, used only when [androidAutoSize] is Custom. */
+    fun androidAutoDensity(context: Context): AndroidAutoDensityMode =
+        scopedEnum(context, KEY_ANDROID_AUTO_DENSITY, AndroidAutoDensityMode.AUTO)
 
     fun setAndroidAutoDensity(context: Context, mode: AndroidAutoDensityMode) {
-        preferences(context).edit().putString(KEY_ANDROID_AUTO_DENSITY, mode.name).apply()
+        putScoped(context, KEY_ANDROID_AUTO_DENSITY, mode.name)
     }
 
-    fun androidAutoAspectMatching(context: Context): AndroidAutoAspectMatchingMode = enumPreference(
-        context = context,
-        key = KEY_ANDROID_AUTO_ASPECT_MATCHING,
-        default = AndroidAutoAspectMatchingMode.AUTO
-    )
+    /** Per motorcycle: Fit. AUTO is "Fill the screen", MANUAL is "Show everything". */
+    fun androidAutoAspectMatching(context: Context): AndroidAutoAspectMatchingMode =
+        scopedEnum(context, KEY_ANDROID_AUTO_ASPECT_MATCHING, AndroidAutoAspectMatchingMode.AUTO)
 
     fun setAndroidAutoAspectMatching(context: Context, mode: AndroidAutoAspectMatchingMode) {
-        preferences(context).edit().putString(KEY_ANDROID_AUTO_ASPECT_MATCHING, mode.name).apply()
+        putScoped(context, KEY_ANDROID_AUTO_ASPECT_MATCHING, mode.name)
     }
 
     fun autoConnect(context: Context): Boolean = preferences(context).getBoolean(KEY_AUTO_CONNECT, false)
@@ -404,22 +527,23 @@ object MotoHubSettings {
      * Put the configured service on the TFT as soon as the motorcycle link is up, instead of
      * leaving the rider on the mode picker. Off by default: which screen a rider wants is a
      * personal choice, and starting one uninvited would take over their dashboard.
+     *
+     * Per motorcycle ("On arrival"), with [autostartService].
      */
     fun autostartEnabled(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_AUTOSTART_ENABLED, false)
+        scopedBoolean(context, KEY_AUTOSTART_ENABLED, false)
 
     fun setAutostartEnabled(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_AUTOSTART_ENABLED, enabled).apply()
+        putScoped(context, KEY_AUTOSTART_ENABLED, enabled)
     }
 
-    fun autostartService(context: Context): AutostartService = enumPreference(
-        context = context,
-        key = KEY_AUTOSTART_SERVICE,
-        default = AutostartService.MIRRORING
-    )
+    /** MIRRORING by default, as it always was: a motorcycle with autostart on and no stored service
+     *  must keep starting Mirroring. */
+    fun autostartService(context: Context): AutostartService =
+        scopedEnum(context, KEY_AUTOSTART_SERVICE, AutostartService.MIRRORING)
 
     fun setAutostartService(context: Context, service: AutostartService) {
-        preferences(context).edit().putString(KEY_AUTOSTART_SERVICE, service.name).apply()
+        putScoped(context, KEY_AUTOSTART_SERVICE, service.name)
     }
 
     /** Recovery is enabled by default so a transient T-Box transport failure does not end a ride. */
@@ -434,13 +558,13 @@ object MotoHubSettings {
      * of the default eager teardown. Off by default: staying associated to the dash's network has
      * a real cost (no other network usable over that link until the group is actually torn down,
      * i.e. Wi-Fi off or the app fully exits), so only a rider whose dash needs this should pay it.
-     * See [io.motohub.android.tbox.TBoxLink.WifiDirect].
+     * See [io.motohub.android.tbox.TBoxLink.WifiDirect]. Per motorcycle.
      */
     fun keepWifiDirectAfterDisconnect(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT, false)
+        scopedBoolean(context, KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT, false)
 
     fun setKeepWifiDirectAfterDisconnect(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT, enabled).apply()
+        putScoped(context, KEY_KEEP_WIFI_DIRECT_ON_DISCONNECT, enabled)
     }
 
     /**
@@ -450,13 +574,13 @@ object MotoHubSettings {
      * UUIDs that intercoms, OBD dongles and tyre sensors also use, so this is not something to
      * switch on for riders who are not chasing a wrong dash clock. Even when enabled,
      * [io.motohub.android.tbox.EcBtpTimeLink] never transmits to a device until that device has
-     * sent a valid frame of the protocol.
+     * sent a valid frame of the protocol. Per motorcycle.
      */
     fun bluetoothClockSync(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_BLUETOOTH_CLOCK_SYNC, false)
+        scopedBoolean(context, KEY_BLUETOOTH_CLOCK_SYNC, false)
 
     fun setBluetoothClockSync(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_BLUETOOTH_CLOCK_SYNC, enabled).apply()
+        putScoped(context, KEY_BLUETOOTH_CLOCK_SYNC, enabled)
     }
 
     /**
@@ -477,13 +601,13 @@ object MotoHubSettings {
      * push the time unasked ([io.motohub.android.tbox.RideDaemonTransport] maps it to
      * `MobileConfig.SkipDashClockSync`). The handshake still completes; the dash is simply not
      * told a time. Only turn it off for a dash that asks for the time and ignores it - a dash that
-     * never asks at all is the case the daemon now handles on its own.
+     * never asks at all is the case the daemon now handles on its own. Per motorcycle.
      */
     fun dashClockSync(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_DASH_CLOCK_SYNC, true)
+        scopedBoolean(context, KEY_DASH_CLOCK_SYNC, true)
 
     fun setDashClockSync(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_DASH_CLOCK_SYNC, enabled).apply()
+        putScoped(context, KEY_DASH_CLOCK_SYNC, enabled)
     }
 
     /**
@@ -534,21 +658,6 @@ object MotoHubSettings {
         preferences(context).edit().putBoolean(KEY_SHOW_RECORDED_TRACK, enabled).apply()
     }
 
-    /**
-     * Hold the phone's screen awake while a MOTO-HUB screen is in the foreground.
-     *
-     * No screen in this edition writes it, so it reads false and the diagnostics report says so -
-     * which is the truth about a CORE install rather than a gap in it. It lives here, and not
-     * behind an edition check at the one place that reads it, so the two copies of this shared
-     * file keep the same surface.
-     */
-    fun keepScreenOn(context: Context): Boolean =
-        preferences(context).getBoolean(KEY_KEEP_SCREEN_ON, false)
-
-    fun setKeepScreenOn(context: Context, enabled: Boolean) {
-        preferences(context).edit().putBoolean(KEY_KEEP_SCREEN_ON, enabled).apply()
-    }
-
     /** True after the rider chose not to see the startup safety warning again. */
     fun safetyDisclaimerAcknowledged(context: Context): Boolean =
         preferences(context).getBoolean(KEY_SAFETY_DISCLAIMER_ACKNOWLEDGED, false)
@@ -573,6 +682,42 @@ object MotoHubSettings {
     ): T {
         val stored = preferences(context).getString(key, default.name)
         return enumValues<T>().firstOrNull { it.name == stored } ?: default
+    }
+
+    // ── per-motorcycle values ────────────────────────────────────────────────────────────────
+    //
+    // Scoped through MotorcycleScope with the CALLER's context, so an explicit MotorcycleContext
+    // reaches it. An unknown stored name falls back to that one key's default, nothing else.
+
+    private fun scopedString(context: Context, key: String): String? =
+        MotorcycleScope.getString(preferences(context), context, key, null)
+
+    private inline fun <reified T : Enum<T>> scopedEnumOrNull(context: Context, key: String): T? =
+        scopedString(context, key)?.let { s -> enumValues<T>().firstOrNull { it.name == s } }
+
+    private inline fun <reified T : Enum<T>> scopedEnum(context: Context, key: String, default: T): T =
+        scopedEnumOrNull<T>(context, key) ?: default
+
+    private fun scopedBoolean(context: Context, key: String, default: Boolean): Boolean =
+        MotorcycleScope.getBoolean(preferences(context), context, key, default)
+
+    private fun scopedInt(context: Context, key: String): Int? = scopedString(context, key)?.toIntOrNull()
+
+    private fun putScoped(context: Context, key: String, value: String) {
+        MotorcycleScope.putString(preferences(context), context, key, value)
+    }
+
+    private fun putScoped(context: Context, key: String, value: Boolean) {
+        MotorcycleScope.putBoolean(preferences(context), context, key, value)
+    }
+
+    /** Null drops this motorcycle's value, which reads as Auto. */
+    private fun putScopedOrRemove(context: Context, key: String, value: String?) {
+        if (value == null) {
+            MotorcycleScope.remove(preferences(context), context, key)
+        } else {
+            putScoped(context, key, value)
+        }
     }
 
     private fun preferences(context: Context) = context.applicationContext.getSharedPreferences(

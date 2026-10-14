@@ -35,6 +35,22 @@ class MotorcycleScopeTest {
         PhysicalPress.entries.forEach { press -> assert(!press.id.contains('#')) }
     }
 
+    @Test
+    fun `an explicit motorcycle wins over the live session and the garage`() {
+        // The Garage editing a motorcycle that is not the live one must write to THAT motorcycle.
+        assertEquals("edited", MotorcycleScope.suffixFor("edited", live = { "live" }, active = { "active" }))
+        assertEquals("live", MotorcycleScope.suffixFor(null, live = { "live" }, active = { "active" }))
+        assertEquals("active", MotorcycleScope.suffixFor(null, live = { null }, active = { "active" }))
+        assertEquals(null, MotorcycleScope.suffixFor(null, live = { null }, active = { null }))
+    }
+
+    @Test
+    fun `forgetting a motorcycle matches only its own scoped keys`() {
+        val keys = setOf("enabled", "enabled#abc", "volumeUp#abc", "enabled#xabc", "enabled#abcd", "abc")
+
+        assertEquals(setOf("enabled#abc", "volumeUp#abc"), MotorcycleScope.keysOf(keys, "abc").toSet())
+    }
+
     /**
      * MotorcycleScope reads the garage's active-profile id straight from its preferences
      * (decoding the full profile store per button press would be far too heavy), so these
