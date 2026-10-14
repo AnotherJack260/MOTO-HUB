@@ -50,8 +50,19 @@ internal object PerBikeSettingsMigration {
         /** `profiles` is set but is not a JSON array: nothing moves, tried again next launch. */
         data object Corrupt : Garage
 
-        /** Only the pre-garage profile exists: the next loadAll() creates it, the next launch migrates. */
+        /**
+         * Only the pre-garage profile exists: the next loadAll() creates it, the next launch
+         * migrates. A password that no longer decrypts waits for the rider's next pairing, which
+         * writes the garage; the globals keep serving until then.
+         */
         data object LegacyPending : Garage
+
+        /**
+         * The pre-garage profile has an ssid but no saved password, so loadAll() can never convert
+         * it. Waiting would wait forever, and deleting would cost the motorcycle the rider pairs
+         * next these settings: the globals stay as every motorcycle's fallback, and DONE.
+         */
+        data object LegacyStranded : Garage
 
         /** No motorcycle: the globals are deleted so they never become a future motorcycle's fallback. */
         data object Empty : Garage
@@ -112,6 +123,11 @@ internal object PerBikeSettingsMigration {
                 "SETTINGS",
                 "Per-motorcycle settings wait for the old motorcycle profile to be converted."
             )
+            garage == Garage.LegacyStranded -> ProjectionEventLog.warning(
+                "SETTINGS",
+                "The old motorcycle profile has no saved password and cannot be converted; " +
+                    "its settings stay as the next motorcycle's starting point."
+            )
             garage is Garage.Bikes && garage.unstable -> ProjectionEventLog.record(
                 "SETTINGS",
                 "Per-motorcycle settings copied; the old ones stay until every motorcycle has an id."
@@ -137,6 +153,7 @@ internal object PerBikeSettingsMigration {
         if (settings[DONE] == true) return emptyList()
         val bikes = when (garage) {
             Garage.Corrupt, Garage.LegacyPending -> return emptyList()
+            Garage.LegacyStranded -> return listOf(Step(SETTINGS, mapOf(DONE to true), emptySet()))
             Garage.Empty -> emptyList()
             is Garage.Bikes -> garage.bikes.filter { it.id.isNotBlank() }
         }
@@ -202,11 +219,16 @@ internal object PerBikeSettingsMigration {
 
     /**
      * The garage from its raw preferences, by the profile decoder's own rule: an entry is a
-     * motorcycle when it is a JSON object with a non-blank ssid. [legacyReady] is the pre-garage
-     * profile being convertible (ssid and encrypted password present).
+     * motorcycle when it is a JSON object with a non-blank ssid. With no garage yet, the pre-garage
+     * [legacySsid] alone means these settings have a motorcycle; [legacyPassword] (both encrypted
+     * halves saved) is whether loadAll() can ever convert it.
      */
-    internal fun garageOf(profilesJson: String?, legacyReady: Boolean): Garage {
-        if (profilesJson.isNullOrBlank()) return if (legacyReady) Garage.LegacyPending else Garage.Empty
+    internal fun garageOf(profilesJson: String?, legacySsid: String?, legacyPassword: Boolean): Garage {
+        if (profilesJson.isNullOrBlank()) return when {
+            legacySsid.isNullOrBlank() -> Garage.Empty
+            legacyPassword -> Garage.LegacyPending
+            else -> Garage.LegacyStranded
+        }
         val array = runCatching { JSONArray(profilesJson) }.getOrNull() ?: return Garage.Corrupt
         val bikes = (0 until array.length()).mapNotNull { index ->
             val item = array.optJSONObject(index) ?: return@mapNotNull null
@@ -230,9 +252,9 @@ internal object PerBikeSettingsMigration {
         return garageOf(
             profilesJson = prefs(context, MotorcycleProfileStore.PREFERENCES_NAME)
                 .getString(MotorcycleProfileStore.KEY_PROFILES, null),
-            legacyReady = !legacy.getString(MotorcycleProfileStore.LEGACY_KEY_SSID, null).isNullOrBlank() &&
-                legacy.contains(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_IV) &&
-                legacy.contains(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_CIPHERTEXT)
+            legacySsid = legacy.getString(MotorcycleProfileStore.LEGACY_KEY_SSID, null),
+            legacyPassword = legacy.getString(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_IV, null) != null &&
+                legacy.getString(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_CIPHERTEXT, null) != null
         )
     }
 

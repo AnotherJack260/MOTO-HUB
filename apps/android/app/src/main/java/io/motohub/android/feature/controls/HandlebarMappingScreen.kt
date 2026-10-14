@@ -177,7 +177,9 @@ fun HandlebarMappingScreen(
     }
     // Ownership is checked again while teaching, not only on the way in: a session that comes up
     // for another motorcycle takes the live capture, and its presses are not this handlebar's.
-    LaunchedEffect(androidAutoState, calibrating) {
+    // Every press re-checks too, since the registry can change hands with Android Auto's state
+    // unchanged.
+    LaunchedEffect(androidAutoState, calibrating, lastGesture?.atElapsedRealtimeMillis) {
         if (calibrating && !ownsLiveCapture(context)) finishTeaching()
     }
 
@@ -195,7 +197,8 @@ fun HandlebarMappingScreen(
                 MediaButtonBridge.setCalibrating(true)
                 onDispose { MediaButtonBridge.setCalibrating(false) }
             }
-            HandlebarCalibrationScreen(onDone = finishTeaching)
+            // Read live, not captured: the wizard sliding out is still composed after teaching ends.
+            HandlebarCalibrationScreen(teaching = { calibrating }, onDone = finishTeaching)
         } else {
             HandlebarListContent(
                 captureControl = captureControl,
@@ -594,8 +597,12 @@ private fun ButtonSection(
  * handlebar and no other.
  */
 @Composable
-private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
+private fun HandlebarCalibrationScreen(teaching: () -> Boolean, onDone: () -> Unit) {
     val context = LocalContext.current
+    // Asked before every press and every write, against the motorcycle the write goes to: false
+    // once teaching has ended or that motorcycle no longer owns the live capture, which can change
+    // hands with nothing here recomposing.
+    fun accepts() = teaching() && ownsLiveCapture(context)
     var step by remember { mutableStateOf(0) }
     var learned by remember { mutableStateOf(0) }
     val lastGesture by HandlebarGestureFeed.lastGesture.collectAsState()
@@ -665,6 +672,8 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
         // The no-hold-exists case is announced and skipped by the step-change effect above,
         // before any press arrives - this only validates the shape of an actual incoming gesture.
         if (skipNotice != null) return@LaunchedEffect
+        // Nothing suspends between here and the write below, so this is also the write's check.
+        if (!accepts()) return@LaunchedEffect
 
         // The "press" step for this same physical button was always taught first (PhysicalPress
         // orders press/double/hold together per button) - its recorded gesture is this button's
@@ -713,12 +722,16 @@ private fun HandlebarCalibrationScreen(onDone: () -> Unit) {
                 MhSecondaryButton(
                     motoHubText("Not on my motorcycle"),
                     onClick = {
-                        HandlebarCalibration.recordMissing(context, press)
-                        ProjectionEventLog.record(
-                            "CONTROLS",
-                            "Marked ${press.id} as absent from this handlebar."
-                        )
-                        step++
+                        if (accepts()) {
+                            HandlebarCalibration.recordMissing(context, press)
+                            ProjectionEventLog.record(
+                                "CONTROLS",
+                                "Marked ${press.id} as absent from this handlebar."
+                            )
+                            step++
+                        } else {
+                            onDone()
+                        }
                     }
                 )
                 MhTextButton(

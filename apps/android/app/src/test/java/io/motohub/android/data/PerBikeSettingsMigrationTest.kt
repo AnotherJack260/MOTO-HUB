@@ -59,26 +59,28 @@ class PerBikeSettingsMigrationTest {
 
     @Test
     fun `the garage is read by the profile decoder's own rules`() {
-        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{not json", legacyReady = false))
-        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{}", legacyReady = false))
-        assertEquals(Garage.LegacyPending, PerBikeSettingsMigration.garageOf(null, legacyReady = true))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, legacyReady = false))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("", legacyReady = false))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("[]", legacyReady = true))
+        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{not json", null, false))
+        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{}", null, false))
+        assertEquals(Garage.LegacyPending, PerBikeSettingsMigration.garageOf(null, "ZONTES", legacyPassword = true))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, null, false))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, "  ", legacyPassword = true))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("", null, false))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("[]", "ZONTES", legacyPassword = true))
         // A non-object element and a blank ssid are not motorcycles.
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("""[1, {"id":"a","ssid":"  "}]""", false))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("""[1, {"id":"a","ssid":"  "}]""", null, false))
 
         val bikes = PerBikeSettingsMigration.garageOf(
             """[7, {"id":"a","ssid":" ZONTES ","model_id":null,"profile_override_key":"zontes_350d_vbr_test"},
                {"id":"b","ssid":"CF","model_id":"37426"}]""",
-            legacyReady = false
+            legacySsid = null,
+            legacyPassword = false
         )
         assertEquals(
             Garage.Bikes(listOf(Bike("a", "ZONTES", null, "zontes_350d_vbr_test"), Bike("b", "CF", "37426", null))),
             bikes
         )
         assertEquals(false, (bikes as Garage.Bikes).unstable)
-        val blankId = PerBikeSettingsMigration.garageOf("""[{"ssid":"ZONTES"}]""", legacyReady = false)
+        val blankId = PerBikeSettingsMigration.garageOf("""[{"ssid":"ZONTES"}]""", null, false)
         assertEquals(true, (blankId as Garage.Bikes).unstable)
     }
 
@@ -86,6 +88,27 @@ class PerBikeSettingsMigrationTest {
     fun `a corrupt or not yet converted garage moves nothing and is retried`() {
         assertEquals(emptyList<PerBikeSettingsMigration.Step>(), plan(ownerState, Garage.Corrupt))
         assertEquals(emptyList<PerBikeSettingsMigration.Step>(), plan(ownerState, Garage.LegacyPending))
+    }
+
+    @Test
+    fun `an old profile with no saved password keeps the globals for the motorcycle paired next`() {
+        // An ssid alone is still a motorcycle: never Empty, which would delete its settings.
+        val garage = PerBikeSettingsMigration.garageOf(null, "ZONTES-350D", legacyPassword = false)
+        assertEquals(Garage.LegacyStranded, garage)
+
+        // loadAll() can never convert it, so this is not deferred: DONE, and nothing deleted.
+        val done = runAll(ownerState, garage)
+        assertEquals(ownerState.getValue(SETTINGS) + (PerBikeSettingsMigration.DONE to true), done[SETTINGS])
+        assertEquals(ownerState[HANDLEBAR], done[HANDLEBAR])
+        assertEquals(ownerState[CALIBRATION], done[CALIBRATION])
+        assertEquals(emptyList<PerBikeSettingsMigration.Step>(), plan(done, garage))
+        // Re-paired, the Zontes reads FHD/240, Sharper, Smooth, autostart and its handlebar again.
+        assertEquals(reads(ownerState, zontes.id), reads(done, zontes.id))
+        assertEquals(
+            AndroidAutoSize.CUSTOM.resolve(false, AndroidAutoResolutionMode.LANDSCAPE_FHD, AndroidAutoDensityMode.DPI_240),
+            reads(done, zontes.id)["size"]
+        )
+        assertEquals(ImageQuality.SHARPER, reads(done, zontes.id)["image"])
     }
 
     @Test

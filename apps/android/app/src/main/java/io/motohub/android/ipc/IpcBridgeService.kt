@@ -1153,10 +1153,15 @@ class IpcBridgeService : Service() {
         // Applies a companion app's settings snapshot to Core's own prefs (via the same setters
         // the UI uses) so the next session honors them. Enums are parsed defensively.
         override fun applyAndroidAutoSettings(settings: AndroidAutoSettingsParcel) {
-            // One motorcycle for the whole parcel: the live session's, pinned once, so a session
-            // change halfway through cannot split the values across two motorcycles.
-            val ctx = TBoxSessionRegistry.current()?.motorcycle?.id
-                ?.let { MotorcycleScope.of(applicationContext, it) } ?: applicationContext
+            // One motorcycle for the whole parcel: the live session's, else the garage's active
+            // one, pinned once, so a session change halfway through cannot split the values
+            // across two motorcycles.
+            val handle = TBoxSessionRegistry.current()
+            val motorcycleId = handle?.motorcycle?.id ?: MotorcycleScope.garageActiveId(applicationContext)
+            val ctx = motorcycleId?.let { MotorcycleScope.of(applicationContext, it) } ?: applicationContext
+            // The live bridge and clock channel serve whoever owns the capture now: they are only
+            // touched while that is still the motorcycle this parcel wrote to.
+            fun stillLive() = MotorcycleScope.suffix(applicationContext) == motorcycleId
             // A companion's resolution or density only means something under Size Custom.
             runCatching {
                 MotoHubSettings.setAndroidAutoResolution(
@@ -1195,7 +1200,7 @@ class IpcBridgeService : Service() {
             // profile this connect installed), so this must be saved before startFullSession.
             runCatching {
                 if (settings.displayMode.isNotBlank()) {
-                    TBoxSessionRegistry.current()?.motorcycle?.let { motorcycle ->
+                    handle?.motorcycle?.let { motorcycle ->
                         AndroidAutoDisplayModeStore(ctx).save(
                             motorcycle,
                             AndroidAutoDisplayMode.valueOf(settings.displayMode)
@@ -1213,7 +1218,7 @@ class IpcBridgeService : Service() {
             // companion store must not push four zeros over a calibration made here.
             runCatching {
                 if (settings.screenMarginsProvided) {
-                    TBoxSessionRegistry.current()?.motorcycle?.let { motorcycle ->
+                    handle?.motorcycle?.let { motorcycle ->
                         val margins = TBoxScreenMargins(
                             top = settings.screenMarginTop,
                             bottom = settings.screenMarginBottom,
@@ -1258,8 +1263,10 @@ class IpcBridgeService : Service() {
                                     "Handlebar input mode mirrored from companion: " +
                                         "${previous.id} -> ${it.id}."
                                 )
-                                io.motohub.android.feature.controls.MediaButtonBridge
-                                    .inputModeChanged()
+                                if (stillLive()) {
+                                    io.motohub.android.feature.controls.MediaButtonBridge
+                                        .inputModeChanged()
+                                }
                             }
                         }
                 }
@@ -1316,13 +1323,15 @@ class IpcBridgeService : Service() {
                     io.motohub.android.feature.controls.HandlebarCalibration.import(
                         ctx, settings.handlebarCalibration
                     )
-                    io.motohub.android.feature.controls.MediaButtonBridge.refreshVolumeGestureUse()
-                    // Apply live when an AA session is already capturing (settings re-pushed by
-                    // the companion at every session start, including embedded dashboard AA).
-                    io.motohub.android.feature.controls.MediaButtonBridge.setTargetCaptureActive(
-                        io.motohub.android.feature.controls.MediaButtonBridge.TARGET_ANDROID_AUTO,
-                        settings.handlebarControlsEnabled
-                    )
+                    if (stillLive()) {
+                        io.motohub.android.feature.controls.MediaButtonBridge.refreshVolumeGestureUse()
+                        // Apply live when an AA session is already capturing (settings re-pushed by
+                        // the companion at every session start, including embedded dashboard AA).
+                        io.motohub.android.feature.controls.MediaButtonBridge.setTargetCaptureActive(
+                            io.motohub.android.feature.controls.MediaButtonBridge.TARGET_ANDROID_AUTO,
+                            settings.handlebarControlsEnabled
+                        )
+                    }
                     ProjectionEventLog.record(
                         "IPC_AA",
                         "Handlebar configuration mirrored from companion: " +
@@ -1346,7 +1355,7 @@ class IpcBridgeService : Service() {
                     // The transport already decided about this channel when it connected, seconds
                     // before this parcel arrived, so acting on the value now is what makes the
                     // rider's first ride after enabling behave like every later one.
-                    io.motohub.android.tbox.EcBtpClockChannel.refresh(ctx)
+                    if (stillLive()) io.motohub.android.tbox.EcBtpClockChannel.refresh(ctx)
                 }
             }
             // Whether a dropped session is retried is decided in Core, by

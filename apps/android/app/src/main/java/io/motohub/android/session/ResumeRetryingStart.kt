@@ -43,3 +43,12 @@ class ResumeRetryingStart<T : Any>(private val start: (T) -> Boolean) {
         return held
     }
 }
+
+/**
+ * Whether an autostart read for motorcycle [forId] may still start: the link is still waiting for
+ * a mode and the live session is still that motorcycle's. The start waits through a delay, the
+ * companion gate, the permission prompts, the consent and a held retry, and a motorcycle that
+ * connected meanwhile was never asked its "On arrival".
+ */
+fun autostartStillFor(forId: String, phase: SessionPhase, sessionMotorcycleId: String?): Boolean =
+    phase == SessionPhase.READY && sessionMotorcycleId == forId

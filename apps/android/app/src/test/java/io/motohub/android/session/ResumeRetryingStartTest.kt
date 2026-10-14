@@ -79,4 +79,15 @@ class ResumeRetryingStartTest {
         assertNull(retrying.onResume())
         assertEquals(listOf("old", "new"), starter.calls)
     }
+
+    @Test
+    fun anAutostartLandsOnlyOnItsOwnMotorcycleStillWaitingForAMode() {
+        assertTrue(autostartStillFor("a", SessionPhase.READY, "a"))
+        // B connected while A's autostart waited: B's "On arrival" was never asked.
+        assertFalse(autostartStillFor("a", SessionPhase.READY, "b"))
+        assertFalse(autostartStillFor("a", SessionPhase.READY, null))
+        // A's link dropped, or a mode is already up.
+        assertFalse(autostartStillFor("a", SessionPhase.CONNECTING_NETWORK, "a"))
+        assertFalse(autostartStillFor("a", SessionPhase.CAPTURING, "a"))
+    }
 }

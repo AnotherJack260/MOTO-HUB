@@ -130,6 +130,7 @@ import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.feature.settings.SettingsTabContent
 import io.motohub.android.session.ProjectionSessionService
 import io.motohub.android.session.ResumeRetryingStart
+import io.motohub.android.session.autostartStillFor
 import io.motohub.android.feature.diagnostics.report.CrashDiagnosticsConsentDialog
 import io.motohub.android.feature.diagnostics.report.DiagnosticReportScheduler
 import io.motohub.android.feature.diagnostics.report.PrivacyNoticeDialog
@@ -147,6 +148,7 @@ import io.motohub.android.tbox.TBoxCapabilityStore
 import io.motohub.android.tbox.TBoxModelProfile
 import io.motohub.android.tbox.TBoxPortScanResult
 import io.motohub.android.tbox.TBoxPortScanner
+import io.motohub.android.tbox.TBoxSessionRegistry
 import io.motohub.android.tbox.TBoxScanPermissions
 import io.motohub.android.tbox.CompanionAppRegistry
 import io.motohub.android.tbox.WifiGate
@@ -567,15 +569,37 @@ class MainActivity : ComponentActivity() {
                         MotoHubSnackbar.success(context, motoHubText("Photo removed"))
                     }
                 }
+                // The motorcycle an autostart was read for, carried through the companion gate, the
+                // permission prompts, the consent and a held start; null for a rider's tap. Saved,
+                // like the permission flags it travels with.
+                var autostartFor by rememberSaveable { mutableStateOf<String?>(null) }
+                // Asked immediately before a service starts. An autostart whose motorcycle is no
+                // longer the one waiting for a mode is dropped and logged; a tap always passes.
+                fun autostartLands(mode: String): Boolean {
+                    val forId = autostartFor ?: return true
+                    val session = viewModel.uiState.value.session
+                    if (autostartStillFor(forId, session.phase, TBoxSessionRegistry.current()?.motorcycle?.id)) {
+                        return true
+                    }
+                    autostartFor = null
+                    ProjectionEventLog.warning(
+                        "AUTOSTART",
+                        "$mode autostart dropped: its motorcycle is no longer the one waiting for a mode."
+                    )
+                    return false
+                }
                 // The consent result can arrive before the activity is resumed, and some ROMs
                 // refuse the foreground start in that window (WB-27). The consent is then held and
                 // tried once more on the next resume; a second refusal ends it as a cancellation.
                 val startMirroringSession: (Int, Intent) -> Boolean = { resultCode, data ->
-                    if (ProjectionSessionService.start(context, resultCode, data)) {
-                        viewModel.onProjectionRequested()
-                        true
-                    } else {
-                        false
+                    when {
+                        // Handled, not held: there is nothing to retry for a motorcycle that left.
+                        !autostartLands("Mirroring") -> true
+                        ProjectionSessionService.start(context, resultCode, data) -> {
+                            viewModel.onProjectionRequested()
+                            true
+                        }
+                        else -> false
                     }
                 }
                 val currentStartMirroringSession by rememberUpdatedState(startMirroringSession)
@@ -694,6 +718,8 @@ class MainActivity : ComponentActivity() {
                 // never lands on a different motorcycle that connected in the meantime.
                 val androidAutoStart = remember {
                     ResumeRetryingStart<String> {
+                        // Handled, not held: there is nothing to retry for a motorcycle that left.
+                        if (!autostartLands("Android Auto")) return@ResumeRetryingStart true
                         // A phone-only session that ended by itself (a call, Android Auto closing)
                         // leaves the flag set, and Stop would then go to the bridge instead of this
                         // session. The service refuses to start over a live one, so only then.
@@ -702,7 +728,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val startAndroidAutoOrHold: () -> Unit = {
-                    if (!androidAutoStart.request(viewModel.uiState.value.session.motorcycle?.id.orEmpty())) {
+                    // An autostart holds its own motorcycle, not whichever one is connected by now.
+                    val forId = autostartFor ?: viewModel.uiState.value.session.motorcycle?.id.orEmpty()
+                    if (!androidAutoStart.request(forId)) {
                         ProjectionEventLog.warning(
                             "AUTOSTART",
                             "Android Auto refused while MOTO-HUB is in the background; " +
@@ -833,8 +861,9 @@ class MainActivity : ComponentActivity() {
                 }
                 // Hoisted out of the home screen's callbacks so autostart can run the exact same
                 // sequence a tap does - permission checks included - instead of a second, subtly
-                // different copy of it.
-                val startMirroring: () -> Unit = {
+                // different copy of it. The argument is the autostart's motorcycle, null for a tap.
+                val startMirroring: (String?) -> Unit = { forId ->
+                    autostartFor = forId
                     // Mirroring needs the same reverse ports Android Auto does, and used to walk
                     // into the conflict with nothing said at all - only the AA path warned.
                     companionConflictGate.gate("Mirroring") {
@@ -853,7 +882,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val startAndroidAutoWithWarning: () -> Unit = {
+                val startAndroidAutoWithWarning: (String?) -> Unit = { forId ->
+                    autostartFor = forId
                     companionConflictGate.gate("Android Auto") { continueAndroidAutoStart() }
                 }
                 val wifiPermissionLauncher = rememberLauncherForActivityResult(
@@ -1046,8 +1076,8 @@ class MainActivity : ComponentActivity() {
                             if (!autostartArmed) return@collect
                             // This motorcycle's "On arrival", read once and pinned to it: the link
                             // can drop and another motorcycle connect inside the delay below.
-                            val bikeId = viewModel.uiState.value.session.motorcycle?.id
-                            val bike = bikeId?.let { MotorcycleScope.of(context, it) } ?: context
+                            val bikeId = viewModel.uiState.value.session.motorcycle?.id ?: return@collect
+                            val bike = MotorcycleScope.of(context, bikeId)
                             if (!MotoHubSettings.autostartEnabled(bike)) return@collect
                             val service = MotoHubSettings.autostartService(bike)
                             autostartArmed = false
@@ -1070,14 +1100,16 @@ class MainActivity : ComponentActivity() {
                                 ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the rider stopped manually.")
                                 return@collect
                             }
-                            val now = viewModel.uiState.value.session
-                            if (now.phase != SessionPhase.READY || now.motorcycle?.id != bikeId) {
+                            val phaseNow = viewModel.uiState.value.session.phase
+                            if (!autostartStillFor(bikeId, phaseNow, TBoxSessionRegistry.current()?.motorcycle?.id)) {
                                 ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the motorcycle link changed.")
                                 return@collect
                             }
+                            // bikeId travels with the start and is checked again right before the
+                            // service starts: the gate and the prompts can wait as long as the rider.
                             when (service) {
-                                AutostartService.MIRRORING -> startMirroring()
-                                AutostartService.ANDROID_AUTO -> startAndroidAutoWithWarning()
+                                AutostartService.MIRRORING -> startMirroring(bikeId)
+                                AutostartService.ANDROID_AUTO -> startAndroidAutoWithWarning(bikeId)
                                 AutostartService.RIDE_DASHBOARD -> Unit
                             }
                         }
@@ -1641,11 +1673,11 @@ class MainActivity : ComponentActivity() {
                         diagnosticsOffer = profileTrialDiagnostics,
                         onStartProjection = {
                             ProjectionEventLog.record("MIRROR", "User selected mirroring mode.")
-                            startMirroring()
+                            startMirroring(null)
                         },
                         androidAutoActive = androidAutoActive,
                         androidAutoStreaming = androidAutoStreaming,
-                        onStartAndroidAuto = startAndroidAutoWithWarning,
+                        onStartAndroidAuto = { startAndroidAutoWithWarning(null) },
                         onStopAndroidAuto = {
                             ProjectionEventLog.record("ANDROID_AUTO", "User requested Android Auto stop.")
                             if (androidAutoPreviewIsPhoneOnly) {
