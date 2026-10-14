@@ -97,8 +97,8 @@ android {
         targetSdk = 36
         // RideLink's own version line, independent of upstream MOTO-HUB's: the two install side
         // by side under different application ids, so neither ever upgrades the other.
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0-beta1"
         buildConfigField("boolean", "IS_PRO", "false")
         buildConfigField("String", "SENTRY_DSN", asBuildConfigString(coreSentryDsn))
         buildConfigField("String", "DIAGNOSTICS_ENDPOINT", asBuildConfigString(diagnosticsEndpoint))
