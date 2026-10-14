@@ -60,6 +60,41 @@ class AdaptiveVideoPolicyTest {
     }
 
     @Test
+    fun `the frame rate answers to the same heat as the bitrate unless told otherwise`() {
+        val both = AdaptiveVideoPolicy.decide(
+            baseBitrate = 4_000_000,
+            baseFrameRate = 30,
+            thermalStatus = PowerManager.THERMAL_STATUS_MODERATE,
+            previousLinkFactor = AdaptiveVideoPolicy.LINK_MAX,
+            lostFrames = 0
+        )
+        assertEquals(3_200_000, both.bitrate)
+        assertEquals(20, both.frameRate)
+
+        val bitrateOnly = AdaptiveVideoPolicy.decide(
+            baseBitrate = 4_000_000,
+            baseFrameRate = 30,
+            thermalStatus = PowerManager.THERMAL_STATUS_MODERATE,
+            previousLinkFactor = AdaptiveVideoPolicy.LINK_MAX,
+            lostFrames = 0,
+            frameRateThermalStatus = PowerManager.THERMAL_STATUS_NONE
+        )
+        assertEquals(3_200_000, bitrateOnly.bitrate)
+        assertEquals(30, bitrateOnly.frameRate)
+    }
+
+    @Test
+    fun `heat reaches the bitrate under Auto frame rate or Automatic image, the frame rate only under Auto`() {
+        val hot = PowerManager.THERMAL_STATUS_SEVERE
+        val none = PowerManager.THERMAL_STATUS_NONE
+        // A fixed image with a fixed frame rate: nothing is throttled for heat, as before.
+        assertEquals(none to none, AdaptiveVideoPolicy.thermalStatuses(hot, autoFrameRate = false, automaticImage = false))
+        assertEquals(hot to none, AdaptiveVideoPolicy.thermalStatuses(hot, autoFrameRate = false, automaticImage = true))
+        assertEquals(hot to hot, AdaptiveVideoPolicy.thermalStatuses(hot, autoFrameRate = true, automaticImage = false))
+        assertEquals(hot to hot, AdaptiveVideoPolicy.thermalStatuses(hot, autoFrameRate = true, automaticImage = true))
+    }
+
+    @Test
     fun `a recovered link climbs back to the ceiling`() {
         var factor = AdaptiveVideoPolicy.LINK_MIN
         repeat(20) { factor = AdaptiveVideoPolicy.nextLinkFactor(factor, 0) }
