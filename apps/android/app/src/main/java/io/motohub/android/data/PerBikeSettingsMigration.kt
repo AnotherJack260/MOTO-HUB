@@ -39,6 +39,9 @@ import org.json.JSONObject
 internal object PerBikeSettingsMigration {
     const val DONE = "per_bike_settings_v1"
 
+    /** Set by the launch that first found only the pre-garage profile: see [Garage.LegacyPending]. */
+    const val LEGACY_WAITED = "per_bike_settings_legacy_waited"
+
     private const val SETTINGS = MotorcycleScope.SETTINGS_FILE
     private const val HANDLEBAR = MotorcycleScope.HANDLEBAR_FILE
     private const val CALIBRATION = MotorcycleScope.CALIBRATION_FILE
@@ -51,18 +54,12 @@ internal object PerBikeSettingsMigration {
         data object Corrupt : Garage
 
         /**
-         * Only the pre-garage profile exists: the next loadAll() creates it, the next launch
-         * migrates. A password that no longer decrypts waits for the rider's next pairing, which
-         * writes the garage; the globals keep serving until then.
+         * Only the pre-garage profile exists, its ssid alone: one launch waits for loadAll() to
+         * convert it, and the next migrates. Still unconverted by then (no saved password, or one
+         * that no longer decrypts), it never will be: DONE, with nothing deleted, so the globals
+         * stay the fallback of the motorcycle the rider pairs next.
          */
         data object LegacyPending : Garage
-
-        /**
-         * The pre-garage profile has an ssid but no saved password, so loadAll() can never convert
-         * it. Waiting would wait forever, and deleting would cost the motorcycle the rider pairs
-         * next these settings: the globals stay as every motorcycle's fallback, and DONE.
-         */
-        data object LegacyStranded : Garage
 
         /** No motorcycle: the globals are deleted so they never become a future motorcycle's fallback. */
         data object Empty : Garage
@@ -119,14 +116,14 @@ internal object PerBikeSettingsMigration {
                 "SETTINGS",
                 "Per-motorcycle settings not moved yet: the garage is unreadable. Retrying next launch."
             )
-            garage == Garage.LegacyPending -> ProjectionEventLog.record(
+            garage == Garage.LegacyPending && steps.none { DONE in it.puts } -> ProjectionEventLog.record(
                 "SETTINGS",
                 "Per-motorcycle settings wait for the old motorcycle profile to be converted."
             )
-            garage == Garage.LegacyStranded -> ProjectionEventLog.warning(
+            garage == Garage.LegacyPending -> ProjectionEventLog.warning(
                 "SETTINGS",
-                "The old motorcycle profile has no saved password and cannot be converted; " +
-                    "its settings stay as the next motorcycle's starting point."
+                "The old motorcycle profile was never converted; its settings stay as the next " +
+                    "motorcycle's starting point."
             )
             garage is Garage.Bikes && garage.unstable -> ProjectionEventLog.record(
                 "SETTINGS",
@@ -152,8 +149,14 @@ internal object PerBikeSettingsMigration {
         val settings = state[SETTINGS].orEmpty()
         if (settings[DONE] == true) return emptyList()
         val bikes = when (garage) {
-            Garage.Corrupt, Garage.LegacyPending -> return emptyList()
-            Garage.LegacyStranded -> return listOf(Step(SETTINGS, mapOf(DONE to true), emptySet()))
+            Garage.Corrupt -> return emptyList()
+            Garage.LegacyPending -> return listOf(
+                if (settings[LEGACY_WAITED] == true) {
+                    Step(SETTINGS, mapOf(DONE to true), setOf(LEGACY_WAITED))
+                } else {
+                    Step(SETTINGS, mapOf(LEGACY_WAITED to true), emptySet())
+                }
+            )
             Garage.Empty -> emptyList()
             is Garage.Bikes -> garage.bikes.filter { it.id.isNotBlank() }
         }
@@ -169,7 +172,7 @@ internal object PerBikeSettingsMigration {
             Step(HANDLEBAR, emptyMap(), HANDLEBAR_BASES intersect handlebar.keys),
             Step(CALIBRATION, emptyMap(), CALIBRATION_BASES intersect calibration.keys),
             Step(SETTINGS, emptyMap(), (SETTINGS_BASES + MotoHubSettings.KEY_VIDEO_QUALITY) intersect settings.keys),
-            Step(SETTINGS, mapOf(DONE to true), emptySet())
+            Step(SETTINGS, mapOf(DONE to true), setOf(LEGACY_WAITED) intersect settings.keys)
         )
         return (copySteps + deleteSteps).filter { it.puts.isNotEmpty() || it.removes.isNotEmpty() }
     }
@@ -220,14 +223,11 @@ internal object PerBikeSettingsMigration {
     /**
      * The garage from its raw preferences, by the profile decoder's own rule: an entry is a
      * motorcycle when it is a JSON object with a non-blank ssid. With no garage yet, the pre-garage
-     * [legacySsid] alone means these settings have a motorcycle; [legacyPassword] (both encrypted
-     * halves saved) is whether loadAll() can ever convert it.
+     * [legacySsid] alone means these settings have a motorcycle, whatever its password.
      */
-    internal fun garageOf(profilesJson: String?, legacySsid: String?, legacyPassword: Boolean): Garage {
-        if (profilesJson.isNullOrBlank()) return when {
-            legacySsid.isNullOrBlank() -> Garage.Empty
-            legacyPassword -> Garage.LegacyPending
-            else -> Garage.LegacyStranded
+    internal fun garageOf(profilesJson: String?, legacySsid: String?): Garage {
+        if (profilesJson.isNullOrBlank()) {
+            return if (legacySsid.isNullOrBlank()) Garage.Empty else Garage.LegacyPending
         }
         val array = runCatching { JSONArray(profilesJson) }.getOrNull() ?: return Garage.Corrupt
         val bikes = (0 until array.length()).mapNotNull { index ->
@@ -247,16 +247,13 @@ internal object PerBikeSettingsMigration {
     private fun JSONObject.nullableString(key: String): String? =
         if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 
-    private fun garageOf(context: Context): Garage {
-        val legacy = prefs(context, MotorcycleProfileStore.LEGACY_PREFERENCES_NAME)
-        return garageOf(
+    private fun garageOf(context: Context): Garage =
+        garageOf(
             profilesJson = prefs(context, MotorcycleProfileStore.PREFERENCES_NAME)
                 .getString(MotorcycleProfileStore.KEY_PROFILES, null),
-            legacySsid = legacy.getString(MotorcycleProfileStore.LEGACY_KEY_SSID, null),
-            legacyPassword = legacy.getString(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_IV, null) != null &&
-                legacy.getString(MotorcycleProfileStore.LEGACY_KEY_PASSWORD_CIPHERTEXT, null) != null
+            legacySsid = prefs(context, MotorcycleProfileStore.LEGACY_PREFERENCES_NAME)
+                .getString(MotorcycleProfileStore.LEGACY_KEY_SSID, null)
         )
-    }
 
     /**
      * Portrait (true) or landscape (false) only when AndroidAutoSessionService.prepareReceiver

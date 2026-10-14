@@ -1158,10 +1158,15 @@ class IpcBridgeService : Service() {
             // across two motorcycles.
             val handle = TBoxSessionRegistry.current()
             val motorcycleId = handle?.motorcycle?.id ?: MotorcycleScope.garageActiveId(applicationContext)
+            // ponytail: no session and an empty garage leave nothing to pin, so the values go to the
+            // global keys, MotorcycleScope's documented no-motorcycle fallback. A session installed
+            // mid-parcel would scope the rest to it; accepted on this path, which no companion can
+            // reach on RideLink. Pinning "global" would need a nullable MotorcycleContext.
             val ctx = motorcycleId?.let { MotorcycleScope.of(applicationContext, it) } ?: applicationContext
-            // The live bridge and clock channel serve whoever owns the capture now: they are only
-            // touched while that is still the motorcycle this parcel wrote to.
-            fun stillLive() = MotorcycleScope.suffix(applicationContext) == motorcycleId
+            // The live bridge, gesture feed and clock channel serve whatever is live now: they are
+            // touched only while that is still the session and motorcycle this parcel wrote for.
+            fun stillLive() = TBoxSessionRegistry.current() === handle &&
+                MotorcycleScope.suffix(applicationContext) == motorcycleId
             // A companion's resolution or density only means something under Size Custom.
             runCatching {
                 MotoHubSettings.setAndroidAutoResolution(
@@ -1277,8 +1282,10 @@ class IpcBridgeService : Service() {
             // press and this process acted on it, moving the dashboard under a rider who was
             // told nothing would happen. Gated like the blocks above: false is also the value
             // that means "obey them", so without the flag an old companion would clear a
-            // teaching session it knows nothing about.
-            if (settings.handlebarCaptureOnlyProvided) {
+            // teaching session it knows nothing about. Turning it on needs the live session to
+            // still be this parcel's; turning it off always goes through, since a flag stuck on
+            // would silence the handlebar on whatever session is live.
+            if (settings.handlebarCaptureOnlyProvided && (!settings.handlebarCaptureOnly || stillLive())) {
                 io.motohub.android.feature.controls.HandlebarGestureFeed
                     .setCaptureOnly(settings.handlebarCaptureOnly)
             }

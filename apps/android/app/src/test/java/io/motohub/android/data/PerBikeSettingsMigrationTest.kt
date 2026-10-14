@@ -59,45 +59,53 @@ class PerBikeSettingsMigrationTest {
 
     @Test
     fun `the garage is read by the profile decoder's own rules`() {
-        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{not json", null, false))
-        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{}", null, false))
-        assertEquals(Garage.LegacyPending, PerBikeSettingsMigration.garageOf(null, "ZONTES", legacyPassword = true))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, null, false))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, "  ", legacyPassword = true))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("", null, false))
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("[]", "ZONTES", legacyPassword = true))
+        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{not json", null))
+        assertEquals(Garage.Corrupt, PerBikeSettingsMigration.garageOf("{}", null))
+        assertEquals(Garage.LegacyPending, PerBikeSettingsMigration.garageOf(null, "ZONTES"))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, null))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf(null, "  "))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("", null))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("[]", "ZONTES"))
         // A non-object element and a blank ssid are not motorcycles.
-        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("""[1, {"id":"a","ssid":"  "}]""", null, false))
+        assertEquals(Garage.Empty, PerBikeSettingsMigration.garageOf("""[1, {"id":"a","ssid":"  "}]""", null))
 
         val bikes = PerBikeSettingsMigration.garageOf(
             """[7, {"id":"a","ssid":" ZONTES ","model_id":null,"profile_override_key":"zontes_350d_vbr_test"},
                {"id":"b","ssid":"CF","model_id":"37426"}]""",
-            legacySsid = null,
-            legacyPassword = false
+            legacySsid = null
         )
         assertEquals(
             Garage.Bikes(listOf(Bike("a", "ZONTES", null, "zontes_350d_vbr_test"), Bike("b", "CF", "37426", null))),
             bikes
         )
         assertEquals(false, (bikes as Garage.Bikes).unstable)
-        val blankId = PerBikeSettingsMigration.garageOf("""[{"ssid":"ZONTES"}]""", null, false)
+        val blankId = PerBikeSettingsMigration.garageOf("""[{"ssid":"ZONTES"}]""", null)
         assertEquals(true, (blankId as Garage.Bikes).unstable)
     }
 
     @Test
-    fun `a corrupt or not yet converted garage moves nothing and is retried`() {
+    fun `a corrupt garage moves nothing and is retried`() {
         assertEquals(emptyList<PerBikeSettingsMigration.Step>(), plan(ownerState, Garage.Corrupt))
-        assertEquals(emptyList<PerBikeSettingsMigration.Step>(), plan(ownerState, Garage.LegacyPending))
     }
 
     @Test
-    fun `an old profile with no saved password keeps the globals for the motorcycle paired next`() {
-        // An ssid alone is still a motorcycle: never Empty, which would delete its settings.
-        val garage = PerBikeSettingsMigration.garageOf(null, "ZONTES-350D", legacyPassword = false)
-        assertEquals(Garage.LegacyStranded, garage)
+    fun `an old profile waits one launch, and one that never converts keeps the globals`() {
+        // An ssid with no saved password: still a motorcycle, never Empty, which would delete its
+        // settings. The same path covers a password that no longer decrypts.
+        val garage = PerBikeSettingsMigration.garageOf(null, "ZONTES-350D")
+        assertEquals(Garage.LegacyPending, garage)
 
-        // loadAll() can never convert it, so this is not deferred: DONE, and nothing deleted.
-        val done = runAll(ownerState, garage)
+        // The first launch only waits for loadAll() to convert it: nothing moves, no DONE.
+        val waited = runAll(ownerState, garage)
+        assertEquals(ownerState.getValue(SETTINGS) + (PerBikeSettingsMigration.LEGACY_WAITED to true), waited[SETTINGS])
+        assertEquals(ownerState[HANDLEBAR], waited[HANDLEBAR])
+        assertEquals(ownerState[CALIBRATION], waited[CALIBRATION])
+
+        // Converted meanwhile: the usual migration, and the wait leaves no trace.
+        assertEquals(runAll(ownerState, Garage.Bikes(listOf(zontes))), runAll(waited, Garage.Bikes(listOf(zontes))))
+
+        // Never converted: DONE, nothing deleted, so it does not wait forever.
+        val done = runAll(waited, garage)
         assertEquals(ownerState.getValue(SETTINGS) + (PerBikeSettingsMigration.DONE to true), done[SETTINGS])
         assertEquals(ownerState[HANDLEBAR], done[HANDLEBAR])
         assertEquals(ownerState[CALIBRATION], done[CALIBRATION])

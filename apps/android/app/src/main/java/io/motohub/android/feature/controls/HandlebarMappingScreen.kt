@@ -177,10 +177,18 @@ fun HandlebarMappingScreen(
     }
     // Ownership is checked again while teaching, not only on the way in: a session that comes up
     // for another motorcycle takes the live capture, and its presses are not this handlebar's.
-    // Every press re-checks too, since the registry can change hands with Android Auto's state
-    // unchanged.
-    LaunchedEffect(androidAutoState, calibrating, lastGesture?.atElapsedRealtimeMillis) {
-        if (calibrating && !ownsLiveCapture(context)) finishTeaching()
+    // ponytail: polled, because the registry and the garage's active id have no flow to observe and
+    // can change hands with Android Auto's state unchanged; the wizard also checks every press and
+    // write itself, so the poll only bounds how long the wizard stays open. A registry flow would
+    // make it immediate.
+    LaunchedEffect(androidAutoState, calibrating) {
+        while (calibrating) {
+            if (!ownsLiveCapture(context)) {
+                finishTeaching()
+                break
+            }
+            delay(OWNER_POLL_MILLIS)
+        }
     }
 
     ScreenSlideTransition(
@@ -1150,3 +1158,4 @@ private const val CALIBRATION_CONFIRM_MILLIS = 700L
 /** Longer than CALIBRATION_CONFIRM_MILLIS - this is an unrequested notice about a step the
  *  rider never got a chance to act on, not a confirmation of something they just did. */
 private const val SKIP_NOTICE_MILLIS = 1800L
+private const val OWNER_POLL_MILLIS = 500L

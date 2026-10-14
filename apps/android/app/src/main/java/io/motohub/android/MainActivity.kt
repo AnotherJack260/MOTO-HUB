@@ -569,19 +569,21 @@ class MainActivity : ComponentActivity() {
                         MotoHubSnackbar.success(context, motoHubText("Photo removed"))
                     }
                 }
-                // The motorcycle an autostart was read for, carried through the companion gate, the
-                // permission prompts, the consent and a held start; null for a rider's tap. Saved,
-                // like the permission flags it travels with.
-                var autostartFor by rememberSaveable { mutableStateOf<String?>(null) }
+                // Every start carries its own `autostartFor`: the motorcycle an autostart was read
+                // for, null for a rider's tap. Closures carry it through the companion gate and the
+                // primer; across a system dialog it rides in that dialog's slot below (one of each
+                // is up at a time), saved like the pending flags; a held start keeps it in its payload.
+                var notificationPermissionFor by rememberSaveable { mutableStateOf<String?>(null) }
+                var microphonePermissionFor by rememberSaveable { mutableStateOf<String?>(null) }
+                var consentFor by rememberSaveable { mutableStateOf<String?>(null) }
                 // Asked immediately before a service starts. An autostart whose motorcycle is no
                 // longer the one waiting for a mode is dropped and logged; a tap always passes.
-                fun autostartLands(mode: String): Boolean {
-                    val forId = autostartFor ?: return true
-                    val session = viewModel.uiState.value.session
-                    if (autostartStillFor(forId, session.phase, TBoxSessionRegistry.current()?.motorcycle?.id)) {
+                fun autostartLands(mode: String, autostartFor: String?): Boolean {
+                    if (autostartFor == null) return true
+                    val phase = viewModel.uiState.value.session.phase
+                    if (autostartStillFor(autostartFor, phase, TBoxSessionRegistry.current()?.motorcycle?.id)) {
                         return true
                     }
-                    autostartFor = null
                     ProjectionEventLog.warning(
                         "AUTOSTART",
                         "$mode autostart dropped: its motorcycle is no longer the one waiting for a mode."
@@ -591,10 +593,10 @@ class MainActivity : ComponentActivity() {
                 // The consent result can arrive before the activity is resumed, and some ROMs
                 // refuse the foreground start in that window (WB-27). The consent is then held and
                 // tried once more on the next resume; a second refusal ends it as a cancellation.
-                val startMirroringSession: (Int, Intent) -> Boolean = { resultCode, data ->
+                val startMirroringSession: (Int, Intent, String?) -> Boolean = { resultCode, data, autostartFor ->
                     when {
                         // Handled, not held: there is nothing to retry for a motorcycle that left.
-                        !autostartLands("Mirroring") -> true
+                        !autostartLands("Mirroring", autostartFor) -> true
                         ProjectionSessionService.start(context, resultCode, data) -> {
                             viewModel.onProjectionRequested()
                             true
@@ -604,19 +606,21 @@ class MainActivity : ComponentActivity() {
                 }
                 val currentStartMirroringSession by rememberUpdatedState(startMirroringSession)
                 val mirroringStart = remember {
-                    ResumeRetryingStart<Pair<Int, Intent>> { (resultCode, data) ->
-                        currentStartMirroringSession(resultCode, data)
+                    ResumeRetryingStart<Triple<Int, Intent, String?>> { (resultCode, data, autostartFor) ->
+                        currentStartMirroringSession(resultCode, data, autostartFor)
                     }
                 }
                 val projectionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
+                    val autostartFor = consentFor
+                    consentFor = null
                     ProjectionEventLog.record(
                         "PERMISSION",
                         "Screen capture consent returned resultCode=${result.resultCode}, hasData=${result.data != null}."
                     )
                     if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                        if (!mirroringStart.request(result.resultCode to result.data!!)) {
+                        if (!mirroringStart.request(Triple(result.resultCode, result.data!!, autostartFor))) {
                             ProjectionEventLog.warning(
                                 "MIRROR",
                                 "Mirroring start refused before the app was in front; retrying on resume."
@@ -625,6 +629,10 @@ class MainActivity : ComponentActivity() {
                     } else {
                         viewModel.onProjectionCancelled()
                     }
+                }
+                val launchConsent: (String?) -> Unit = { autostartFor ->
+                    consentFor = autostartFor
+                    projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
                 }
                 val projectionRetryLifecycleOwner = LocalLifecycleOwner.current
                 DisposableEffect(projectionRetryLifecycleOwner) {
@@ -715,11 +723,12 @@ class MainActivity : ComponentActivity() {
                 // (WB-28: it used to crash the app). A refused start is held and tried once more
                 // when the rider brings the app back - see the resume observer by the autostart.
                 // It holds the id of the motorcycle it was meant for ("" for none), so the retry
-                // never lands on a different motorcycle that connected in the meantime.
+                // never lands on a different motorcycle that connected in the meantime, and the
+                // start's autostartFor.
                 val androidAutoStart = remember {
-                    ResumeRetryingStart<String> {
+                    ResumeRetryingStart<Pair<String, String?>> { (_, autostartFor) ->
                         // Handled, not held: there is nothing to retry for a motorcycle that left.
-                        if (!autostartLands("Android Auto")) return@ResumeRetryingStart true
+                        if (!autostartLands("Android Auto", autostartFor)) return@ResumeRetryingStart true
                         // A phone-only session that ended by itself (a call, Android Auto closing)
                         // leaves the flag set, and Stop would then go to the bridge instead of this
                         // session. The service refuses to start over a live one, so only then.
@@ -727,10 +736,10 @@ class MainActivity : ComponentActivity() {
                         startAndroidAuto()
                     }
                 }
-                val startAndroidAutoOrHold: () -> Unit = {
+                val startAndroidAutoOrHold: (String?) -> Unit = { autostartFor ->
                     // An autostart holds its own motorcycle, not whichever one is connected by now.
-                    val forId = autostartFor ?: viewModel.uiState.value.session.motorcycle?.id.orEmpty()
-                    if (!androidAutoStart.request(forId)) {
+                    val motorcycleId = autostartFor ?: viewModel.uiState.value.session.motorcycle?.id.orEmpty()
+                    if (!androidAutoStart.request(motorcycleId to autostartFor)) {
                         ProjectionEventLog.warning(
                             "AUTOSTART",
                             "Android Auto refused while MOTO-HUB is in the background; " +
@@ -743,10 +752,12 @@ class MainActivity : ComponentActivity() {
                 ) { granted ->
                     val action = microphonePermissionAction
                     microphonePermissionAction = null
+                    val autostartFor = microphonePermissionFor
+                    microphonePermissionFor = null
                     ProjectionEventLog.record("PERMISSION", "Microphone permission result: granted=$granted.")
                     if (granted) {
                         when (action) {
-                            "full" -> startAndroidAutoOrHold()
+                            "full" -> startAndroidAutoOrHold(autostartFor)
                             "phone_only" -> startPhoneOnlyBridge()
                         }
                     } else {
@@ -755,13 +766,14 @@ class MainActivity : ComponentActivity() {
                         allowInAppSettings(motoHubText("Allow the microphone to start Android Auto"))
                     }
                 }
-                val requestMicAndStart: (String) -> Unit = { action ->
+                val requestMicAndStart: (String, String?) -> Unit = { action, autostartFor ->
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                         PackageManager.PERMISSION_GRANTED
                     ) {
-                        startAndroidAutoOrHold()
+                        startAndroidAutoOrHold(autostartFor)
                     } else {
                         microphonePermissionAction = action
+                        microphonePermissionFor = autostartFor
                         microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 }
@@ -779,17 +791,19 @@ class MainActivity : ComponentActivity() {
                     ActivityResultContracts.RequestPermission()
                 ) { granted ->
                     ProjectionEventLog.record("PERMISSION", "Notification permission result: granted=$granted.")
+                    val autostartFor = notificationPermissionFor
+                    notificationPermissionFor = null
                     if (projectionPermissionPending) {
                         projectionPermissionPending = false
                         if (granted) {
-                            projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                            launchConsent(autostartFor)
                         } else {
                             viewModel.onNotificationPermissionDenied()
                         }
                     } else if (androidAutoPermissionPending) {
                         androidAutoPermissionPending = false
                        if (granted) {
-                            requestMicAndStart("full")
+                            requestMicAndStart("full", autostartFor)
                        } else {
                             viewModel.onNotificationPermissionDenied()
                         }
@@ -826,7 +840,7 @@ class MainActivity : ComponentActivity() {
                         start()
                     }
                 }
-                val continueAndroidAutoStart: () -> Unit = {
+                val continueAndroidAutoStart: (String?) -> Unit = { autostartFor ->
                     primeThen(androidAuto = true) {
                         val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                             ContextCompat.checkSelfPermission(
@@ -834,8 +848,9 @@ class MainActivity : ComponentActivity() {
                                 Manifest.permission.POST_NOTIFICATIONS
                             ) == PackageManager.PERMISSION_GRANTED
                         if (notificationGranted) {
-                            requestMicAndStart("full")
+                            requestMicAndStart("full", autostartFor)
                         } else {
+                            notificationPermissionFor = autostartFor
                             androidAutoPermissionPending = true
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
@@ -861,9 +876,8 @@ class MainActivity : ComponentActivity() {
                 }
                 // Hoisted out of the home screen's callbacks so autostart can run the exact same
                 // sequence a tap does - permission checks included - instead of a second, subtly
-                // different copy of it. The argument is the autostart's motorcycle, null for a tap.
-                val startMirroring: (String?) -> Unit = { forId ->
-                    autostartFor = forId
+                // different copy of it. The argument is the start's autostartFor, null for a tap.
+                val startMirroring: (String?) -> Unit = { autostartFor ->
                     // Mirroring needs the same reverse ports Android Auto does, and used to walk
                     // into the conflict with nothing said at all - only the AA path warned.
                     companionConflictGate.gate("Mirroring") {
@@ -874,17 +888,17 @@ class MainActivity : ComponentActivity() {
                                     Manifest.permission.POST_NOTIFICATIONS
                                 ) == PackageManager.PERMISSION_GRANTED
                             if (notificationGranted) {
-                                projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                                launchConsent(autostartFor)
                             } else {
+                                notificationPermissionFor = autostartFor
                                 projectionPermissionPending = true
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         }
                     }
                 }
-                val startAndroidAutoWithWarning: (String?) -> Unit = { forId ->
-                    autostartFor = forId
-                    companionConflictGate.gate("Android Auto") { continueAndroidAutoStart() }
+                val startAndroidAutoWithWarning: (String?) -> Unit = { autostartFor ->
+                    companionConflictGate.gate("Android Auto") { continueAndroidAutoStart(autostartFor) }
                 }
                 val wifiPermissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions()
@@ -1141,7 +1155,7 @@ class MainActivity : ComponentActivity() {
                         if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
                         val hubSession = viewModel.uiState.value.session
                         if (hubSession.phase == SessionPhase.READY &&
-                            androidAutoStart.held.let { it == null || it == hubSession.motorcycle?.id.orEmpty() } &&
+                            androidAutoStart.held.let { it == null || it.first == hubSession.motorcycle?.id.orEmpty() } &&
                             !ProjectionRuntime.riderStopped &&
                             !ProjectionRuntime.isActive() &&
                             !AndroidAutoRuntime.isActive()
