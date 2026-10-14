@@ -42,9 +42,12 @@ import io.motohub.android.androidauto.TBoxScreenMarginsStore
 import io.motohub.android.androidauto.encodeScreenMargins
 import io.motohub.android.androidauto.withFullVideoTarget
 import io.motohub.android.encoding.VideoBackpressureGuard
+import io.motohub.android.feature.controls.MotorcycleScope
 import io.motohub.android.feature.settings.AndroidAutoAspectMatchingMode
 import io.motohub.android.feature.settings.AndroidAutoDensityMode
 import io.motohub.android.feature.settings.AndroidAutoResolutionMode
+import io.motohub.android.feature.settings.AndroidAutoSize
+import io.motohub.android.feature.settings.ImageQuality
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.feature.settings.VideoQuality
 import io.motohub.android.encoding.VideoDeliveryProbe
@@ -1150,17 +1153,23 @@ class IpcBridgeService : Service() {
         // Applies a companion app's settings snapshot to Core's own prefs (via the same setters
         // the UI uses) so the next session honors them. Enums are parsed defensively.
         override fun applyAndroidAutoSettings(settings: AndroidAutoSettingsParcel) {
-            val ctx = applicationContext
+            // One motorcycle for the whole parcel: the live session's, pinned once, so a session
+            // change halfway through cannot split the values across two motorcycles.
+            val ctx = TBoxSessionRegistry.current()?.motorcycle?.id
+                ?.let { MotorcycleScope.of(applicationContext, it) } ?: applicationContext
+            // A companion's resolution or density only means something under Size Custom.
             runCatching {
                 MotoHubSettings.setAndroidAutoResolution(
                     ctx, AndroidAutoResolutionMode.valueOf(settings.resolutionMode)
                 )
+                MotoHubSettings.setAndroidAutoSize(ctx, AndroidAutoSize.CUSTOM)
             }
             if (settings.androidAutoDensityProvided) {
                 runCatching {
                     MotoHubSettings.setAndroidAutoDensity(
                         ctx, AndroidAutoDensityMode.valueOf(settings.androidAutoDensity)
                     )
+                    MotoHubSettings.setAndroidAutoSize(ctx, AndroidAutoSize.CUSTOM)
                 }
             }
             runCatching {
@@ -1169,7 +1178,9 @@ class IpcBridgeService : Service() {
                 )
             }
             runCatching {
-                MotoHubSettings.setVideoQuality(ctx, VideoQuality.valueOf(settings.videoQuality))
+                // Balanced is no longer offered: it becomes Automatic, which starts at its bitrate.
+                val quality = VideoQuality.valueOf(settings.videoQuality)
+                MotoHubSettings.setImageQuality(ctx, ImageQuality.fromLegacy(quality.name))
             }
             runCatching { MotoHubSettings.setDisableTouchscreen(ctx, settings.disableTouchscreen) }
             runCatching { MotoHubSettings.setSeamlessResume(ctx, settings.seamlessResume) }

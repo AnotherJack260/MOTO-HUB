@@ -21,6 +21,7 @@ import api.MobileSession
 import api.NaviInfo
 import io.motohub.android.aa.AaNavigationGuidance
 import io.motohub.android.aa.proto.NavigationStatus.NavigationManeuver.NavigationType
+import io.motohub.android.feature.controls.MotorcycleScope
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.ProjectionEventLog
@@ -624,6 +625,10 @@ class RideDaemonTransport(
         ).takeIf { it.width > 0 && it.height > 0 }
     }
 
+    /** CAPTURE_CONFIG's BitRate, 0 when the dash named none. A Long in the binding: checked before narrowing. */
+    override fun dashRequestedBitrate(): Int? =
+        session?.captureConfig()?.bitRate?.takeIf { it in 1..Int.MAX_VALUE.toLong() }?.toInt()
+
     /**
      * Transport event 16: the dash sent a CAPTURE_CONFIG, or its 0x60 updated one. Each new plan
      * is logged once and handed to the session, which restarts its encoder if the shape changed.
@@ -667,6 +672,12 @@ class RideDaemonTransport(
             val profile = protocolProfile.takeIf { it != TBoxModelProfile.GENERIC }
                 ?: TBoxModelProfile.resolve(expectedModelId, null)
             val wire = wireConfigFor(profile)
+            // This connect's motorcycle, named explicitly: the session registry can still hold the
+            // previous session while a new connect discovers.
+            val bike = motorcycleProfile?.let { MotorcycleScope.of(appContext, it.id) } ?: appContext
+            // The rider's Advanced override, else the profile's own. It moves the Carbit encoder
+            // plan with it (carbitVideoPlan): a dash answered Carbit's way is sent Carbit's size.
+            val carbitExact = MotoHubSettings.carbitExactOverride(bike) ?: profile.carbitExactVideo
             val mobileConfig = Api.newMobileConfig(
                 ByteArray(0),
                 30L,
@@ -726,7 +737,7 @@ class RideDaemonTransport(
                 // hand on the dash. The rider's own switch is the only way to tell it apart -
                 // its firmware strings are identical to the panels the answer does fix. Read
                 // per session, so flipping the setting takes effect on the next connect.
-                sessionAnswersClock = MotoHubSettings.dashClockSync(appContext)
+                sessionAnswersClock = MotoHubSettings.dashClockSync(bike)
                 setSkipDashClockSync(!sessionAnswersClock)
                 // A dashboard that asked for the time in an earlier session must not be raced by
                 // the unsolicited push: it wins the grace period sometimes and loses it others,
@@ -739,7 +750,7 @@ class RideDaemonTransport(
             }
             // A companion-driven session pushes its settings only after this point, so the channel
             // re-evaluates itself again from IpcBridgeService; see EcBtpClockChannel.
-            EcBtpClockChannel.onSessionStarted(appContext, profile.transportFamily)
+            EcBtpClockChannel.onSessionStarted(bike, profile.transportFamily)
             val generation = nextSessionGeneration.incrementAndGet()
             val createdSession = Api.newMobileSession(
                 mobileConfig,
@@ -748,10 +759,10 @@ class RideDaemonTransport(
             // Before StartSession, so it hears the dash's 0x10040 icon count. No listener: dash
             // keys, notifications and the rest stay unhandled for now.
             val worker = DashWorker(generation, Api.newDashFeatures(createdSession, null))
-            sessionCarbitExact = profile.carbitExactVideo
+            sessionCarbitExact = carbitExact
             loggedCarbitPlan.set(null)
             carbitMovieModeLogged.set(false)
-            if (profile.carbitExactVideo) createdSession.setCarbitExactMediaControl(true)
+            if (carbitExact) createdSession.setCarbitExactMediaControl(true)
             // The library turns this on for every flavor-51 dash; every profile that streams today
             // was proven without it, so only a profile that asks for it gets it.
             createdSession.setFlavor51Lifecycle(profile.flavor51Lifecycle)
@@ -781,7 +792,7 @@ class RideDaemonTransport(
                     "supportFunction=${profile.advertisedSupportFunction}; " +
                     "wire=${wire.signature}; " +
                     "proactivePxcHeartbeat=${wire.requiresProactivePxcHeartbeat}; " +
-                    "carbitExactMediaControl=${profile.carbitExactVideo}; " +
+                    "carbitExactMediaControl=$carbitExact; " +
                     "plainVideoFramingAllowed=${wire.allowsPlainVideoFraming}; " +
                     "timeZone=${java.util.TimeZone.getDefault().id}."
             )

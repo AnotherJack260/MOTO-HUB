@@ -19,6 +19,7 @@ import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
 import android.os.Looper
 import android.os.Process
+import io.motohub.android.feature.controls.MotorcycleScope
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.session.ProjectionEventLog
@@ -918,6 +919,10 @@ class TBoxWifiDirectConnector(
                     iface = group?.`interface`,
                     gateway = gateway,
                     leaveGroup = { removeGroup(manager, channel, closeChannelAfter = true) },
+                    // This motorcycle's own choice, named explicitly rather than through the
+                    // session registry, which may still hold the previous session here.
+                    releaseGroupOnDisconnect =
+                        !MotoHubSettings.keepWifiDirectAfterDisconnect(MotorcycleScope.of(appContext, profile.id)),
                     settle = settle
                 )
             }
@@ -928,6 +933,7 @@ class TBoxWifiDirectConnector(
         iface: String?,
         gateway: Inet4Address,
         leaveGroup: () -> Unit,
+        releaseGroupOnDisconnect: Boolean,
         settle: (Result<TBoxLink.WifiDirect>) -> Unit
     ) {
         // DHCP on the p2p link can lag the "group formed" event; poll off the main thread.
@@ -957,8 +963,7 @@ class TBoxWifiDirectConnector(
                             gatewayIp = gateway,
                             leaveGroup = leaveGroup,
                             appContext = appContext,
-                            releaseGroupOnDisconnect =
-                                !MotoHubSettings.keepWifiDirectAfterDisconnect(appContext)
+                            releaseGroupOnDisconnect = releaseGroupOnDisconnect
                         )
                     )
                 )

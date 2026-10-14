@@ -26,6 +26,7 @@ import io.motohub.android.aa.AaReceiver
 import io.motohub.android.androidauto.AaInputBridge
 import io.motohub.android.aa.SingleKeyKeyManager
 import io.motohub.android.encoding.AdaptiveVideoController
+import io.motohub.android.encoding.AutoImageRange
 import io.motohub.android.encoding.AvcEncoder
 import io.motohub.android.encoding.EncoderProfile
 import io.motohub.android.encoding.JpegDisplaySource
@@ -61,10 +62,12 @@ import io.motohub.android.tbox.TBoxTransport
 import io.motohub.android.tbox.tBoxFailureOwnedByHandshake
 import io.motohub.android.tbox.TBoxTouchFilter
 import io.motohub.android.tbox.TBoxVideoAreaSource
-import io.motohub.android.tbox.followingCarbitPlan
+import io.motohub.android.tbox.forImage
+import io.motohub.android.tbox.imageBitrates
 import io.motohub.android.tbox.negotiateVideoConfiguration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -98,6 +101,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
     private var navigationJob: Job? = null
     /** The Carbit plan the running encoder was built to; see [TBoxEvent.CarbitPlan]. */
     @Volatile private var carbitPlanInUse: CarbitVideoPlan? = null
+    /** Automatic image's range for the running encoder; null for a fixed image. */
+    @Volatile private var autoImageInUse: AutoImageRange? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val streamingLocks = TBoxStreamingLocks(this, "Android Auto")
     private var mediaButtonBridge: MediaButtonBridge? = null
@@ -292,8 +297,14 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                 "stale=${modelProfile.touchPolicy.staleContactMillis}ms; " +
                 "screen margins=$screenMargins (profile default ${modelProfile.defaultScreenMargins})."
         )
-        val resolutionMode = MotoHubSettings.androidAutoResolution(this)
-        val densityMode = MotoHubSettings.androidAutoDensity(this)
+        // The motorcycle's Size; the dashboard decides the orientation, the same way AUTO does.
+        val size = MotoHubSettings.androidAutoSize(this)
+        val portrait = (usableLearnedGeometry ?: fallbackPreset.source).let { it.height > it.width }
+        val (sizePreset, sizeDpi) = size.resolve(
+            portrait,
+            MotoHubSettings.androidAutoResolution(this),
+            MotoHubSettings.androidAutoDensity(this)
+        )
         val aspectMatchingMode = MotoHubSettings.androidAutoAspectMatching(this)
         val advertisedMargins = if (aspectMatchingMode == AndroidAutoAspectMatchingMode.MANUAL) {
             screenMargins
@@ -302,11 +313,11 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         }
         capabilityProfile = AndroidAutoCapabilityProfiles.select(
             target = usableLearnedGeometry,
-            overridePreset = resolutionMode.preset,
+            overridePreset = sizePreset,
             screenMargins = advertisedMargins,
             touchEnabled = touchEnabled,
             fallbackPreset = fallbackPreset,
-            densityOverride = densityMode.dpi
+            densityOverride = sizeDpi
         ).let { selected ->
             // AUTO used to mean "advertise no margins", which is the same thing as accepting the
             // letterbox: Android Auto only offers a handful of coded sizes and none of them is
@@ -330,8 +341,9 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             "ANDROID AUTO",
                 "Capability profile: source=${capabilityProfile.video.width}x" +
                 "${capabilityProfile.video.height}@${capabilityProfile.densityDpi}dpi, " +
-                "selection=${capabilityProfile.source}, resolution=${resolutionMode.name}, " +
-                "density=${densityMode.name}, aspectMatching=${aspectMatchingMode.name}; " +
+                "selection=${capabilityProfile.source}, size=${size.name} " +
+                "(preset=${sizePreset?.name ?: "auto"}, dpi=${sizeDpi ?: "auto"}), " +
+                "aspectMatching=${aspectMatchingMode.name}; " +
                 capabilityProfile.reason
         )
         if (learnedGeometry == null) {
@@ -646,7 +658,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                 negotiated.copy(encoderProfile = negotiated.encoderProfile.copy(width = it.width, height = it.height))
             } ?: negotiated
         }
-        val quality = MotoHubSettings.videoQuality(this)
+        val image = MotoHubSettings.imageQuality(this)
         val sessionModelProfile = resolveSessionProfile(handle)
         // What this dash is actually being sent. Identical to the profile's own fields for every
         // recognised dash; for an unidentified one it is whichever rung TBoxWireLadder has reached.
@@ -655,16 +667,20 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             handle.motorcycle,
             sessionModelProfile
         )
-        val encoderProfile = configuration.encoderProfile.copy(
+        val imageRates = imageBitrates(
+            base = MotoHubSettings.baseBitrateOverride(this)
+                ?: carbitPlan?.bitRate
+                ?: sessionModelProfile.encoderBitRate
+                ?: configuration.encoderProfile.bitRate,
+            dashCap = carbitPlan?.bitRate ?: handle.transport.dashRequestedBitrate()
+        )
+        val (encoderProfile, autoImage) = configuration.encoderProfile.copy(
             // Frame rate and bitrate were previously honoured only on the native mirror path, so a
             // dash whose profile asks for a slower capture still got Android Auto's negotiated 30
             // fps here. On a Yunmo dash that is not a quality preference: every all-intra frame is
             // a keyframe, a keyframe is split into three wire frames, and three times the frames
             // at three times the rate cannot fit through a three-frame send window.
             frameRate = sessionModelProfile.encoderFrameRate ?: configuration.encoderProfile.frameRate,
-            bitRate = quality.bitrateFor(
-                sessionModelProfile.encoderBitRate ?: configuration.encoderProfile.bitRate
-            ),
             keyframeIntervalSeconds = sessionWire.encoderKeyframeIntervalSeconds,
             // Yunmo's split framing needs real keyframes to split; intra refresh would make them
             // rare. A profile can also demand plain IDRs for its decoder's sake (KOVE froze on
@@ -685,8 +701,9 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
             } else {
                 configuration.encoderProfile.height
             }
-        ).let { profile -> carbitPlan?.let { profile.followingCarbitPlan(it, quality) } ?: profile }
+        ).forImage(image, imageRates, carbitPlan, MotoHubSettings.keyframeIntervalOverride(this))
         carbitPlanInUse = carbitPlan
+        autoImageInUse = autoImage
         val negotiatedArea = configuration.rawArea
         val actualGeometry = DisplayGeometry(encoderProfile.width, encoderProfile.height)
         tBoxTouchTransform = TBoxTouchTransform.forVideoConfiguration(configuration)
@@ -804,7 +821,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                 // Saying "next time" when the geometry was just rejected is what made this
                 // loop invisible in rider logs: the promise never came true.
                 "this geometry was not saved, so the next session starts from the same profile - " +
-                    "set the resolution manually in Settings to use it now."
+                    "set the motorcycle's Android Auto size to Custom to use it now."
             }
             ProjectionEventLog.warning(
                 "ANDROID AUTO",
@@ -817,7 +834,8 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
         ProjectionEventLog.record(
             "T-BOX",
             "Area Android Auto ${encoderProfile.width}x${encoderProfile.height}; " +
-                "quality=${quality.name}, bitrate=${encoderProfile.bitRate}."
+                "quality=${image.name}, bitrate=${encoderProfile.bitRate}" +
+                (autoImage?.let { ", automatic ${it.floor}..${it.ceiling}" } ?: "") + "."
         )
         // The dash's own turn arrows. Handing guidance over never blocks: the transport sends it
         // from its own worker for this native session, newest state only. Only EasyConn has
@@ -902,7 +920,7 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                 }
             )
             activeEncoder.start()
-            adaptiveVideoController.reset()
+            adaptiveVideoController.reset(autoImage)
             activeEncoder.setFrameCapListener { compositor?.setFrameCap(it) }
             if (videoStreamStartRequested.get()) {
                 activeEncoder.requestSyncFrame("TFT consumer already requested Android Auto video")
@@ -1058,6 +1076,10 @@ class AndroidAutoSessionService : Service(), AndroidAutoPreviewController {
                             "The dash asked for a ${event.plan.width}x${event.plan.height} picture; " +
                                 "restarting the encoder on Carbit's new plan."
                         )
+                    } else if (encoder != null) {
+                        // Same shape, new rate: a lowered dash request lowers Automatic's ceiling at
+                        // once. A fixed image keeps its configured bitrate, as before.
+                        autoImageInUse?.let { adaptiveVideoController.updateCeiling(min(it.ceiling, event.plan.bitRate)) }
                     }
                     is TBoxEvent.VideoArea -> Unit
                 }

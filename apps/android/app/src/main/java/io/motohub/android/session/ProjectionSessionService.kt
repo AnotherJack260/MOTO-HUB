@@ -46,6 +46,8 @@ import io.motohub.android.tbox.TBoxSessionRegistry
 import io.motohub.android.tbox.TBoxStreamingLocks
 import io.motohub.android.tbox.TBoxTransport
 import io.motohub.android.tbox.TBoxVideoAreaSource
+import io.motohub.android.tbox.forImage
+import io.motohub.android.tbox.imageBitrates
 import io.motohub.android.tbox.negotiateVideoConfiguration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -229,7 +231,7 @@ class ProjectionSessionService : Service() {
         }
         val configuration = configurationResult.getOrThrow()
         val area = configuration.rawArea
-        val quality = MotoHubSettings.videoQuality(this)
+        val image = MotoHubSettings.imageQuality(this)
         // The transport's own profile wins when discovery changed it - a dash that answered Yunmo
         // after EasyConn found nothing is not the profile the saved motorcycle resolves to.
         val modelProfile = handle.transport.activeProtocolProfile ?: TBoxModelProfile.resolve(
@@ -240,13 +242,16 @@ class ProjectionSessionService : Service() {
         // What this dash is actually being sent. Identical to the profile's own fields for every
         // recognised dash; for an unidentified one it is whichever rung TBoxWireLadder has reached.
         val sessionWire = TBoxWireLadder.configFor(applicationContext, handle.motorcycle, modelProfile)
-        val profile = configuration.encoderProfile.copy(
+        // Mirroring follows no Carbit plan, as before: the base is the rider's override, else the
+        // profile's rate, else the negotiated one, capped by what the dash itself asked for.
+        val imageRates = imageBitrates(
+            base = MotoHubSettings.baseBitrateOverride(this)
+                ?: modelProfile.encoderBitRate
+                ?: configuration.encoderProfile.bitRate,
+            dashCap = handle.transport.dashRequestedBitrate()
+        )
+        val (profile, autoImage) = configuration.encoderProfile.copy(
             frameRate = modelProfile.encoderFrameRate ?: configuration.encoderProfile.frameRate,
-            // The profile's rate, where it has one, is the base the rider's quality setting scales -
-            // same as the negotiated one, so the setting keeps working on these dashes too.
-            bitRate = quality.bitrateFor(
-                modelProfile.encoderBitRate ?: configuration.encoderProfile.bitRate
-            ),
             keyframeIntervalSeconds = sessionWire.encoderKeyframeIntervalSeconds,
             // Yunmo's split framing needs real keyframes to split; intra refresh would make them
             // rare. A profile can also demand plain IDRs for its decoder's sake (KOVE froze on
@@ -267,7 +272,7 @@ class ProjectionSessionService : Service() {
             } else {
                 configuration.encoderProfile.height
             }
-        )
+        ).forImage(image, imageRates, plan = null, MotoHubSettings.keyframeIntervalOverride(this))
         ProjectionEventLog.record("T-BOX", "Handshake completed.")
         if (configuration.source == TBoxVideoAreaSource.LIVE) {
             geometryStore.save(
@@ -289,7 +294,8 @@ class ProjectionSessionService : Service() {
         ProjectionEventLog.record(
             "T-BOX",
             "Area video ${profile.width}x${profile.height} ${profile.frameRate}fps; " +
-                "quality=${quality.name}, bitrate=${profile.bitRate}."
+                "quality=${image.name}, bitrate=${profile.bitRate}" +
+                (autoImage?.let { ", automatic ${it.floor}..${it.ceiling}" } ?: "") + "."
         )
         if (stopping) return
 
@@ -371,7 +377,7 @@ class ProjectionSessionService : Service() {
                 rawScreenInput = true
             )
             activeEncoder.start()
-            adaptiveVideoController.reset()
+            adaptiveVideoController.reset(autoImage)
             if (videoStreamStartRequested.get()) {
                 activeEncoder.requestSyncFrame("TFT consumer already requested video")
             }

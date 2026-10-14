@@ -121,6 +121,9 @@ interface TBoxTransport {
 
     /** Carbit's encoder plan for this session's CAPTURE_CONFIG, for a Carbit-exact profile only. */
     fun carbitVideoPlan(): CarbitVideoPlan? = null
+
+    /** The bitrate this session's dash asked for in its CAPTURE_CONFIG, in bps; null when it named none. */
+    fun dashRequestedBitrate(): Int? = null
     val events: Flow<TBoxEvent>
 }
 

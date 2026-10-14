@@ -18,6 +18,9 @@ package io.motohub.android.session
 class ResumeRetryingStart<T : Any>(private val start: (T) -> Boolean) {
     private var pending: T? = null
 
+    /** The value held for the resume, or null; lets the caller check it still applies. */
+    val held: T? get() = pending
+
     /** True when [start] succeeded now; false when it was refused and is held for the resume. */
     fun request(value: T): Boolean {
         pending = null

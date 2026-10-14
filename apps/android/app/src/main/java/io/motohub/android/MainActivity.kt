@@ -80,6 +80,7 @@ import io.motohub.android.androidauto.AndroidAutoDisplayMode
 import io.motohub.android.androidauto.AndroidAutoDisplayModeStore
 import io.motohub.android.feature.controls.BluetoothStatus
 import io.motohub.android.feature.controls.MediaButtonBridge
+import io.motohub.android.feature.controls.MotorcycleScope
 import io.motohub.android.ipc.IpcBridgeContract
 import io.motohub.android.androidauto.TBoxDisplayGeometryStore
 import io.motohub.android.androidauto.TBoxScreenMargins
@@ -689,8 +690,10 @@ class MainActivity : ComponentActivity() {
                 // in the background, and Android 12+ refuses a foreground start from there
                 // (WB-28: it used to crash the app). A refused start is held and tried once more
                 // when the rider brings the app back - see the resume observer by the autostart.
+                // It holds the id of the motorcycle it was meant for ("" for none), so the retry
+                // never lands on a different motorcycle that connected in the meantime.
                 val androidAutoStart = remember {
-                    ResumeRetryingStart<Unit> {
+                    ResumeRetryingStart<String> {
                         // A phone-only session that ended by itself (a call, Android Auto closing)
                         // leaves the flag set, and Stop would then go to the bridge instead of this
                         // session. The service refuses to start over a live one, so only then.
@@ -699,7 +702,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val startAndroidAutoOrHold: () -> Unit = {
-                    if (!androidAutoStart.request(Unit)) {
+                    if (!androidAutoStart.request(viewModel.uiState.value.session.motorcycle?.id.orEmpty())) {
                         ProjectionEventLog.warning(
                             "AUTOSTART",
                             "Android Auto refused while MOTO-HUB is in the background; " +
@@ -1041,8 +1044,12 @@ class MainActivity : ComponentActivity() {
                         .collect { phase ->
                             if (phase != SessionPhase.READY) return@collect
                             if (!autostartArmed) return@collect
-                            if (!MotoHubSettings.autostartEnabled(context)) return@collect
-                            val service = MotoHubSettings.autostartService(context)
+                            // This motorcycle's "On arrival", read once and pinned to it: the link
+                            // can drop and another motorcycle connect inside the delay below.
+                            val bikeId = viewModel.uiState.value.session.motorcycle?.id
+                            val bike = bikeId?.let { MotorcycleScope.of(context, it) } ?: context
+                            if (!MotoHubSettings.autostartEnabled(bike)) return@collect
+                            val service = MotoHubSettings.autostartService(bike)
                             autostartArmed = false
                             if (service.advancedOnly) {
                                 ProjectionEventLog.warning(
@@ -1061,6 +1068,11 @@ class MainActivity : ComponentActivity() {
                             // Disconnect or Cancel can land inside that delay.
                             if (ProjectionRuntime.riderStopped) {
                                 ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the rider stopped manually.")
+                                return@collect
+                            }
+                            val now = viewModel.uiState.value.session
+                            if (now.phase != SessionPhase.READY || now.motorcycle?.id != bikeId) {
+                                ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the motorcycle link changed.")
                                 return@collect
                             }
                             when (service) {
@@ -1095,7 +1107,9 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
                         if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
-                        if (viewModel.uiState.value.session.phase == SessionPhase.READY &&
+                        val hubSession = viewModel.uiState.value.session
+                        if (hubSession.phase == SessionPhase.READY &&
+                            androidAutoStart.held.let { it == null || it == hubSession.motorcycle?.id.orEmpty() } &&
                             !ProjectionRuntime.riderStopped &&
                             !ProjectionRuntime.isActive() &&
                             !AndroidAutoRuntime.isActive()
@@ -2250,7 +2264,8 @@ private fun tboxConnectPermissions(
     // about over the bridge, and the same set that decides whether anything here can read the
     // air at all. One list, so the two questions can never drift apart.
     val permissions = TBoxScanPermissions.required.toMutableList()
-    if (ThinkerRideGate.requiresBle(profile) || MotoHubSettings.bluetoothClockSync(context)) {
+    val bike = profile?.let { MotorcycleScope.of(context, it.id) } ?: context
+    if (ThinkerRideGate.requiresBle(profile) || MotoHubSettings.bluetoothClockSync(bike)) {
         permissions += ThinkerRideGate.blePermissions
     }
     return permissions.toTypedArray()
