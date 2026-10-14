@@ -5,6 +5,8 @@ package io.motohub.android.feature.garage
 
 import io.motohub.android.i18n.motoHubText
 
+import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,22 +21,29 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddAPhoto
-import androidx.compose.material.icons.rounded.AspectRatio
-import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.DoNotTouch
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FitScreen
 import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.Monitor
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.PhotoLibrary
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.ZoomOutMap
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,11 +64,20 @@ import androidx.compose.ui.unit.dp
 import io.motohub.android.BuildConfig
 import io.motohub.android.androidauto.AndroidAutoDisplayMode
 import io.motohub.android.androidauto.TBoxScreenMargins
+import io.motohub.android.feature.controls.HandlebarControlStore
+import io.motohub.android.feature.controls.HandlebarDetail
+import io.motohub.android.feature.controls.HandlebarMappingScreen
+import io.motohub.android.feature.controls.MotorcycleScope
+import io.motohub.android.feature.controls.handlebarProblem
+import io.motohub.android.feature.controls.rememberOnResume
+import io.motohub.android.feature.settings.AndroidAutoAspectMatchingMode
+import io.motohub.android.feature.settings.AndroidAutoSize
 import io.motohub.android.feature.settings.MotoHubSettings
 import io.motohub.android.session.MotorcycleProfile
 import io.motohub.android.units.UnitFormat
 import io.motohub.android.session.ProjectionEventLog
 import io.motohub.android.tbox.ProfileOverride
+import io.motohub.android.tbox.TBoxCapabilityStore
 import io.motohub.android.tbox.TBoxModelProfile
 import io.motohub.android.ui.components.MhActionStyle
 import io.motohub.android.ui.components.MhChoiceRow
@@ -67,15 +85,33 @@ import io.motohub.android.ui.components.MhFootnote
 import io.motohub.android.ui.components.MhIconCircle
 import io.motohub.android.ui.components.MhListGroup
 import io.motohub.android.ui.components.MhListRow
+import io.motohub.android.ui.components.MhMotion
 import io.motohub.android.ui.components.MhScreen
 import io.motohub.android.ui.components.MhSecondaryButton
 import io.motohub.android.ui.components.MhSheet
+import io.motohub.android.ui.components.MhSwitchRow
 import io.motohub.android.ui.components.MhTextField
 import io.motohub.android.ui.components.MotoHubSnackbar
 import io.motohub.android.ui.components.ScreenSlideTransition
 import io.motohub.android.ui.theme.MotoHubColors
 
-private enum class MotorcycleDetail { ANDROID_AUTO_DISPLAY, TFT_MARGINS, PROFILE_OVERRIDE }
+private enum class MotorcycleDetail {
+    ANDROID_AUTO_DISPLAY, TFT_MARGINS, PROFILE_OVERRIDE, ADVANCED, AA_RESOLUTION, AA_DENSITY, HANDLEBAR, HANDLEBAR_MAPPING
+}
+
+/** Where back goes: the screen that opened this one, or the main list. */
+private val MotorcycleDetail?.parent: MotorcycleDetail?
+    get() = when (this) {
+        MotorcycleDetail.ANDROID_AUTO_DISPLAY, MotorcycleDetail.TFT_MARGINS, MotorcycleDetail.PROFILE_OVERRIDE ->
+            MotorcycleDetail.ADVANCED
+        MotorcycleDetail.HANDLEBAR_MAPPING -> MotorcycleDetail.HANDLEBAR
+        else -> null
+    }
+
+private val MotorcycleDetail?.depth: Int get() = if (this == null) 0 else 1 + parent.depth
+
+/** The pickers the main list opens (P1). */
+private enum class DetailsSheet { SIZE, FIT, IMAGE, ON_ARRIVAL }
 
 /** Where a motorcycle photo comes from when the rider adds or changes it. */
 enum class MotorcyclePhotoSource { CAMERA, GALLERY, FILES }
@@ -105,38 +141,69 @@ fun MotorcycleDetailsScreen(
 ) {
     var detail by rememberSaveable(profile.id) { mutableStateOf<MotorcycleDetail?>(null) }
     var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    // Every setting on these screens is THIS motorcycle's, whichever one is live or active.
+    val context = LocalContext.current
+    val bike = remember(profile.id) { MotorcycleScope.of(context, profile.id) }
+    // Details go three deep (Advanced > Display fit), so the slide is told directly whether a
+    // move went up a level, the way Settings does it.
+    var goingUp by remember { mutableStateOf(false) }
+    val go: (MotorcycleDetail?) -> Unit = { to ->
+        goingUp = to.depth < detail.depth
+        detail = to
+    }
 
-    // Each screen's MhScreen answers system back like its arrow: a sub-detail returns here, this
-    // list leaves through onBack.
-    ScreenSlideTransition(screen = detail, isBase = { it == null }, label = "motorcycle-details") { current ->
+    // Each screen's MhScreen answers system back like its arrow: a sub-detail returns to its
+    // parent, this list leaves through onBack.
+    ScreenSlideTransition(screen = detail, isBase = { goingUp }, label = "motorcycle-details") { current ->
+        val back = { go(current.parent) }
         when (current) {
             null -> MotorcycleDetailsMainList(
                 profile = profile,
-                displayMode = displayMode,
+                bike = bike,
                 onBack = onBack,
                 onSave = onSave,
-                onOpenDetail = { detail = it },
-                onOpenCapabilities = onOpenCapabilities,
+                onOpenDetail = go,
                 onCustomizeDashboard = onCustomizeDashboard,
+                onDisplayModeChanged = onDisplayModeChanged,
                 onChoosePhoto = onChoosePhoto,
                 onRemovePhoto = onRemovePhoto,
                 onRequestDelete = { showDeleteConfirmation = true }
             )
+            MotorcycleDetail.ADVANCED -> MotorcycleAdvancedScreen(
+                profile = profile,
+                bike = bike,
+                displayMode = displayMode,
+                onBack = back,
+                onOpenProfileOverride = { go(MotorcycleDetail.PROFILE_OVERRIDE) },
+                onOpenDisplayFit = { go(MotorcycleDetail.ANDROID_AUTO_DISPLAY) },
+                onOpenScreenMargins = { go(MotorcycleDetail.TFT_MARGINS) },
+                onOpenCapabilities = onOpenCapabilities
+            )
+            MotorcycleDetail.AA_RESOLUTION -> AndroidAutoResolutionDetail(bike, back)
+            MotorcycleDetail.AA_DENSITY -> AndroidAutoDensityDetail(bike, back)
+            // The handlebar screens read their stores through LocalContext, so this motorcycle's
+            // scoped context is provided to them whole; nothing under it casts it to an Activity.
+            MotorcycleDetail.HANDLEBAR -> CompositionLocalProvider(LocalContext provides bike) {
+                HandlebarDetail(onBack = back, onOpenMapping = { go(MotorcycleDetail.HANDLEBAR_MAPPING) })
+            }
+            MotorcycleDetail.HANDLEBAR_MAPPING -> CompositionLocalProvider(LocalContext provides bike) {
+                HandlebarMappingScreen(onBack = back)
+            }
             MotorcycleDetail.ANDROID_AUTO_DISPLAY -> AndroidAutoDisplayDetail(
                 displayMode = displayMode,
                 onDisplayModeChanged = onDisplayModeChanged,
-                onBack = { detail = null }
+                onBack = back
             )
             MotorcycleDetail.TFT_MARGINS -> TftMarginsDetail(
                 profile = profile,
                 screenMargins = screenMargins,
                 onScreenMarginsChanged = onScreenMarginsChanged,
-                onBack = { detail = null }
+                onBack = back
             )
             MotorcycleDetail.PROFILE_OVERRIDE -> ProfileOverrideDetail(
                 profile = profile,
                 onSave = onSave,
-                onBack = { detail = null }
+                onBack = back
             )
         }
     }
@@ -163,18 +230,40 @@ fun MotorcycleDetailsScreen(
 @Composable
 private fun MotorcycleDetailsMainList(
     profile: MotorcycleProfile,
-    displayMode: AndroidAutoDisplayMode,
+    bike: Context,
     onBack: () -> Unit,
     onSave: (MotorcycleProfile) -> Boolean,
     onOpenDetail: (MotorcycleDetail) -> Unit,
-    onOpenCapabilities: () -> Unit,
     onCustomizeDashboard: () -> Unit,
+    onDisplayModeChanged: (AndroidAutoDisplayMode) -> Unit,
     onChoosePhoto: (MotorcyclePhotoSource) -> Unit,
     onRemovePhoto: () -> Unit,
     onRequestDelete: () -> Unit
 ) {
     val context = LocalContext.current
     val units = MotoHubSettings.distanceUnits(context)
+    // This motorcycle's values, re-read whenever the list comes back from a sub-screen.
+    var size by remember(profile.id) { mutableStateOf(MotoHubSettings.androidAutoSize(bike)) }
+    var fit by remember(profile.id) { mutableStateOf(MotoHubSettings.androidAutoAspectMatching(bike)) }
+    var ignoreTouch by remember(profile.id) { mutableStateOf(MotoHubSettings.disableTouchscreen(bike)) }
+    var image by remember(profile.id) { mutableStateOf(MotoHubSettings.imageQuality(bike)) }
+    var onArrival by remember(profile.id) {
+        mutableStateOf(MotoHubSettings.autostartService(bike).takeIf { MotoHubSettings.autostartEnabled(bike) })
+    }
+    // "On" while presses can't arrive is the one answer that sends a rider hunting, so the broken
+    // prerequisite is said here, a screen up from where it is fixed.
+    val handlebarProblem = rememberOnResume { handlebarProblem(bike) }
+    // The touch row only where there is a touchscreen to ignore, by the profile a session resolves.
+    val touchDashboard = remember(profile) {
+        TBoxModelProfile.resolve(
+            profile.modelId,
+            TBoxCapabilityStore(context).load(profile)?.capabilities,
+            ProfileOverride.byKey(profile.profileOverrideKey)
+        ).supportsScreenTouch
+    }
+    var sheet by rememberSaveable(profile.id) { mutableStateOf<DetailsSheet?>(null) }
+    fun log(setting: String, value: String) =
+        ProjectionEventLog.record("GARAGE", "$setting for ${profile.ssid}: $value.")
     // The field edits the profile's km-native tank range in the rider's display unit.
     var fuelTankRangeText by rememberSaveable(profile.id) {
         mutableStateOf(
@@ -236,16 +325,34 @@ private fun MotorcycleDetailsMainList(
 
         GarageSection(motoHubText("Android Auto")) {
             MhListRow(
-                title = motoHubText("Display fit"),
-                icon = Icons.Rounded.AspectRatio,
-                value = displayMode.title,
-                onClick = { onOpenDetail(MotorcycleDetail.ANDROID_AUTO_DISPLAY) }
+                title = motoHubText("Size"),
+                icon = Icons.Rounded.ZoomOutMap,
+                value = size.title(),
+                onClick = { sheet = DetailsSheet.SIZE }
             )
+            // Custom's two answers, folded in under it. The stored pair is kept while another
+            // size is chosen, so coming back to Custom shows it again.
+            AnimatedVisibility(size == AndroidAutoSize.CUSTOM, enter = MhMotion.foldIn, exit = MhMotion.foldOut) {
+                Column {
+                    MhListRow(
+                        title = motoHubText("Resolution"),
+                        icon = Icons.Rounded.Monitor,
+                        value = MotoHubSettings.androidAutoResolution(bike).title(bike),
+                        onClick = { onOpenDetail(MotorcycleDetail.AA_RESOLUTION) }
+                    )
+                    MhListRow(
+                        title = motoHubText("Interface size"),
+                        icon = Icons.Rounded.FormatSize,
+                        value = bike.getString(MotoHubSettings.androidAutoDensity(bike).labelRes),
+                        onClick = { onOpenDetail(MotorcycleDetail.AA_DENSITY) }
+                    )
+                }
+            }
             MhListRow(
-                title = motoHubText("Screen margins"),
-                subtitle = motoHubText("Leave room for the dashboard's own display"),
-                icon = Icons.Rounded.CropFree,
-                onClick = { onOpenDetail(MotorcycleDetail.TFT_MARGINS) }
+                title = motoHubText("Fit"),
+                icon = Icons.Rounded.FitScreen,
+                value = fit.fitTitle(),
+                onClick = { sheet = DetailsSheet.FIT }
             )
             if (BuildConfig.IS_PRO) {
                 MhListRow(
@@ -255,6 +362,49 @@ private fun MotorcycleDetailsMainList(
                     onClick = onCustomizeDashboard
                 )
             }
+            if (touchDashboard) {
+                MhSwitchRow(
+                    title = motoHubText("Ignore the touchscreen"),
+                    subtitle = motoHubText("Use handlebar buttons even on a touch dashboard"),
+                    icon = Icons.Rounded.DoNotTouch,
+                    checked = ignoreTouch,
+                    onCheckedChange = {
+                        ignoreTouch = it
+                        MotoHubSettings.setDisableTouchscreen(bike, it)
+                        log("Ignore the touchscreen", "$it")
+                    }
+                )
+            }
+        }
+
+        GarageSection(motoHubText("Video")) {
+            MhListRow(
+                title = motoHubText("Image"),
+                icon = Icons.Rounded.HighQuality,
+                value = image.title(),
+                onClick = { sheet = DetailsSheet.IMAGE }
+            )
+        }
+
+        GarageSection(motoHubText("On the motorcycle")) {
+            MhListRow(
+                title = motoHubText("On arrival"),
+                icon = Icons.Rounded.PlayCircle,
+                value = onArrival?.title() ?: motoHubText("Off"),
+                onClick = { sheet = DetailsSheet.ON_ARRIVAL }
+            )
+            MhListRow(
+                title = motoHubText("Handlebar buttons"),
+                icon = Icons.Rounded.SportsEsports,
+                subtitle = handlebarProblem,
+                subtitleColor = MotoHubColors.Warning,
+                value = when {
+                    handlebarProblem != null -> null
+                    HandlebarControlStore.isEnabled(bike) -> motoHubText("On")
+                    else -> motoHubText("Off")
+                },
+                onClick = { onOpenDetail(MotorcycleDetail.HANDLEBAR) }
+            )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -268,18 +418,12 @@ private fun MotorcycleDetailsMainList(
             MhFootnote(motoHubText("The Wi-Fi password is stored securely on this phone."))
         }
 
-        GarageSection(motoHubText("Advanced")) {
+        // Advanced, collapsed to one row: one level deeper, the way Settings nests.
+        MhListGroup {
             MhListRow(
-                title = motoHubText("Dashboard profile"),
-                icon = Icons.Rounded.Memory,
-                value = ProfileOverride.byKey(profile.profileOverrideKey).title(),
-                onClick = { onOpenDetail(MotorcycleDetail.PROFILE_OVERRIDE) }
-            )
-            MhListRow(
-                title = motoHubText("Dashboard capabilities"),
-                subtitle = motoHubText("What the dashboard reports about itself"),
-                icon = Icons.Rounded.Info,
-                onClick = onOpenCapabilities
+                title = motoHubText("Advanced"),
+                icon = Icons.Rounded.Tune,
+                onClick = { onOpenDetail(MotorcycleDetail.ADVANCED) }
             )
         }
 
@@ -293,6 +437,53 @@ private fun MotorcycleDetailsMainList(
                 onClick = onRequestDelete
             )
         }
+    }
+
+    // Each pick writes through `bike`, captured here: a sheet's own LocalContext is not the motorcycle's.
+    val dismiss = { sheet = null }
+    when (sheet) {
+        DetailsSheet.SIZE -> SizeSheet(
+            current = size,
+            onPick = {
+                size = it
+                MotoHubSettings.setAndroidAutoSize(bike, it)
+                log("Android Auto size", it.name)
+            },
+            onDismiss = dismiss
+        )
+        DetailsSheet.FIT -> FitSheet(
+            current = fit,
+            onPick = {
+                fit = it
+                MotoHubSettings.setAndroidAutoAspectMatching(bike, it)
+                // "Show everything" has to be true on a profile whose own Display fit crops
+                // (CFMOTO MTX800 fills): the whole frame, letterboxed. Display fit stays editable.
+                if (it == AndroidAutoAspectMatchingMode.MANUAL) onDisplayModeChanged(AndroidAutoDisplayMode.LETTERBOX)
+                log("Android Auto fit", it.name)
+            },
+            onDismiss = dismiss
+        )
+        DetailsSheet.IMAGE -> ImageSheet(
+            current = image,
+            onPick = {
+                image = it
+                MotoHubSettings.setImageQuality(bike, it)
+                log("Image", it.name)
+            },
+            onDismiss = dismiss
+        )
+        DetailsSheet.ON_ARRIVAL -> OnArrivalSheet(
+            current = onArrival,
+            onPick = { service ->
+                onArrival = service
+                // "Do nothing" keeps the service, so turning it back on starts the same thing.
+                service?.let { MotoHubSettings.setAutostartService(bike, it) }
+                MotoHubSettings.setAutostartEnabled(bike, service != null)
+                log("On arrival", service?.name ?: "NOTHING")
+            },
+            onDismiss = dismiss
+        )
+        null -> Unit
     }
 
     if (showPhotoSheet) {
@@ -449,6 +640,8 @@ fun AndroidAutoDisplayDetail(
                 )
             }
         }
+        // What separates it from Fit, which decides the shape Android Auto draws in.
+        MhFootnote(motoHubText("Used when Android Auto doesn't fill the screen."))
     }
 }
 
@@ -546,7 +739,7 @@ private fun ProfileOverrideDetail(
 
 // The two neutral choices are rider words and get translated; every other entry is a model name,
 // shown as written.
-private fun ProfileOverride.title(): String = when (this) {
+internal fun ProfileOverride.title(): String = when (this) {
     ProfileOverride.AUTO -> motoHubText("Auto")
     ProfileOverride.GENERIC -> motoHubText("Generic dashboard")
     else -> label

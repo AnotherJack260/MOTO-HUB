@@ -138,7 +138,9 @@ fun HandlebarMappingScreen(
         // wizard any earlier would just look broken - presses would register nothing yet.
         if (androidAutoState is AndroidAutoRuntimeState.Streaming) {
             awaitingSessionForTeach = false
-            calibrating = true
+            // Presses are read with the capture owner's handlebar: a session that came up for
+            // another motorcycle is no session to teach this one from.
+            calibrating = ownsLiveCapture(context)
         }
     }
     val lastGesture by HandlebarGestureFeed.lastGesture.collectAsState()
@@ -173,6 +175,11 @@ fun HandlebarMappingScreen(
         // presses).
         MediaButtonBridge.refreshVolumeGestureUse()
     }
+    // Ownership is checked again while teaching, not only on the way in: a session that comes up
+    // for another motorcycle takes the live capture, and its presses are not this handlebar's.
+    LaunchedEffect(androidAutoState, calibrating) {
+        if (calibrating && !ownsLiveCapture(context)) finishTeaching()
+    }
 
     ScreenSlideTransition(
         screen = calibrating,
@@ -197,6 +204,8 @@ fun HandlebarMappingScreen(
                 revision = revision,
                 litGesture = litGesture,
                 teachLoading = awaitingSessionForTeach,
+                // Read on every recomposition, and androidAutoState changing is one.
+                canTeach = ownsLiveCapture(context),
                 onTeach = {
                     // The wizard only ever sees a press through a live capture (MediaButtonBridge
                     // captureActive), so with no Android Auto session at all there is nothing to
@@ -236,8 +245,14 @@ fun HandlebarMappingScreen(
         )
     }
     if (showTeachPrerequisite) {
+        // Under the Garage, only the motorcycle being edited, and Android Auto on this phone only
+        // when that motorcycle is the garage's active one (a phone-only session captures for it).
+        val editedId = (context as? MotorcycleContext)?.motorcycleId
         HandlebarTeachPrerequisiteSheet(
-            motorcycles = remember { MotorcycleProfileStore(context).loadAll() },
+            motorcycles = remember(editedId) {
+                MotorcycleProfileStore(context).loadAll().filter { editedId == null || it.id == editedId }
+            },
+            offerPhoneOnly = editedId == null || editedId == MotorcycleScope.garageActiveId(context),
             onConnect = { profile ->
                 ProjectionEventLog.record(
                     "CONTROLS",
@@ -285,6 +300,7 @@ private fun HandlebarListContent(
     revision: Int,
     litGesture: HandlebarGesture?,
     teachLoading: Boolean,
+    canTeach: Boolean,
     onTeach: () -> Unit,
     onEdit: (PhysicalPress) -> Unit,
     onReset: () -> Unit
@@ -331,10 +347,12 @@ private fun HandlebarListContent(
         // The one lime control, and only until the handlebar is taught: after that the mappings
         // are what the rider came for.
         if (handlebarTaught) {
-            MhSecondaryButton(motoHubText("Teach again"), onTeach, loading = teachLoading)
+            MhSecondaryButton(motoHubText("Teach again"), onTeach, enabled = canTeach, loading = teachLoading)
         } else {
-            MhPrimaryButton(motoHubText("Teach my handlebar"), onTeach, loading = teachLoading)
+            MhPrimaryButton(motoHubText("Teach my handlebar"), onTeach, enabled = canTeach, loading = teachLoading)
         }
+        // Presses are read with the live motorcycle's handlebar, so only that one can be taught.
+        if (!canTeach) MhFootnote(motoHubText("Connect this motorcycle to teach its buttons"))
 
         // Before anything is taught there is nothing of this handlebar's to map: a wall of
         // "Not taught yet" rows only buried the one button that fixes it.
@@ -400,6 +418,7 @@ private fun CaptureOffBanner(onEnable: (() -> Unit)?) {
 @Composable
 private fun HandlebarTeachPrerequisiteSheet(
     motorcycles: List<MotorcycleProfile>,
+    offerPhoneOnly: Boolean,
     onConnect: (MotorcycleProfile) -> Unit,
     onPhoneOnly: () -> Unit,
     onDismiss: () -> Unit
@@ -422,12 +441,14 @@ private fun HandlebarTeachPrerequisiteSheet(
                     onClick = { close { onConnect(profile) } }
                 )
             }
-            MhListRow(
-                title = motoHubText("Android Auto on this phone"),
-                subtitle = motoHubText("No motorcycle needed"),
-                icon = Icons.Rounded.DirectionsCar,
-                onClick = { close(onPhoneOnly) }
-            )
+            if (offerPhoneOnly) {
+                MhListRow(
+                    title = motoHubText("Android Auto on this phone"),
+                    subtitle = motoHubText("No motorcycle needed"),
+                    icon = Icons.Rounded.DirectionsCar,
+                    onClick = { close(onPhoneOnly) }
+                )
+            }
         }
     }
 }

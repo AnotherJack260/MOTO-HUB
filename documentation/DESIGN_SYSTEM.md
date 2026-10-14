@@ -397,6 +397,25 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
     checkmark in one group.
   - Long explanations are cut to one sentence. A setting that genuinely needs
     more gets an `MhFootnote` under the group, not a paragraph in the row.
+  - Global Settings holds only what belongs to the app or the rider. Anything
+    that belongs to a motorcycle (Android Auto, image, frame rate, On arrival,
+    handlebar, dashboard clock) is in Garage › Motorcycle details, per
+    motorcycle.
+- **Per-motorcycle screens.** Motorcycle details reads and writes the edited
+  motorcycle, which need not be the live or active one, through
+  `MotorcycleScope.of(context, profile.id)` (a `MotorcycleContext`).
+  - Pass that `bike` context to every `MotoHubSettings` read and write. Never
+    `applicationContext`: it drops the wrapper.
+  - The handlebar screens get it as their `LocalContext`
+    (`CompositionLocalProvider(LocalContext provides bike)`), so nothing under
+    them may cast `LocalContext` to an Activity.
+  - Sheet content is its own dialog composition, whose `LocalContext` is not
+    the motorcycle's: a sheet never reads `LocalContext` for a store call. Its
+    pick runs a callback that uses the `bike` the screen captured.
+  - Live handlebar capture belongs to one motorcycle at a time (the live
+    session's, else the garage's active one). Only that motorcycle may teach
+    or switch the live capture; another one's Teach is disabled with "Connect
+    this motorcycle to teach its buttons".
 - **Haptics.** A haptic means the motorcycle (or the system) answered, not
   that a finger touched glass. Call
   `LocalView.current.performHapticFeedback(...)` directly; no helper class.
@@ -419,7 +438,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 
 | # | Situation | Pattern |
 |---|---|---|
-| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title, with no chevron. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Connection options, Motorcycle options, connection type, import QR, motorcycle photo, the action picker, timing and the teach prerequisite. |
+| P1 | A choice or picker | An `MhSheet` with a title and an optional one-line body. Rows sit **directly on the sheet** (no inner `MhListGroup`) and align with the title, with no chevron. A single choice closes on tap. There are no OK or Cancel pills: swipe, back or scrim cancels. This covers Connection options, Motorcycle options, connection type, import QR, motorcycle photo, the action picker, timing, the teach prerequisite and the Motorcycle details pickers (Size, Fit, Image, On arrival, and Advanced's Frame rate, Base bitrate, I-frame interval, Carbit-exact media). |
 | P2 | Destructive confirm | An `MhSheet` titled "<Verb> <thing>?" that names the thing, with a one-line consequence. The primary uses `primaryStyle = DESTRUCTIVE` (red text on a red-tinted pill, heavier than the grey Cancel) and fires the haptic itself. The secondary is "Cancel". On success, a past-tense snackbar. This covers Remove motorcycle, Reset actions and Clear the log. "Remove photo" is a red row that acts at once with a snackbar, because it is already inside a sheet. |
 | P3 | Blocking | Only three things block. Safety is a full-screen page. Crash consent and the unverified QR use `MhDialog`. Everything else is a sheet, a snackbar or inline. |
 | P4 | Consent, trust and data answers | **No lime**: two equal neutral pills. This covers crash consent, the report notice, the unverified QR and the wire verdict. |
@@ -427,7 +446,7 @@ just changed?" or "did it hear me?". The tokens live in `MhMotion`
 | P6 | Lime | One lime-filled **action** per layer. A sheet or dialog is its own layer, and the scrimmed screen behind it does not count. Lime as *state* is allowed: switch on, check mark, live dot, progress, success icon. The selected tab is white. The snackbar action is not lime. |
 | P7 | Setup entry points | The same three rows with the same strings and icons in Ride PAIRING (lime "Scan QR code" plus two rows), the Ride "Connection options" sheet (the neutral pill under Connect) and Garage. Pairing success returns to the tab it was launched from and does not auto-connect. Every save path ends with "Motorcycle saved". |
 | P8 | Developer reach | App-wide tools live in Settings › Developer tools (the last group, no header). Per-motorcycle tools live in Motorcycle details › Advanced. The simulator profile stays in a "Developer" group at the end of Dashboard profile, reachable in every build (owner decision: dev tools stay reachable). Application logs live in Diagnostics › Support. |
-| P9 | Back | System back always does what the back icon does. Nested Settings states go to their parent. Sheets and full-screen pages dismiss. Scanner and wizard exit through their cleanup callback. |
+| P9 | Back | System back always does what the back icon does. Nested Settings and Motorcycle details states go to their parent (Advanced › Display fit back to Advanced, Button mapping back to Handlebar buttons). Sheets and full-screen pages dismiss. Scanner and wizard exit through their cleanup callback. |
 | P10 | Feedback order | A snackbar is emitted only after the sheet that caused it has closed. An error while a sheet stays open goes inline in the sheet. |
 | P11 | Motion | 220 ms on one clock, heights included. State swaps fade through (`ScreenCrossfade`, `MhMotion.fadeThrough`); navigation slides. Pills and cards dip on press. Haptics: CONFIRM = it worked (connected, picture on the dashboard, Stop, destructive confirmed, QR read, press captured); REJECT = it failed (connection failed, wrong QR, wrong press). Nothing else vibrates. See Motion. |
 | P12 | Promo | Removed: RideLink promotes nothing. |
@@ -573,13 +592,16 @@ A row's title is always the title of the screen it opens.
 | Tabs | Ride · Garage · Settings |
 | Ride | Connect your motorcycle · Show on the dashboard · Connection options · Motorcycle options (sheet: Switch motorcycle · Add photo / Change photo · Motorcycle details) · Switch motorcycle (sheet) · Allow notifications / Allow the microphone / Allow notifications and the microphone (permission sheet before the first stream, rows "Notifications · Keep streaming visible and let you stop it" and "Microphone · For Google Assistant and calls") |
 | Garage | Garage · Current motorcycle · Other motorcycles · Add a motorcycle |
-| Motorcycle details | Name (row and its sheet) · Android Auto · Connection · Advanced · Display fit · Screen margins · Dashboard profile · Dashboard capabilities |
-| Settings headers | On the motorcycle · Connection · Help · App |
-| Settings rows and screens | Video quality · Android Auto · Handlebar buttons · Start automatically · Auto-connect and recovery · Dashboard clock · Android Auto won't start · Diagnostics · Language · About RideLink · Developer tools |
-| Settings subscreens | Resolution · Interface size · Button mapping · How your data is handled · Application logs · Legal (About) |
+| Motorcycle details | Name (row and its sheet) · sections Android Auto (Size, Resolution and Interface size under Size › Custom, Fit, Ignore the touchscreen on a touch dashboard) · Video (Image) · On the motorcycle (On arrival, Handlebar buttons) · Connection · Advanced (one row, its own screen) |
+| Motorcycle details › Advanced | sections Video (Dashboard profile · Frame rate · Base bitrate · I-frame interval · Carbit-exact media) · Android Auto (Display fit · Screen margins) · Dashboard clock · Connection (Stay on the dashboard's Wi-Fi, Wi-Fi Direct dashboards only) · Dashboard capabilities |
+| Motorcycle details sheets | Size: Compact · Standard · Large · Custom. Fit: Fill the screen · Show everything (also sets Display fit to Fit). Image: Automatic · Sharper · Smoother. On arrival: Start Android Auto · Start mirroring · Do nothing (row value Android Auto · Mirroring · Off). Frame rate: Auto · 30 fps · 24 fps · 20 fps. Base bitrate: Auto · 2–8 Mbps. I-frame interval: Auto · Every frame · 1–3 s. Carbit-exact media: Auto · On · Off |
+| Settings headers | Connection · Help · App |
+| Settings rows and screens | Auto-connect and recovery · Android Auto won't start · Diagnostics · Language · About RideLink · Developer tools |
+| Settings subscreens | How your data is handled · Application logs · Legal (About) |
+| Motorcycle subscreens | Resolution · Interface size · Handlebar buttons › Button mapping · Display fit · Screen margins · Dashboard profile |
 | About RideLink | Version · Source code (this fork) · Based on MOTO-HUB (upstream, its author and the licence) · Legal |
-| Video quality choices | Picture: Lighter · Balanced · Sharper (not "Smoother": a frame-rate subtitle already says "Smoothest"). Frame rate: Auto · 30 fps · 24 fps · 20 fps |
+| Image choices | Automatic · Sharper · Smoother. "Smoother" no longer sits next to "Smoothest", which is one screen deeper under Advanced › Frame rate |
 | Button type choices | Media controls (Most dashboards) · Bluetooth keyboard (For remotes paired as a Bluetooth keyboard) |
-| Section headers | Screen margins · Controls · Support · Privacy · Logging · Timing · Maps and data · Frame rate (Video quality) · Button type (Handlebar buttons) |
+| Section headers | Support · Privacy · Logging · Timing · Maps and data · Video · Dashboard clock · Music volume and Button type (Handlebar buttons) |
 
 Developer-lab body copy stays verbatim, because its audience is developers.
