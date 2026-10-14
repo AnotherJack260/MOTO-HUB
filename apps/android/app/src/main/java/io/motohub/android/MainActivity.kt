@@ -1076,6 +1076,10 @@ class MainActivity : ComponentActivity() {
                 // restart the very screen the rider just stopped as soon as they connect again,
                 // leaving no way back to the picker.
                 var autostartArmed by rememberSaveable { mutableStateOf(true) }
+                // A mode the rider taps inside the delay below is their answer: the autostart then
+                // stands down rather than run a second start, and a second permission request,
+                // over theirs.
+                var modeTaps by remember { mutableStateOf(0) }
                 // Collected from the ViewModel rather than keyed on the composition's snapshot,
                 // for the reason attemptAutoConnect reads it there too: an attempt in flight when
                 // the rider leaves the screen lands minutes later, and a stopped activity neither
@@ -1108,10 +1112,15 @@ class MainActivity : ComponentActivity() {
                             )
                             // Let the mode screen settle before a system consent dialog lands on
                             // top of it.
+                            val tapsBefore = modeTaps
                             delay(AUTOSTART_ON_CONNECT_DELAY_MS)
                             // Disconnect or Cancel can land inside that delay.
                             if (ProjectionRuntime.riderStopped) {
                                 ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the rider stopped manually.")
+                                return@collect
+                            }
+                            if (modeTaps != tapsBefore) {
+                                ProjectionEventLog.debug("AUTOSTART", "Autostart skipped: the rider picked a mode.")
                                 return@collect
                             }
                             val phaseNow = viewModel.uiState.value.session.phase
@@ -1687,11 +1696,15 @@ class MainActivity : ComponentActivity() {
                         diagnosticsOffer = profileTrialDiagnostics,
                         onStartProjection = {
                             ProjectionEventLog.record("MIRROR", "User selected mirroring mode.")
+                            modeTaps++
                             startMirroring(null)
                         },
                         androidAutoActive = androidAutoActive,
                         androidAutoStreaming = androidAutoStreaming,
-                        onStartAndroidAuto = { startAndroidAutoWithWarning(null) },
+                        onStartAndroidAuto = {
+                            modeTaps++
+                            startAndroidAutoWithWarning(null)
+                        },
                         onStopAndroidAuto = {
                             ProjectionEventLog.record("ANDROID_AUTO", "User requested Android Auto stop.")
                             if (androidAutoPreviewIsPhoneOnly) {
