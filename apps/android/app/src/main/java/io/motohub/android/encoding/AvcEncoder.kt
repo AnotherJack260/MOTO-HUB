@@ -34,7 +34,10 @@ data class EncoderProfile(
     /** Leaves a GOP stream on the codec's default (VBR) rate control instead of CBR, the way
      *  CarbitRide encodes the Zontes 350D. Experimental: see [gopUsesCbr] for why CBR is the
      *  default. */
-    val variableBitrate: Boolean = false
+    val variableBitrate: Boolean = false,
+    /** The most a live bitrate change may raise the stream to; null keeps [bitRate] the ceiling.
+     *  Automatic image is configured at [bitRate] and raised from there toward this. */
+    val maxBitRate: Int? = null
 ) {
     companion object {
         fun forTBoxArea(width: Int, height: Int): EncoderProfile = EncoderProfile(

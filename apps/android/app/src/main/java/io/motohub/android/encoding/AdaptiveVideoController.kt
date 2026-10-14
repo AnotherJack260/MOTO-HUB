@@ -100,6 +100,10 @@ object AdaptiveVideoPolicy {
     }
 }
 
+// STUB(batch C): signature-identical placeholder for batch C's AutoImageRange (branch auto-image).
+// Take batch C's version of this whole file at merge.
+data class AutoImageRange(val floor: Int, val start: Int, val ceiling: Int)
+
 /** Owns the live policy state for one projection encoder. */
 class AdaptiveVideoController(
     context: Context,
@@ -115,12 +119,18 @@ class AdaptiveVideoController(
     private var appliedBitrate = -1
     private var appliedFrameRate = -1
 
-    fun reset() {
+    // STUB(batch C): `auto` is ignored here; batch C's reset(auto) learns the Automatic target.
+    fun reset(@Suppress("UNUSED_PARAMETER") auto: AutoImageRange? = null) {
         linkFactor = AdaptiveVideoPolicy.LINK_MAX
         lastLostFrames = 0L
         appliedBitrate = -1
         appliedFrameRate = -1
     }
+
+    // STUB(batch C): no-ops until batch C's controller lands.
+    fun noteStall() = Unit
+
+    fun updateCeiling(@Suppress("UNUSED_PARAMETER") ceiling: Int) = Unit
 
     /**
      * @param linkDown true while the session has no working transport at all - a broken video
